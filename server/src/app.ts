@@ -12,6 +12,12 @@ app.use(cors()); // Enable CORS for frontend communication
 app.use(express.json()); // Parse JSON bodies
 app.use(express.static(CLIENT_DIST_PATH)); // Serve static files from client/dist
 
+// Simple request logging
+app.use((req: Request, res: Response, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
+});
+
 // Message type definition
 interface Message {
   id: number;
