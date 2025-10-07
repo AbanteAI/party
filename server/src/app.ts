@@ -27,10 +27,18 @@ interface Message {
   reactions: { [emoji: string]: string[] };
 }
 
-// Messages file path - store outside src to avoid dirtying repo
+// Snake score type definition
+interface SnakeScore {
+  name: string;
+  score: number;
+  date: string;
+}
+
+// Data file paths - store outside src to avoid dirtying repo
 // Go up one level from server directory to project root
 const DATA_DIR = path.join(process.cwd(), '../data');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
+const SNAKE_SCORES_FILE = path.join(DATA_DIR, 'snake-scores.json');
 
 // Ensure data directory exists
 if (!existsSync(DATA_DIR)) {
@@ -56,12 +64,41 @@ function writeMessages(messages: Message[]): void {
   }
 }
 
+// Helper functions for snake scores
+function readSnakeScores(): SnakeScore[] {
+  try {
+    const data = readFileSync(SNAKE_SCORES_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+
+function writeSnakeScores(scores: SnakeScore[]): void {
+  try {
+    writeFileSync(SNAKE_SCORES_FILE, JSON.stringify(scores, null, 2));
+  } catch (error) {
+    console.error('Error writing snake scores:', error);
+    throw error;
+  }
+}
+
+function getUserHighScore(username: string): number {
+  const scores = readSnakeScores();
+  const userScores = scores.filter(
+    (s) => s.name.toLowerCase() === username.toLowerCase()
+  );
+  return userScores.length > 0
+    ? Math.max(...userScores.map((s) => s.score))
+    : 0;
+}
+
 // Basic route
 app.get('/api', (req: Request, res: Response) => {
   res.json({ message: 'Welcome to the Mentat API!' });
 });
 
-// Get all messages
+// Get all messages (with snake scores)
 app.get('/api/messages', (req: Request, res: Response) => {
   // Prevent caching
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
@@ -69,7 +106,14 @@ app.get('/api/messages', (req: Request, res: Response) => {
   res.setHeader('Expires', '0');
 
   const messages = readMessages();
-  res.json(messages);
+
+  // Add snake high scores to messages
+  const messagesWithScores = messages.map((msg) => ({
+    ...msg,
+    snakeScore: getUserHighScore(msg.username),
+  }));
+
+  res.json(messagesWithScores);
 });
 
 // Post a new message
@@ -148,6 +192,43 @@ app.post('/api/messages/:id/react', (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error adding reaction:', error);
     res.status(500).json({ error: 'Failed to add reaction' });
+  }
+});
+
+// Get snake leaderboard
+app.get('/api/snake/scores', (req: Request, res: Response) => {
+  const scores = readSnakeScores();
+  // Sort by score descending and return top 10
+  const topScores = scores.sort((a, b) => b.score - a.score).slice(0, 10);
+  res.json(topScores);
+});
+
+// Post a new snake score
+app.post('/api/snake/scores', (req: Request, res: Response) => {
+  const { name, score } = req.body;
+
+  const nameSafe = String(name || '').trim();
+  const scoreSafe = parseInt(String(score || '0'));
+
+  if (!nameSafe || scoreSafe <= 0) {
+    return res.status(400).json({ error: 'Name and valid score are required' });
+  }
+
+  try {
+    const scores = readSnakeScores();
+    const newScore: SnakeScore = {
+      name: nameSafe,
+      score: scoreSafe,
+      date: new Date().toISOString(),
+    };
+
+    scores.push(newScore);
+    writeSnakeScores(scores);
+
+    res.json(newScore);
+  } catch (error) {
+    console.error('Error posting snake score:', error);
+    res.status(500).json({ error: 'Failed to save score' });
   }
 });
 

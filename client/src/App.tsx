@@ -6,6 +6,7 @@ interface Message {
   message: string;
   timestamp: string;
   reactions: { [emoji: string]: string[] };
+  snakeScore: number;
 }
 
 function App() {
@@ -167,9 +168,26 @@ function App() {
                   fontSize: '14px',
                   color: '#1f2937',
                   marginBottom: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                 }}
               >
-                {msg.username}
+                <span>{msg.username}</span>
+                {msg.snakeScore > 0 && (
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      color: '#667eea',
+                      backgroundColor: '#f0f4ff',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontWeight: '500',
+                    }}
+                  >
+                    🐍 {msg.snakeScore}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: '14px', color: '#374151' }}>
                 {msg.message}

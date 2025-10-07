@@ -213,18 +213,21 @@
       const minSpeed = 20; // Minimum speed (maximum difficulty)
       const speedIncrement = 2; // Speed increase per point
 
-      // Leaderboard management
-      function getLeaderboard() {
-        const stored = localStorage.getItem('snakeLeaderboard');
-        return stored ? JSON.parse(stored) : [];
+      // Leaderboard management - now using server API
+      async function fetchLeaderboard() {
+        try {
+          const response = await fetch('/api/snake/scores');
+          if (response.ok) {
+            return await response.json();
+          }
+        } catch (error) {
+          console.error('Error fetching leaderboard:', error);
+        }
+        return [];
       }
 
-      function saveLeaderboard(leaderboard) {
-        localStorage.setItem('snakeLeaderboard', JSON.stringify(leaderboard));
-      }
-
-      function updateLeaderboardDisplay() {
-        const leaderboard = getLeaderboard();
+      async function updateLeaderboardDisplay() {
+        const leaderboard = await fetchLeaderboard();
         const listElement = document.getElementById('leaderboardList');
 
         if (leaderboard.length === 0) {
@@ -244,26 +247,31 @@
           `
           )
           .join('');
-      }
 
-      function addToLeaderboard(name, score) {
-        const leaderboard = getLeaderboard();
-        leaderboard.push({ name, score, date: new Date().toISOString() });
-        leaderboard.sort((a, b) => b.score - a.score);
-        const topScores = leaderboard.slice(0, 10);
-        saveLeaderboard(topScores);
-
-        // Update high score display
-        if (topScores.length > 0) {
-          highScore = topScores[0].score;
+        // Update high score display from leaderboard
+        if (leaderboard.length > 0) {
+          highScore = leaderboard[0].score;
           highScoreElement.textContent = highScore;
-          localStorage.setItem('snakeHighScore', highScore);
         }
-
-        updateLeaderboardDisplay();
       }
 
-      highScoreElement.textContent = highScore;
+      async function addToLeaderboard(name, score) {
+        try {
+          const response = await fetch('/api/snake/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, score }),
+          });
+
+          if (response.ok) {
+            await updateLeaderboardDisplay();
+          }
+        } catch (error) {
+          console.error('Error posting score:', error);
+        }
+      }
+
+      // Initialize leaderboard display
       updateLeaderboardDisplay();
 
       function drawGame() {
