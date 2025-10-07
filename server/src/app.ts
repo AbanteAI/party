@@ -57,6 +57,11 @@ app.get('/api', (req: Request, res: Response) => {
 
 // Get all messages
 app.get('/api/messages', (req: Request, res: Response) => {
+  // Prevent caching
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   const messages = readMessages();
   res.json(messages);
 });

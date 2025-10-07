@@ -73,7 +73,7 @@ describe('App Component', () => {
 
     // Mock successful message post and get
     (globalThis.fetch as unknown as Mock).mockImplementation(
-      (url: string, options?: RequestInit) => {
+      (_url: string, options?: RequestInit) => {
         if (options?.method === 'POST') {
           // POST request - return single message
           return Promise.resolve({
