@@ -206,7 +206,7 @@
   </head>
   <body>
     <h1>🏎️ Code Typeracer 🏎️</h1>
-    <div class="version">v1.0.0</div>
+    <div class="version">v1.0.1</div>
 
     <div class="container">
       <div class="game-container">
@@ -383,6 +383,15 @@
         );
       }
 
+      inputArea.addEventListener('keydown', (e) => {
+        if (!isRacing) return;
+
+        // Prevent default for Enter and Tab
+        if (e.key === 'Enter' || e.key === 'Tab') {
+          e.preventDefault();
+        }
+      });
+
       inputArea.addEventListener('input', (e) => {
         if (!isRacing) return;
 
@@ -392,17 +401,21 @@
         }
 
         const typed = e.target.value;
-        const expected = currentSnippet.slice(
-          0,
-          currentPosition + typed.length
-        );
+        if (typed.length === 0) return;
 
-        if (typed === expected.slice(currentPosition)) {
-          // Correct so far
-          currentPosition += typed.length;
-          correctChars += typed.length;
-          totalChars += typed.length;
+        const lastChar = typed[typed.length - 1];
+        const expectedChar = currentSnippet[currentPosition];
+
+        // Check if the character is correct
+        if (lastChar === expectedChar) {
+          correctChars++;
+          currentPosition++;
           e.target.value = '';
+
+          // Auto-advance on newline
+          if (expectedChar === '\n') {
+            // Already advanced position
+          }
 
           if (currentPosition >= currentSnippet.length) {
             finishRace();
@@ -410,10 +423,12 @@
             updateDisplay();
           }
         } else {
-          // Incorrect
-          totalChars++;
-          updateStats();
+          // Incorrect character - don't advance
+          e.target.value = '';
         }
+
+        totalChars++;
+        updateStats();
       });
 
       // Initialize
