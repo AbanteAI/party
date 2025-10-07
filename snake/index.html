@@ -134,6 +134,9 @@
       let highScore = localStorage.getItem('snakeHighScore') || 0;
       let gameRunning = false;
       let gameLoop;
+      let gameSpeed = 50; // Starting speed in ms
+      const minSpeed = 20; // Minimum speed (maximum difficulty)
+      const speedIncrement = 2; // Speed increase per point
 
       highScoreElement.textContent = highScore;
 
@@ -157,6 +160,14 @@
               localStorage.setItem('snakeHighScore', highScore);
             }
             placeFood();
+
+            // Increase speed (decrease interval)
+            if (gameSpeed > minSpeed) {
+              gameSpeed = Math.max(minSpeed, gameSpeed - speedIncrement);
+              // Restart game loop with new speed
+              clearInterval(gameLoop);
+              gameLoop = setInterval(drawGame, gameSpeed);
+            }
           } else {
             snake.pop();
           }
@@ -225,6 +236,7 @@
         dx = 0;
         dy = 0;
         score = 0;
+        gameSpeed = 50; // Reset speed
         scoreElement.textContent = score;
         gameOverElement.style.display = 'none';
         placeFood();
@@ -234,7 +246,7 @@
       function startGame() {
         if (!gameRunning) {
           gameRunning = true;
-          gameLoop = setInterval(drawGame, 50);
+          gameLoop = setInterval(drawGame, gameSpeed);
         }
       }
 
