@@ -216,9 +216,7 @@
       // Leaderboard management - now using server API
       async function fetchLeaderboard() {
         try {
-          const response = await fetch(
-            'http://localhost:5000/api/snake/scores'
-          );
+          const response = await fetch('/api/snake/scores');
           if (response.ok) {
             return await response.json();
           }
@@ -259,14 +257,11 @@
 
       async function addToLeaderboard(name, score) {
         try {
-          const response = await fetch(
-            'http://localhost:5000/api/snake/scores',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name, score }),
-            }
-          );
+          const response = await fetch('/api/snake/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, score }),
+          });
 
           if (response.ok) {
             await updateLeaderboardDisplay();
