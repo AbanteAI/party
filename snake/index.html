@@ -96,23 +96,98 @@
       .game-over button:hover {
         background: #5568d3;
       }
+
+      .game-over input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 2px solid #667eea;
+        border-radius: 6px;
+        font-size: 16px;
+        text-align: center;
+      }
+
+      .leaderboard {
+        margin-top: 20px;
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        min-width: 300px;
+      }
+
+      .leaderboard h2 {
+        color: #333;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .leaderboard-entry {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 12px;
+        margin-bottom: 5px;
+        background: #f8fafc;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      .leaderboard-entry.top-score {
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        font-weight: 600;
+      }
+
+      .leaderboard-rank {
+        color: #666;
+        font-weight: 600;
+        min-width: 30px;
+      }
+
+      .leaderboard-name {
+        flex: 1;
+        color: #333;
+      }
+
+      .leaderboard-score {
+        color: #667eea;
+        font-weight: 600;
+      }
+
+      .container {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+      }
     </style>
   </head>
   <body>
     <h1>🐍 Snake Game 🐍</h1>
-    <div class="game-container">
-      <canvas id="gameCanvas" width="400" height="400"></canvas>
-      <div class="info">
-        <div>Score: <span id="score">0</span></div>
-        <div>High Score: <span id="highScore">0</span></div>
+    <div class="container">
+      <div class="game-container">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div class="info">
+          <div>Score: <span id="score">0</span></div>
+          <div>High Score: <span id="highScore">0</span></div>
+        </div>
+        <div class="controls">Use Arrow Keys or WASD to move</div>
       </div>
-      <div class="controls">Use Arrow Keys or WASD to move</div>
+
+      <div class="leaderboard">
+        <h2>🏆 Leaderboard</h2>
+        <div id="leaderboardList"></div>
+      </div>
     </div>
 
     <div class="game-over" id="gameOver">
       <h2>Game Over!</h2>
       <p>Final Score: <span id="finalScore">0</span></p>
-      <button onclick="restartGame()">Play Again</button>
+      <input
+        type="text"
+        id="playerName"
+        placeholder="Enter your name"
+        maxlength="20"
+      />
+      <button onclick="saveScoreAndRestart()">Save & Play Again</button>
     </div>
 
     <script>
@@ -138,7 +213,58 @@
       const minSpeed = 20; // Minimum speed (maximum difficulty)
       const speedIncrement = 2; // Speed increase per point
 
+      // Leaderboard management
+      function getLeaderboard() {
+        const stored = localStorage.getItem('snakeLeaderboard');
+        return stored ? JSON.parse(stored) : [];
+      }
+
+      function saveLeaderboard(leaderboard) {
+        localStorage.setItem('snakeLeaderboard', JSON.stringify(leaderboard));
+      }
+
+      function updateLeaderboardDisplay() {
+        const leaderboard = getLeaderboard();
+        const listElement = document.getElementById('leaderboardList');
+
+        if (leaderboard.length === 0) {
+          listElement.innerHTML =
+            '<div style="text-align: center; color: #999; padding: 20px;">No scores yet!</div>';
+          return;
+        }
+
+        listElement.innerHTML = leaderboard
+          .map(
+            (entry, index) => `
+            <div class="leaderboard-entry ${index === 0 ? 'top-score' : ''}">
+              <span class="leaderboard-rank">#${index + 1}</span>
+              <span class="leaderboard-name">${entry.name}</span>
+              <span class="leaderboard-score">${entry.score}</span>
+            </div>
+          `
+          )
+          .join('');
+      }
+
+      function addToLeaderboard(name, score) {
+        const leaderboard = getLeaderboard();
+        leaderboard.push({ name, score, date: new Date().toISOString() });
+        leaderboard.sort((a, b) => b.score - a.score);
+        const topScores = leaderboard.slice(0, 10);
+        saveLeaderboard(topScores);
+
+        // Update high score display
+        if (topScores.length > 0) {
+          highScore = topScores[0].score;
+          highScoreElement.textContent = highScore;
+          localStorage.setItem('snakeHighScore', highScore);
+        }
+
+        updateLeaderboardDisplay();
+      }
+
       highScoreElement.textContent = highScore;
+      updateLeaderboardDisplay();
 
       function drawGame() {
         // Clear canvas
@@ -229,6 +355,26 @@
         clearInterval(gameLoop);
         finalScoreElement.textContent = score;
         gameOverElement.style.display = 'block';
+
+        // Focus on name input
+        const nameInput = document.getElementById('playerName');
+        nameInput.value = localStorage.getItem('snakePlayerName') || '';
+        setTimeout(() => nameInput.focus(), 100);
+      }
+
+      function saveScoreAndRestart() {
+        const nameInput = document.getElementById('playerName');
+        const playerName = nameInput.value.trim() || 'Anonymous';
+
+        // Save player name for next time
+        localStorage.setItem('snakePlayerName', playerName);
+
+        // Add to leaderboard
+        if (score > 0) {
+          addToLeaderboard(playerName, score);
+        }
+
+        restartGame();
       }
 
       function restartGame() {
@@ -252,6 +398,12 @@
 
       // Keyboard controls
       document.addEventListener('keydown', (e) => {
+        // Allow Enter to submit name in game over screen
+        if (gameOverElement.style.display === 'block' && e.key === 'Enter') {
+          saveScoreAndRestart();
+          return;
+        }
+
         if (
           !gameRunning &&
           (e.key.startsWith('Arrow') || 'wasd'.includes(e.key.toLowerCase()))
