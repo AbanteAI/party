@@ -22,7 +22,8 @@ interface Message {
 }
 
 // Messages file path - store outside src to avoid dirtying repo
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Go up one level from server directory to project root
+const DATA_DIR = path.join(process.cwd(), '../data');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
 
 // Ensure data directory exists

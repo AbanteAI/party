@@ -1,6 +1,7 @@
 {
   "name": "snake-game",
   "version": "1.0.0",
+  "type": "module",
   "description": "Simple snake game server",
   "main": "server.js",
   "scripts": {

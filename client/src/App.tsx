@@ -88,7 +88,9 @@ function App() {
   };
 
   const addReaction = async (messageId: number, emoji: string) => {
-    if (!username.trim()) {
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      alert('Please enter a username first!');
       return;
     }
 
@@ -100,7 +102,7 @@ function App() {
         },
         body: JSON.stringify({
           emoji,
-          username: username.trim(),
+          username: trimmedUsername,
         }),
       });
 
@@ -209,24 +211,30 @@ function App() {
                     </button>
                   ))}
                 {/* Quick reaction buttons */}
-                {['👍', '❤️', '😂', '🎉'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => addReaction(msg.id, emoji)}
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '12px',
-                      border: '1px solid #e5e7eb',
-                      backgroundColor: '#f9fafb',
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      opacity: 0.6,
-                    }}
-                    title={`React with ${emoji}`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+                {['👍', '❤️', '😂', '🎉']
+                  .filter(
+                    (emoji) =>
+                      !msg.reactions ||
+                      !msg.reactions[emoji] ||
+                      msg.reactions[emoji].length === 0
+                  )
+                  .map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => addReaction(msg.id, emoji)}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        backgroundColor: '#f9fafb',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                      }}
+                      title={`React with ${emoji}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
               </div>
               <div
                 style={{
