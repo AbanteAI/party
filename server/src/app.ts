@@ -34,11 +34,20 @@ interface SnakeScore {
   date: string;
 }
 
+// Typeracer score type definition
+interface TyperacerScore {
+  name: string;
+  wpm: number;
+  accuracy: number;
+  date: string;
+}
+
 // Data file paths - store outside src to avoid dirtying repo
 // Go up one level from server directory to project root
 const DATA_DIR = path.join(process.cwd(), '../data');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
 const SNAKE_SCORES_FILE = path.join(DATA_DIR, 'snake-scores.json');
+const TYPERACER_SCORES_FILE = path.join(DATA_DIR, 'typeracer-scores.json');
 
 // Ensure data directory exists
 if (!existsSync(DATA_DIR)) {
@@ -79,6 +88,25 @@ function writeSnakeScores(scores: SnakeScore[]): void {
     writeFileSync(SNAKE_SCORES_FILE, JSON.stringify(scores, null, 2));
   } catch (error) {
     console.error('Error writing snake scores:', error);
+    throw error;
+  }
+}
+
+// Helper functions for typeracer scores
+function readTyperacerScores(): TyperacerScore[] {
+  try {
+    const data = readFileSync(TYPERACER_SCORES_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+
+function writeTyperacerScores(scores: TyperacerScore[]): void {
+  try {
+    writeFileSync(TYPERACER_SCORES_FILE, JSON.stringify(scores, null, 2));
+  } catch (error) {
+    console.error('Error writing typeracer scores:', error);
     throw error;
   }
 }
@@ -228,6 +256,47 @@ app.post('/api/snake/scores', (req: Request, res: Response) => {
     res.json(newScore);
   } catch (error) {
     console.error('Error posting snake score:', error);
+    res.status(500).json({ error: 'Failed to save score' });
+  }
+});
+
+// Get typeracer leaderboard
+app.get('/api/typeracer/scores', (req: Request, res: Response) => {
+  const scores = readTyperacerScores();
+  // Sort by WPM descending and return top 10
+  const topScores = scores.sort((a, b) => b.wpm - a.wpm).slice(0, 10);
+  res.json(topScores);
+});
+
+// Post a new typeracer score
+app.post('/api/typeracer/scores', (req: Request, res: Response) => {
+  const { name, wpm, accuracy } = req.body;
+
+  const nameSafe = String(name || '').trim();
+  const wpmSafe = parseInt(String(wpm || '0'));
+  const accuracySafe = parseInt(String(accuracy || '0'));
+
+  if (!nameSafe || wpmSafe <= 0 || accuracySafe < 0 || accuracySafe > 100) {
+    return res
+      .status(400)
+      .json({ error: 'Name, valid WPM, and accuracy (0-100) are required' });
+  }
+
+  try {
+    const scores = readTyperacerScores();
+    const newScore: TyperacerScore = {
+      name: nameSafe,
+      wpm: wpmSafe,
+      accuracy: accuracySafe,
+      date: new Date().toISOString(),
+    };
+
+    scores.push(newScore);
+    writeTyperacerScores(scores);
+
+    res.json(newScore);
+  } catch (error) {
+    console.error('Error posting typeracer score:', error);
     res.status(500).json({ error: 'Failed to save score' });
   }
 });
