@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 
 export const app = express();
 export const PORT = process.env.PORT || 5000;
@@ -12,9 +12,54 @@ app.use(cors()); // Enable CORS for frontend communication
 app.use(express.json()); // Parse JSON bodies
 app.use(express.static(CLIENT_DIST_PATH)); // Serve static files from client/dist
 
+// Messages file path
+const MESSAGES_FILE = path.join(__dirname, 'messages.json');
+
+// Helper functions for message persistence
+function readMessages() {
+  try {
+    const data = readFileSync(MESSAGES_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+
+function writeMessages(messages: any[]) {
+  writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2));
+}
+
 // Basic route
 app.get('/api', (req: Request, res: Response) => {
   res.json({ message: 'Welcome to the Mentat API!' });
+});
+
+// Get all messages
+app.get('/api/messages', (req: Request, res: Response) => {
+  const messages = readMessages();
+  res.json(messages);
+});
+
+// Post a new message
+app.post('/api/messages', (req: Request, res: Response) => {
+  const { username, message } = req.body;
+
+  if (!username || !message) {
+    return res.status(400).json({ error: 'Username and message are required' });
+  }
+
+  const messages = readMessages();
+  const newMessage = {
+    id: Date.now(),
+    username,
+    message,
+    timestamp: new Date().toISOString(),
+  };
+
+  messages.push(newMessage);
+  writeMessages(messages);
+
+  res.json(newMessage);
 });
 
 // Serve React app or fallback page
