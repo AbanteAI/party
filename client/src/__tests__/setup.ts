@@ -1,3 +1,5 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
-// Global test setup can go here
+// Mock scrollIntoView which is not available in jsdom
+Element.prototype.scrollIntoView = vi.fn();
