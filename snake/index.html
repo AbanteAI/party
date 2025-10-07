@@ -175,7 +175,7 @@
         font-family: monospace;
       "
     >
-      v1.0.7
+      v1.0.8
     </div>
     <div class="container">
       <div class="game-container">
@@ -263,6 +263,8 @@
       let dx = 0;
       let dy = 0;
       let score = 0;
+      let inputBuffer = null; // Buffer for next direction change
+      let lastDirection = { dx: 0, dy: 0 }; // Track last direction
       let highScore = localStorage.getItem('snakeHighScore') || 0;
       let gameRunning = false;
       let gameLoop;
@@ -361,6 +363,14 @@
       });
 
       function drawGame() {
+        // Process buffered input
+        if (inputBuffer) {
+          dx = inputBuffer.dx;
+          dy = inputBuffer.dy;
+          lastDirection = { dx, dy };
+          inputBuffer = null;
+        }
+
         // Clear canvas
         ctx.fillStyle = '#f0f0f0';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -381,13 +391,8 @@
             }
             placeFood();
 
-            // Increase speed (decrease interval)
-            if (gameSpeed > minSpeed) {
-              gameSpeed = Math.max(minSpeed, gameSpeed - speedIncrement);
-              // Restart game loop with new speed
-              clearInterval(gameLoop);
-              gameLoop = setInterval(drawGame, gameSpeed);
-            }
+            // Note: Progressive acceleration removed to fix lag
+            // Speed is now controlled by the difficulty slider
           } else {
             snake.pop();
           }
@@ -508,37 +513,34 @@
           startGame();
         }
 
+        // Buffer input to prevent 180-degree turns
         switch (e.key) {
           case 'ArrowUp':
           case 'w':
           case 'W':
-            if (dy === 0) {
-              dx = 0;
-              dy = -1;
+            if (lastDirection.dy === 0) {
+              inputBuffer = { dx: 0, dy: -1 };
             }
             break;
           case 'ArrowDown':
           case 's':
           case 'S':
-            if (dy === 0) {
-              dx = 0;
-              dy = 1;
+            if (lastDirection.dy === 0) {
+              inputBuffer = { dx: 0, dy: 1 };
             }
             break;
           case 'ArrowLeft':
           case 'a':
           case 'A':
-            if (dx === 0) {
-              dx = -1;
-              dy = 0;
+            if (lastDirection.dx === 0) {
+              inputBuffer = { dx: -1, dy: 0 };
             }
             break;
           case 'ArrowRight':
           case 'd':
           case 'D':
-            if (dx === 0) {
-              dx = 1;
-              dy = 0;
+            if (lastDirection.dx === 0) {
+              inputBuffer = { dx: 1, dy: 0 };
             }
             break;
         }
