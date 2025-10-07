@@ -5,6 +5,7 @@ interface Message {
   username: string;
   message: string;
   timestamp: string;
+  reactions: { [emoji: string]: string[] };
 }
 
 function App() {
@@ -13,6 +14,21 @@ function App() {
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load username from localStorage
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('chatUsername');
+    if (savedUsername) {
+      setUsername(savedUsername);
+    }
+  }, []);
+
+  // Save username to localStorage when it changes
+  useEffect(() => {
+    if (username) {
+      localStorage.setItem('chatUsername', username);
+    }
+  }, [username]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,6 +84,31 @@ function App() {
       console.error('Error sending message:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const addReaction = async (messageId: number, emoji: string) => {
+    if (!username.trim()) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/messages/${messageId}/react`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          emoji,
+          username: username.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        await fetchMessages();
+      }
+    } catch (err) {
+      console.error('Error adding reaction:', err);
     }
   };
 
@@ -130,6 +171,62 @@ function App() {
               </div>
               <div style={{ fontSize: '14px', color: '#374151' }}>
                 {msg.message}
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginTop: '8px',
+                  flexWrap: 'wrap',
+                }}
+              >
+                {/* Existing reactions */}
+                {msg.reactions &&
+                  Object.entries(msg.reactions).map(([emoji, users]) => (
+                    <button
+                      key={emoji}
+                      onClick={() => addReaction(msg.id, emoji)}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        backgroundColor: users.includes(username.trim())
+                          ? '#dbeafe'
+                          : '#f9fafb',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                      title={users.join(', ')}
+                    >
+                      <span>{emoji}</span>
+                      <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                        {users.length}
+                      </span>
+                    </button>
+                  ))}
+                {/* Quick reaction buttons */}
+                {['👍', '❤️', '😂', '🎉'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => addReaction(msg.id, emoji)}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '12px',
+                      border: '1px solid #e5e7eb',
+                      backgroundColor: '#f9fafb',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      opacity: 0.6,
+                    }}
+                    title={`React with ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
               </div>
               <div
                 style={{

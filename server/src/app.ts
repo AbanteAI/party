@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 
 export const app = express();
 export const PORT = process.env.PORT || 5000;
@@ -12,11 +12,26 @@ app.use(cors()); // Enable CORS for frontend communication
 app.use(express.json()); // Parse JSON bodies
 app.use(express.static(CLIENT_DIST_PATH)); // Serve static files from client/dist
 
-// Messages file path
-const MESSAGES_FILE = path.join(__dirname, 'messages.json');
+// Message type definition
+interface Message {
+  id: number;
+  username: string;
+  message: string;
+  timestamp: string;
+  reactions: { [emoji: string]: string[] };
+}
+
+// Messages file path - store outside src to avoid dirtying repo
+const DATA_DIR = path.join(process.cwd(), 'data');
+const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
+
+// Ensure data directory exists
+if (!existsSync(DATA_DIR)) {
+  mkdirSync(DATA_DIR, { recursive: true });
+}
 
 // Helper functions for message persistence
-function readMessages() {
+function readMessages(): Message[] {
   try {
     const data = readFileSync(MESSAGES_FILE, 'utf-8');
     return JSON.parse(data);
@@ -25,8 +40,13 @@ function readMessages() {
   }
 }
 
-function writeMessages(messages: any[]) {
-  writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2));
+function writeMessages(messages: Message[]): void {
+  try {
+    writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2));
+  } catch (error) {
+    console.error('Error writing messages:', error);
+    throw error;
+  }
 }
 
 // Basic route
@@ -44,22 +64,79 @@ app.get('/api/messages', (req: Request, res: Response) => {
 app.post('/api/messages', (req: Request, res: Response) => {
   const { username, message } = req.body;
 
-  if (!username || !message) {
+  const usernameSafe = String(username || '').trim();
+  const messageSafe = String(message || '').trim();
+
+  if (!usernameSafe || !messageSafe) {
     return res.status(400).json({ error: 'Username and message are required' });
   }
 
-  const messages = readMessages();
-  const newMessage = {
-    id: Date.now(),
-    username,
-    message,
-    timestamp: new Date().toISOString(),
-  };
+  try {
+    const messages = readMessages();
+    const newMessage: Message = {
+      id: Date.now(),
+      username: usernameSafe,
+      message: messageSafe,
+      timestamp: new Date().toISOString(),
+      reactions: {},
+    };
 
-  messages.push(newMessage);
-  writeMessages(messages);
+    messages.push(newMessage);
+    writeMessages(messages);
 
-  res.json(newMessage);
+    res.json(newMessage);
+  } catch (error) {
+    console.error('Error posting message:', error);
+    res.status(500).json({ error: 'Failed to save message' });
+  }
+});
+
+// Add a reaction to a message
+app.post('/api/messages/:id/react', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { emoji, username } = req.body;
+
+  const emojiSafe = String(emoji || '').trim();
+  const usernameSafe = String(username || '').trim();
+
+  if (!emojiSafe || !usernameSafe) {
+    return res.status(400).json({ error: 'Emoji and username are required' });
+  }
+
+  try {
+    const messages = readMessages();
+    const message = messages.find((m) => m.id === parseInt(id));
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    if (!message.reactions) {
+      message.reactions = {};
+    }
+
+    if (!message.reactions[emojiSafe]) {
+      message.reactions[emojiSafe] = [];
+    }
+
+    // Toggle reaction - remove if already exists, add if not
+    const userIndex = message.reactions[emojiSafe].indexOf(usernameSafe);
+    if (userIndex > -1) {
+      message.reactions[emojiSafe].splice(userIndex, 1);
+      // Remove emoji key if no users left
+      if (message.reactions[emojiSafe].length === 0) {
+        delete message.reactions[emojiSafe];
+      }
+    } else {
+      message.reactions[emojiSafe].push(usernameSafe);
+    }
+
+    writeMessages(messages);
+    res.json(message);
+  } catch (error) {
+    console.error('Error adding reaction:', error);
+    res.status(500).json({ error: 'Failed to add reaction' });
+  }
 });
 
 // Serve React app or fallback page
