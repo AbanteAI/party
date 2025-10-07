@@ -398,9 +398,12 @@
 
       // Keyboard controls
       document.addEventListener('keydown', (e) => {
-        // Allow Enter to submit name in game over screen
-        if (gameOverElement.style.display === 'block' && e.key === 'Enter') {
-          saveScoreAndRestart();
+        // Don't capture keys when typing in input field
+        if (document.activeElement.tagName === 'INPUT') {
+          // Allow Enter to submit name in game over screen
+          if (gameOverElement.style.display === 'block' && e.key === 'Enter') {
+            saveScoreAndRestart();
+          }
           return;
         }
 
