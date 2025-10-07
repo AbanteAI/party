@@ -211,7 +211,7 @@ function App() {
                     </button>
                   ))}
                 {/* Quick reaction buttons */}
-                {['👍', '❤️', '😂', '🎉']
+                {['👍', '❤️', '😂', '🎉', '🔥', '🚀']
                   .filter(
                     (emoji) =>
                       !msg.reactions ||
