@@ -175,7 +175,7 @@
         font-family: monospace;
       "
     >
-      v1.0.5
+      v1.0.6
     </div>
     <div class="container">
       <div class="game-container">
@@ -224,9 +224,9 @@
       let highScore = localStorage.getItem('snakeHighScore') || 0;
       let gameRunning = false;
       let gameLoop;
-      let gameSpeed = 50; // Starting speed in ms
-      const minSpeed = 20; // Minimum speed (maximum difficulty)
-      const speedIncrement = 2; // Speed increase per point
+      let gameSpeed = 100; // Starting speed in ms (slower = easier)
+      const minSpeed = 40; // Minimum speed (maximum difficulty)
+      const speedIncrement = 1; // Speed increase per point (slower acceleration)
 
       // Leaderboard management - now using server API
       async function fetchLeaderboard() {
@@ -416,7 +416,7 @@
         dx = 0;
         dy = 0;
         score = 0;
-        gameSpeed = 50; // Reset speed
+        gameSpeed = 100; // Reset speed
         scoreElement.textContent = score;
         gameOverElement.style.display = 'none';
         placeFood();
