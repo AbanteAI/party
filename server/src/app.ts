@@ -419,6 +419,29 @@ app.post('/api/polls/:id/vote', (req: Request, res: Response) => {
   }
 });
 
+// Get stock data (TSLA)
+app.get('/api/stock/:symbol', async (req: Request, res: Response) => {
+  const symbol = req.params.symbol.toUpperCase();
+
+  try {
+    // Use Yahoo Finance API (free, no key required)
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return res
+        .status(response.status)
+        .json({ error: 'Failed to fetch stock data' });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching stock data:', error);
+    res.status(500).json({ error: 'Failed to fetch stock data' });
+  }
+});
+
 // Serve React app or fallback page
 app.get('*', (req: Request, res: Response) => {
   const indexPath = path.join(CLIENT_DIST_PATH, 'index.html');
