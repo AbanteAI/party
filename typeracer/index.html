@@ -206,7 +206,7 @@
   </head>
   <body>
     <h1>🏎️ Code Typeracer 🏎️</h1>
-    <div class="version">v1.0.3</div>
+    <div class="version">v1.0.4</div>
 
     <div class="container">
       <div class="game-container">
@@ -247,9 +247,9 @@
     </div>
 
     <script>
-            // Git source code snippets
-            const codeSnippets = [
-              `function apply_patch(state, patch) {
+      // Git source code snippets
+      const codeSnippets = [
+        `function apply_patch(state, patch) {
         const lines = patch.split('\\n');
         let current_line = 0;
 
@@ -265,7 +265,7 @@
           }
         }
       }`,
-              `static int diff_tree(struct tree *t1, struct tree *t2) {
+        `static int diff_tree(struct tree *t1, struct tree *t2) {
         struct tree_desc desc[2];
         void *tree1, *tree2;
 
@@ -277,7 +277,7 @@
 
         return diff_tree_paths(&desc[0], &desc[1]);
       }`,
-              `def merge_commits(base, ours, theirs):
+        `def merge_commits(base, ours, theirs):
           """Perform a three-way merge."""
           conflicts = []
           result = {}
@@ -291,233 +291,232 @@
                   conflicts.append(key)
 
           return result, conflicts`,
-            ];
+      ];
 
-            let currentSnippet = '';
-            let currentPosition = 0;
-            let startTime = null;
-            let timerInterval = null;
-            let correctChars = 0;
-            let totalChars = 0;
-            let isRacing = false;
+      let currentSnippet = '';
+      let currentPosition = 0;
+      let startTime = null;
+      let timerInterval = null;
+      let correctChars = 0;
+      let totalChars = 0;
+      let isRacing = false;
 
-            const codeDisplay = document.getElementById('codeDisplay');
-            const inputArea = document.getElementById('inputArea');
-            const startButton = document.getElementById('startButton');
-            const wpmElement = document.getElementById('wpm');
-            const accuracyElement = document.getElementById('accuracy');
-            const timeElement = document.getElementById('time');
+      const codeDisplay = document.getElementById('codeDisplay');
+      const inputArea = document.getElementById('inputArea');
+      const startButton = document.getElementById('startButton');
+      const wpmElement = document.getElementById('wpm');
+      const accuracyElement = document.getElementById('accuracy');
+      const timeElement = document.getElementById('time');
 
-            function startRace() {
-              // Reset state
-              currentSnippet =
-                codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
-              currentPosition = 0;
-              correctChars = 0;
-              totalChars = 0;
-              startTime = null;
-              isRacing = true;
+      function startRace() {
+        // Reset state
+        currentSnippet =
+          codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+        currentPosition = 0;
+        correctChars = 0;
+        totalChars = 0;
+        startTime = null;
+        isRacing = true;
 
-              // Update UI
+        // Update UI
+        updateDisplay();
+        inputArea.value = '';
+        inputArea.disabled = false;
+        inputArea.focus();
+        startButton.disabled = true;
+        wpmElement.textContent = '0';
+        accuracyElement.textContent = '100%';
+        timeElement.textContent = '0s';
+      }
+
+      function updateDisplay() {
+        const before = currentSnippet.slice(0, currentPosition);
+        const current = currentSnippet[currentPosition] || '';
+        const after = currentSnippet.slice(currentPosition + 1);
+
+        codeDisplay.innerHTML =
+          `<span class="correct">${escapeHtml(before)}</span>` +
+          `<span class="cursor">${escapeHtml(current)}</span>` +
+          `<span>${escapeHtml(after)}</span>`;
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function updateStats() {
+        if (!startTime) return;
+
+        const elapsed = (Date.now() - startTime) / 1000;
+        const minutes = elapsed / 60;
+        const words = correctChars / 5; // Standard: 5 chars = 1 word
+        const wpm = Math.round(words / minutes) || 0;
+        const accuracy =
+          totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 100;
+
+        wpmElement.textContent = wpm;
+        accuracyElement.textContent = accuracy + '%';
+        timeElement.textContent = Math.round(elapsed) + 's';
+      }
+
+      async function finishRace() {
+        isRacing = false;
+        clearInterval(timerInterval);
+        inputArea.disabled = true;
+        startButton.disabled = false;
+
+        const elapsed = (Date.now() - startTime) / 1000;
+        const minutes = elapsed / 60;
+        const words = correctChars / 5;
+        const wpm = Math.round(words / minutes) || 0;
+        const accuracy = Math.round((correctChars / totalChars) * 100);
+
+        // Prompt for name and save score
+        const name =
+          prompt('Enter your name for the leaderboard:') || 'Anonymous';
+        await saveScore(name, wpm, accuracy);
+
+        alert(
+          `Race complete!\\nWPM: ${wpm}\\nAccuracy: ${accuracy}%\\nTime: ${Math.round(elapsed)}s`
+        );
+      }
+
+      inputArea.addEventListener('keydown', (e) => {
+        if (!isRacing) return;
+
+        // Handle Enter key as newline
+        if (e.key === 'Enter') {
+          e.preventDefault();
+
+          if (!startTime) {
+            startTime = Date.now();
+            timerInterval = setInterval(updateStats, 100);
+          }
+
+          const expectedChar = currentSnippet[currentPosition];
+
+          if (expectedChar === '\n') {
+            correctChars++;
+            currentPosition++;
+
+            if (currentPosition >= currentSnippet.length) {
+              finishRace();
+            } else {
               updateDisplay();
-              inputArea.value = '';
-              inputArea.disabled = false;
-              inputArea.focus();
-              startButton.disabled = true;
-              wpmElement.textContent = '0';
-              accuracyElement.textContent = '100%';
-              timeElement.textContent = '0s';
             }
+          }
 
-            function updateDisplay() {
-              const before = currentSnippet.slice(0, currentPosition);
-              const current = currentSnippet[currentPosition] || '';
-              const after = currentSnippet.slice(currentPosition + 1);
+          totalChars++;
+          updateStats();
+        }
 
-              codeDisplay.innerHTML =
-                `<span class="correct">${escapeHtml(before)}</span>` +
-                `<span class="cursor">${escapeHtml(current)}</span>` +
-                `<span>${escapeHtml(after)}</span>`;
-            }
+        // Prevent Tab
+        if (e.key === 'Tab') {
+          e.preventDefault();
+        }
+      });
 
-            function escapeHtml(text) {
-              const div = document.createElement('div');
-              div.textContent = text;
-              return div.innerHTML;
-            }
+      inputArea.addEventListener('input', (e) => {
+        if (!isRacing) return;
 
-            function updateStats() {
-              if (!startTime) return;
+        if (!startTime) {
+          startTime = Date.now();
+          timerInterval = setInterval(updateStats, 100);
+        }
 
-              const elapsed = (Date.now() - startTime) / 1000;
-              const minutes = elapsed / 60;
-              const words = correctChars / 5; // Standard: 5 chars = 1 word
-              const wpm = Math.round(words / minutes) || 0;
-              const accuracy =
-                totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 100;
+        const typed = e.target.value;
+        if (typed.length === 0) return;
 
-              wpmElement.textContent = wpm;
-              accuracyElement.textContent = accuracy + '%';
-              timeElement.textContent = Math.round(elapsed) + 's';
-            }
+        const lastChar = typed[typed.length - 1];
+        const expectedChar = currentSnippet[currentPosition];
 
-            async function finishRace() {
-              isRacing = false;
-              clearInterval(timerInterval);
-              inputArea.disabled = true;
-              startButton.disabled = false;
+        // Check if the character is correct
+        if (lastChar === expectedChar) {
+          correctChars++;
+          currentPosition++;
+          e.target.value = '';
 
-              const elapsed = (Date.now() - startTime) / 1000;
-              const minutes = elapsed / 60;
-              const words = correctChars / 5;
-              const wpm = Math.round(words / minutes) || 0;
-              const accuracy = Math.round((correctChars / totalChars) * 100);
-
-              // Prompt for name and save score
-              const name =
-                prompt('Enter your name for the leaderboard:') || 'Anonymous';
-              await saveScore(name, wpm, accuracy);
-
-              alert(
-                `Race complete!\\nWPM: ${wpm}\\nAccuracy: ${accuracy}%\\nTime: ${Math.round(elapsed)}s`
-              );
-            }
-
-            inputArea.addEventListener('keydown', (e) => {
-              if (!isRacing) return;
-
-              // Handle Enter key as newline
-              if (e.key === 'Enter') {
-                e.preventDefault();
-
-                if (!startTime) {
-                  startTime = Date.now();
-                  timerInterval = setInterval(updateStats, 100);
-                }
-
-                const expectedChar = currentSnippet[currentPosition];
-
-                if (expectedChar === '\n') {
-                  correctChars++;
-                  currentPosition++;
-
-                  if (currentPosition >= currentSnippet.length) {
-                    finishRace();
-                  } else {
-                    updateDisplay();
-                  }
-                }
-
-                totalChars++;
-                updateStats();
-              }
-
-              // Prevent Tab
-              if (e.key === 'Tab') {
-                e.preventDefault();
-              }
-            });
-
-            inputArea.addEventListener('input', (e) => {
-              if (!isRacing) return;
-
-              if (!startTime) {
-                startTime = Date.now();
-                timerInterval = setInterval(updateStats, 100);
-              }
-
-              const typed = e.target.value;
-              if (typed.length === 0) return;
-
-              const lastChar = typed[typed.length - 1];
-              const expectedChar = currentSnippet[currentPosition];
-
-              // Check if the character is correct
-              if (lastChar === expectedChar) {
-                correctChars++;
-                currentPosition++;
-                e.target.value = '';
-
-                if (currentPosition >= currentSnippet.length) {
-                  finishRace();
-                } else {
-                  updateDisplay();
-                }
-              } else {
-                // Incorrect character - don't advance
-                e.target.value = '';
-              }
-
-              totalChars++;
-              updateStats();
-            });
-      </mentat_notes>
-
-            // Initialize
+          if (currentPosition >= currentSnippet.length) {
+            finishRace();
+          } else {
             updateDisplay();
-            updateLeaderboard();
+          }
+        } else {
+          // Incorrect character - don't advance
+          e.target.value = '';
+        }
 
-            async function fetchLeaderboard() {
-              console.log('Fetching typeracer leaderboard...');
-              try {
-                const response = await fetch('/api/typeracer/scores');
-                console.log('Leaderboard response status:', response.status);
-                if (response.ok) {
-                  const data = await response.json();
-                  console.log('Leaderboard data:', data);
-                  return data;
-                }
-              } catch (error) {
-                console.error('Error fetching leaderboard:', error);
-              }
-              return [];
-            }
+        totalChars++;
+        updateStats();
+      });
 
-            async function updateLeaderboard() {
-              const leaderboard = await fetchLeaderboard();
-              const leaderboardList = document.getElementById('leaderboardList');
+      // Initialize
+      updateDisplay();
+      updateLeaderboard();
 
-              if (leaderboard.length === 0) {
-                leaderboardList.innerHTML =
-                  '<div style="text-align: center; color: #999; padding: 20px;">No scores yet!</div>';
-                return;
-              }
+      async function fetchLeaderboard() {
+        console.log('Fetching typeracer leaderboard...');
+        try {
+          const response = await fetch('/api/typeracer/scores');
+          console.log('Leaderboard response status:', response.status);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Leaderboard data:', data);
+            return data;
+          }
+        } catch (error) {
+          console.error('Error fetching leaderboard:', error);
+        }
+        return [];
+      }
 
-              leaderboardList.innerHTML = leaderboard
-                .map(
-                  (entry, index) => `
+      async function updateLeaderboard() {
+        const leaderboard = await fetchLeaderboard();
+        const leaderboardList = document.getElementById('leaderboardList');
+
+        if (leaderboard.length === 0) {
+          leaderboardList.innerHTML =
+            '<div style="text-align: center; color: #999; padding: 20px;">No scores yet!</div>';
+          return;
+        }
+
+        leaderboardList.innerHTML = leaderboard
+          .map(
+            (entry, index) => `
                   <div class="leaderboard-entry ${index === 0 ? 'top-score' : ''}">
                     <span class="leaderboard-rank">#${index + 1}</span>
                     <span class="leaderboard-name">${entry.name}</span>
                     <span class="leaderboard-wpm">${entry.wpm} WPM</span>
                   </div>
                 `
-                )
-                .join('');
-            }
+          )
+          .join('');
+      }
 
-            async function saveScore(name, wpm, accuracy) {
-              console.log('Attempting to save score:', { name, wpm, accuracy });
-              try {
-                const response = await fetch('/api/typeracer/scores', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ name, wpm, accuracy }),
-                });
+      async function saveScore(name, wpm, accuracy) {
+        console.log('Attempting to save score:', { name, wpm, accuracy });
+        try {
+          const response = await fetch('/api/typeracer/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, wpm, accuracy }),
+          });
 
-                console.log('Response status:', response.status);
-                if (response.ok) {
-                  const data = await response.json();
-                  console.log('Score saved successfully:', data);
-                  await updateLeaderboard();
-                } else {
-                  const errorText = await response.text();
-                  console.error('Failed to save score:', response.status, errorText);
-                }
-              } catch (error) {
-                console.error('Error posting score:', error);
-              }
-            }
+          console.log('Response status:', response.status);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Score saved successfully:', data);
+            await updateLeaderboard();
+          } else {
+            const errorText = await response.text();
+            console.error('Failed to save score:', response.status, errorText);
+          }
+        } catch (error) {
+          console.error('Error posting score:', error);
+        }
+      }
     </script>
   </body>
 </html>
