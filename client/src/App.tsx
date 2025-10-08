@@ -305,7 +305,6 @@ function App() {
         alignItems: 'center',
         height: '100vh',
         width: '100vw',
-        padding: '20px',
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}
@@ -313,11 +312,11 @@ function App() {
       <div
         className="paper"
         style={{
-          maxWidth: '600px',
           width: '100%',
-          height: '80vh',
+          height: '100vh',
           display: 'flex',
           flexDirection: 'column',
+          padding: '20px',
         }}
       >
         <h1 style={{ marginBottom: '20px' }}>mentat party 🥳</h1>
