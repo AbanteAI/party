@@ -103,18 +103,18 @@
       }
 
       .code-display .cursor {
-        background: #60a5fa;
+        border-left: 3px solid #60a5fa;
         animation: blink 1s infinite;
       }
 
       @keyframes blink {
         0%,
         50% {
-          opacity: 1;
+          border-left-color: #60a5fa;
         }
         51%,
         100% {
-          opacity: 0;
+          border-left-color: transparent;
         }
       }
 
@@ -241,7 +241,7 @@
   </head>
   <body>
     <h1>🏎️ Code Typeracer 🏎️</h1>
-    <div class="version">v1.0.9</div>
+    <div class="version">v1.1.0</div>
 
     <div class="container">
       <div class="game-container">
