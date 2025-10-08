@@ -75,7 +75,18 @@ function App() {
   }, [username]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only auto-scroll if user is near the bottom (within 100px)
+    const messagesDiv = messagesEndRef.current?.parentElement;
+    if (messagesDiv) {
+      const isNearBottom =
+        messagesDiv.scrollHeight -
+          messagesDiv.scrollTop -
+          messagesDiv.clientHeight <
+        100;
+      if (isNearBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   };
 
   const fetchMessages = useCallback(async () => {
