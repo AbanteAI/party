@@ -241,7 +241,7 @@
   </head>
   <body>
     <h1>🏎️ Code Typeracer 🏎️</h1>
-    <div class="version">v1.0.7</div>
+    <div class="version">v1.0.8</div>
 
     <div class="container">
       <div class="game-container">
@@ -474,13 +474,20 @@
             timerInterval = setInterval(updateStats, 100);
           }
 
-          const expectedChar = currentSnippet[currentPosition];
-
-          if (expectedChar === '\t' || expectedChar === '  ') {
-            // Accept tab for either tab character or spaces
+          // Skip through spaces (indentation) when Tab is pressed
+          let spacesSkipped = 0;
+          while (
+            currentPosition < currentSnippet.length &&
+            currentSnippet[currentPosition] === ' ' &&
+            spacesSkipped < 4 // Max 4 spaces per tab
+          ) {
             correctChars++;
             currentPosition++;
+            spacesSkipped++;
+          }
 
+          if (spacesSkipped > 0) {
+            totalChars += spacesSkipped;
             if (currentPosition >= currentSnippet.length) {
               finishRace();
             } else {
@@ -488,7 +495,6 @@
             }
           }
 
-          totalChars++;
           updateStats();
         }
       });
