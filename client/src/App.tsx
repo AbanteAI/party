@@ -9,11 +9,24 @@ interface Message {
   snakeScore: number;
 }
 
+interface Poll {
+  id: number;
+  question: string;
+  options: string[];
+  votes: { [option: string]: string[] };
+  createdBy: string;
+  createdAt: string;
+}
+
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [polls, setPolls] = useState<Poll[]>([]);
   const [username, setUsername] = useState('');
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPollForm, setShowPollForm] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState(['', '']);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load username from localStorage
@@ -115,6 +128,94 @@ function App() {
     }
   };
 
+  const fetchPolls = useCallback(async () => {
+    try {
+      const response = await fetch('/api/polls');
+      if (response.ok) {
+        const data = await response.json();
+        setPolls(data);
+      }
+    } catch (err) {
+      console.error('Error fetching polls:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPolls();
+    const interval = setInterval(fetchPolls, 3000);
+    return () => clearInterval(interval);
+  }, [fetchPolls]);
+
+  const createPoll = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const trimmedUsername = username.trim();
+    const trimmedQuestion = pollQuestion.trim();
+    const trimmedOptions = pollOptions
+      .map((opt) => opt.trim())
+      .filter((opt) => opt.length > 0);
+
+    if (!trimmedUsername) {
+      alert('Please enter a username first!');
+      return;
+    }
+
+    if (!trimmedQuestion || trimmedOptions.length < 2) {
+      alert('Please enter a question and at least 2 options!');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/polls', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: trimmedQuestion,
+          options: trimmedOptions,
+          username: trimmedUsername,
+        }),
+      });
+
+      if (response.ok) {
+        setPollQuestion('');
+        setPollOptions(['', '']);
+        setShowPollForm(false);
+        await fetchPolls();
+      }
+    } catch (err) {
+      console.error('Error creating poll:', err);
+    }
+  };
+
+  const vote = async (pollId: number, option: string) => {
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) {
+      alert('Please enter a username first!');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/polls/${pollId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          option,
+          username: trimmedUsername,
+        }),
+      });
+
+      if (response.ok) {
+        await fetchPolls();
+      }
+    } catch (err) {
+      console.error('Error voting:', err);
+    }
+  };
+
   return (
     <div
       style={{
@@ -141,6 +242,131 @@ function App() {
       >
         <h1 style={{ marginBottom: '20px' }}>mentat party 🥳</h1>
 
+        {/* Poll creation button */}
+        <button
+          onClick={() => setShowPollForm(!showPollForm)}
+          style={{
+            marginBottom: '10px',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: '1px solid #d1d5db',
+            backgroundColor: showPollForm ? '#dbeafe' : 'white',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            color: '#1f2937',
+          }}
+        >
+          📊 {showPollForm ? 'Cancel Poll' : 'Create Poll'}
+        </button>
+
+        {/* Poll creation form */}
+        {showPollForm && (
+          <div
+            style={{
+              marginBottom: '10px',
+              padding: '15px',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            <form onSubmit={createPoll}>
+              <input
+                type="text"
+                placeholder="Poll question..."
+                value={pollQuestion}
+                onChange={(e) => setPollQuestion(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  marginBottom: '10px',
+                  borderRadius: '6px',
+                  border: '1px solid #d1d5db',
+                  fontSize: '14px',
+                }}
+              />
+              {pollOptions.map((option, index) => (
+                <div
+                  key={index}
+                  style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}
+                >
+                  <input
+                    type="text"
+                    placeholder={`Option ${index + 1}...`}
+                    value={option}
+                    onChange={(e) => {
+                      const newOptions = [...pollOptions];
+                      newOptions[index] = e.target.value;
+                      setPollOptions(newOptions);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db',
+                      fontSize: '14px',
+                    }}
+                  />
+                  {pollOptions.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newOptions = pollOptions.filter(
+                          (_, i) => i !== index
+                        );
+                        setPollOptions(newOptions);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #d1d5db',
+                        backgroundColor: 'white',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setPollOptions([...pollOptions, ''])}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: 'white',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  + Add Option
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Create Poll
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* Messages area */}
         <div
           style={{
@@ -152,6 +378,118 @@ function App() {
             borderRadius: '8px',
           }}
         >
+          {/* Polls */}
+          {polls.map((poll) => {
+            const totalVotes = Object.values(poll.votes).reduce(
+              (sum, voters) => sum + voters.length,
+              0
+            );
+            const userVote = Object.entries(poll.votes).find(([_, voters]) =>
+              voters.includes(username.trim())
+            )?.[0];
+
+            return (
+              <div
+                key={poll.id}
+                style={{
+                  marginBottom: '12px',
+                  padding: '12px',
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  border: '2px solid #3b82f6',
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: '600',
+                    fontSize: '15px',
+                    color: '#1f2937',
+                    marginBottom: '8px',
+                  }}
+                >
+                  📊 {poll.question}
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: '#6b7280',
+                    marginBottom: '10px',
+                  }}
+                >
+                  by {poll.createdBy} • {totalVotes} vote
+                  {totalVotes !== 1 ? 's' : ''}
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                  }}
+                >
+                  {poll.options.map((option) => {
+                    const votes = poll.votes[option]?.length || 0;
+                    const percentage =
+                      totalVotes > 0
+                        ? Math.round((votes / totalVotes) * 100)
+                        : 0;
+                    const isUserVote = userVote === option;
+
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => vote(poll.id, option)}
+                        style={{
+                          padding: '10px',
+                          borderRadius: '6px',
+                          border: isUserVote
+                            ? '2px solid #3b82f6'
+                            : '1px solid #d1d5db',
+                          backgroundColor: isUserVote ? '#dbeafe' : 'white',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: `${percentage}%`,
+                            backgroundColor: isUserVote ? '#93c5fd' : '#e5e7eb',
+                            transition: 'width 0.3s ease',
+                            zIndex: 0,
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: 'relative',
+                            zIndex: 1,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <span>
+                            {isUserVote && '✓ '}
+                            {option}
+                          </span>
+                          <span style={{ fontWeight: '600', color: '#6b7280' }}>
+                            {percentage}% ({votes})
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Messages */}
           {messages.map((msg) => (
             <div
               key={msg.id}
