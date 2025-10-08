@@ -227,27 +227,6 @@
             border-radius: 6px;
           "
         >
-          <label
-            for="speedSlider"
-            style="
-              display: block;
-              font-size: 14px;
-              font-weight: 600;
-              margin-bottom: 8px;
-              color: #1f2937;
-            "
-          >
-            Difficulty: <span id="difficultyLabel">Normal</span>
-          </label>
-          <input
-            type="range"
-            id="speedSlider"
-            min="50"
-            max="150"
-            value="100"
-            step="10"
-            style="width: 100%"
-          />
           <div
             style="
               display: flex;
@@ -312,7 +291,7 @@
       const tileCount = canvas.width / gridSize;
 
       let snake = [{ x: 10, y: 10 }];
-      let food = { x: 15, y: 15 };
+      let food = { x: 15, y: 15, type: 'apple' }; // type can be 'apple' or 'banana'
       let dx = 0;
       let dy = 0;
       let score = 0;
@@ -411,23 +390,6 @@
         }
       }
 
-      // Difficulty slider
-      const speedSlider = document.getElementById('speedSlider');
-      const difficultyLabel = document.getElementById('difficultyLabel');
-
-      speedSlider.addEventListener('input', (e) => {
-        const value = parseInt(e.target.value);
-        gameSpeed = value;
-
-        // Update label based on speed
-        if (value <= 70) {
-          difficultyLabel.textContent = 'Hard';
-        } else if (value <= 110) {
-          difficultyLabel.textContent = 'Normal';
-        } else {
-          difficultyLabel.textContent = 'Easy';
-        }
-      });
 
       function drawGame() {
         // Process buffered input
@@ -494,17 +456,16 @@
           );
         });
 
-        // Draw food
-        ctx.fillStyle = '#FF5252';
-        ctx.beginPath();
-        ctx.arc(
+        // Draw food (apple or banana emoji)
+        ctx.font = `${gridSize - 4}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const emoji = food.type === 'apple' ? '🍎' : '🍌';
+        ctx.fillText(
+          emoji,
           food.x * gridSize + gridSize / 2,
-          food.y * gridSize + gridSize / 2,
-          gridSize / 2 - 2,
-          0,
-          Math.PI * 2
+          food.y * gridSize + gridSize / 2
         );
-        ctx.fill();
       }
 
       function placeFood() {
@@ -514,6 +475,8 @@
         } while (
           snake.some((segment) => segment.x === food.x && segment.y === food.y)
         );
+        // Randomly choose apple or banana
+        food.type = Math.random() < 0.5 ? 'apple' : 'banana';
       }
 
       function endGame() {
