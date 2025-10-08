@@ -380,13 +380,17 @@ function App() {
         >
           {/* Polls */}
           {polls.map((poll) => {
-            const totalVotes = Object.values(poll.votes).reduce(
-              (sum, voters) => sum + voters.length,
-              0
-            );
-            const userVote = Object.entries(poll.votes).find(([, voters]) =>
-              voters.includes(username.trim())
-            )?.[0];
+            const totalVotes = poll.votes
+              ? Object.values(poll.votes).reduce(
+                  (sum, voters) => sum + voters.length,
+                  0
+                )
+              : 0;
+            const userVote =
+              poll.votes &&
+              Object.entries(poll.votes).find(([, voters]) =>
+                voters.includes(username.trim())
+              )?.[0];
 
             return (
               <div
