@@ -206,7 +206,7 @@
   </head>
   <body>
     <h1>🏎️ Code Typeracer 🏎️</h1>
-    <div class="version">v1.0.5</div>
+    <div class="version">v1.0.6</div>
 
     <div class="container">
       <div class="game-container">
@@ -422,9 +422,31 @@
           updateStats();
         }
 
-        // Prevent Tab
+        // Handle Tab key for indentation
         if (e.key === 'Tab') {
           e.preventDefault();
+
+          if (!startTime) {
+            startTime = Date.now();
+            timerInterval = setInterval(updateStats, 100);
+          }
+
+          const expectedChar = currentSnippet[currentPosition];
+
+          if (expectedChar === '\t' || expectedChar === '  ') {
+            // Accept tab for either tab character or spaces
+            correctChars++;
+            currentPosition++;
+
+            if (currentPosition >= currentSnippet.length) {
+              finishRace();
+            } else {
+              updateDisplay();
+            }
+          }
+
+          totalChars++;
+          updateStats();
         }
       });
 
