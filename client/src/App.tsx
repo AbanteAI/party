@@ -1,4 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 interface Message {
   id: number;
@@ -27,6 +50,13 @@ function App() {
   const [showPollForm, setShowPollForm] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
+  const [stockData, setStockData] = useState<{
+    labels: string[];
+    prices: number[];
+    currentPrice: number;
+    change: number;
+    changePercent: number;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load username from localStorage
@@ -216,6 +246,56 @@ function App() {
     }
   };
 
+  const fetchStockData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/stock/TSLA');
+      if (response.ok) {
+        const data = await response.json();
+        const result = data.chart.result[0];
+        const timestamps = result.timestamp;
+        const prices = result.indicators.quote[0].close;
+
+        // Format dates and filter out null prices
+        const labels: string[] = [];
+        const validPrices: number[] = [];
+
+        timestamps.forEach((ts: number, i: number) => {
+          if (prices[i] !== null) {
+            const date = new Date(ts * 1000);
+            labels.push(
+              date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
+            );
+            validPrices.push(prices[i]);
+          }
+        });
+
+        const currentPrice = validPrices[validPrices.length - 1];
+        const previousPrice = validPrices[validPrices.length - 2];
+        const change = currentPrice - previousPrice;
+        const changePercent = (change / previousPrice) * 100;
+
+        setStockData({
+          labels,
+          prices: validPrices,
+          currentPrice,
+          change,
+          changePercent,
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching stock data:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStockData();
+    const interval = setInterval(fetchStockData, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [fetchStockData]);
+
   return (
     <div
       style={{
@@ -241,6 +321,114 @@ function App() {
         }}
       >
         <h1 style={{ marginBottom: '20px' }}>mentat party 🥳</h1>
+
+        {/* Stock Chart */}
+        {stockData && (
+          <div
+            style={{
+              marginBottom: '15px',
+              padding: '15px',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              border: '1px solid #e5e7eb',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '10px',
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: '#1f2937',
+                  }}
+                >
+                  TSLA
+                </div>
+                <div
+                  style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: '#1f2937',
+                  }}
+                >
+                  ${stockData.currentPrice.toFixed(2)}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div
+                  style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: stockData.change >= 0 ? '#10b981' : '#ef4444',
+                  }}
+                >
+                  {stockData.change >= 0 ? '+' : ''}$
+                  {stockData.change.toFixed(2)} (
+                  {stockData.changePercent.toFixed(2)}%)
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                  Last 30 days
+                </div>
+              </div>
+            </div>
+            <div style={{ height: '150px' }}>
+              <Line
+                data={{
+                  labels: stockData.labels,
+                  datasets: [
+                    {
+                      label: 'TSLA Price',
+                      data: stockData.prices,
+                      borderColor: '#3b82f6',
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                      fill: true,
+                      tension: 0.4,
+                      pointRadius: 0,
+                      borderWidth: 2,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      display: false,
+                    },
+                    tooltip: {
+                      mode: 'index',
+                      intersect: false,
+                    },
+                  },
+                  scales: {
+                    x: {
+                      display: true,
+                      grid: {
+                        display: false,
+                      },
+                      ticks: {
+                        maxTicksLimit: 6,
+                      },
+                    },
+                    y: {
+                      display: true,
+                      grid: {
+                        color: '#f3f4f6',
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Poll creation button */}
         <button
