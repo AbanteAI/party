@@ -241,7 +241,7 @@
   </head>
   <body>
     <h1>🏎️ Code Typeracer 🏎️</h1>
-    <div class="version">v1.0.8</div>
+    <div class="version">v1.0.9</div>
 
     <div class="container">
       <div class="game-container">
@@ -425,6 +425,9 @@
         const words = correctChars / 5;
         const wpm = Math.round(words / minutes) || 0;
         const accuracy = Math.round((correctChars / totalChars) * 100);
+
+        // Wait a moment before prompting to avoid accidental Enter key submission
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Prompt for name and save score
         const name =
