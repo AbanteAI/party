@@ -567,6 +567,126 @@
       const minSpeed = 40; // Minimum speed (maximum difficulty)
       const speedIncrement = 1; // Speed increase per point (slower acceleration)
 
+      // Feature variables (by @mcgdj on GitHub)
+      let multiplier = 1;
+      let multiplierTimer = 0;
+      const multiplierDuration = 300;
+      const powerUps = [];
+      let powerUpTimer = 0;
+      const powerUpInterval = 500;
+      const snakeTrail = [];
+      const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+      let audioContext = null;
+      const particles = [];
+      let currentSkin = 'classic';
+      let wrapWalls = localStorage.getItem('wrapWalls') === 'true';
+      let speedBoost = false;
+      let speedBoostTimer = 0;
+      let gamePaused = false;
+      let difficulty = 'medium';
+      let showLength = true;
+      let appleCount = 0;
+      let bananaCount = 0;
+      let streak = 0;
+      let maxStreak = 0;
+      let ghostMode = false;
+      let ghostTimer = 0;
+      let gameTime = 0;
+      let colorCycle = false;
+      let foodAnimation = true;
+      let customControls = {
+        up: 'ArrowUp',
+        down: 'ArrowDown',
+        left: 'ArrowLeft',
+        right: 'ArrowRight'
+      };
+      let snakeSize = 1;
+      let gameTimer = 0;
+      let scoreAnimating = false;
+      let showHighScoreNotification = true;
+      let snakeRotation = 0;
+      let foodTeleport = false;
+      let tailGlow = true;
+      let customSpeed = 100;
+      let trailFade = true;
+      let foodMagnetism = false;
+      let snakeCamouflage = false;
+      let gameStats = {
+        totalMoves: 0,
+        totalFoodEaten: 0,
+        deaths: 0,
+        timePlayed: 0
+      };
+      let headStyle = 'classic';
+      const foodTypes = ['apple', 'banana', 'cherry', 'orange', 'strawberry', 'grape'];
+      let dynamicDifficulty = true;
+      let timeMultiplier = 1;
+      let trailColor = '#66BB6A';
+      let collectedFoods = [];
+      let snakePersonality = 'calm';
+      let achievements = [];
+      let trailPattern = 'solid';
+      let attractionRadius = 0;
+      let movementStyle = 'classic';
+      let foodSpawnPattern = 'random';
+      let trailLength = 10;
+      let inGameMessages = [];
+      let headShape = 'square';
+      let foodVarietyTimer = 0;
+      let trailTransparency = 0.5;
+      let foodAnimationSpeed = 1;
+      let trailEffect = 'fade';
+      let foodCollection = [];
+      let trailStyle = 'simple';
+      let showHints = true;
+      let trailGlow = false;
+      let foodVarietyCount = 0;
+      let trailDirection = 'follow';
+      let foodAnimationType = 'bounce';
+      let trailFrequency = 1;
+      let challenges = [];
+      let trailIntensity = 1;
+      let foodVarietySystem = 'random';
+      let trailPatternType = 'dotted';
+      let foodCollectionCounter = 0;
+      let trailColorScheme = 'green';
+      let objectives = [];
+      let trailAnimation = 'none';
+      let foodVarietyMultiplier = 1;
+      let trailTransparencyLevel = 0.5;
+      let foodAnimationIntensity = 1;
+      let trailGlowIntensity = 1;
+      let events = [];
+      let trailFadeSpeed = 1;
+      let foodVarietyFrequency = 10;
+      let trailRotation = 0;
+      let foodCollectionProgress = 0;
+      let trailSize = 1;
+      let rewards = [];
+      let trailPatternFrequency = 1;
+      let foodVarietySystemEnabled = true;
+      let trailColorVariation = 0;
+      let foodAnimationStyle = 'bounce';
+      let notifications = [];
+      let trailEffectIntensity = 1;
+      let foodVarietyCounter = 0;
+      let trailPatternTypeValue = 'dotted';
+      let foodCollectionSystem = 'simple';
+      let gameAchievements = [];
+      let trailAnimationSpeed = 1;
+      let foodVarietyMultiplierValue = 1;
+      let trailTransparencyLevelValue = 0.5;
+      let foodAnimationIntensityValue = 1;
+      let trailGlowIntensityValue = 1;
+      let gameEvents = [];
+      let trailFadeSpeedValue = 1;
+      let foodVarietyFrequencyValue = 10;
+      let trailRotationValue = 0;
+      let foodCollectionProgressValue = 0;
+      let trailSizeValue = 1;
+      let gameRewards = [];
+      let trailPatternFrequencyValue = 1;
+
       // Leaderboard management - now using server API
       async function fetchLeaderboard() {
         console.log('Fetching leaderboard...');
@@ -653,6 +773,322 @@
         }
       }
 
+      // Feature functions (by @mcgdj on GitHub)
+      function updateBackgroundGradient() {
+        const hue = (score * 3) % 360;
+        document.body.style.background = `linear-gradient(135deg, hsl(${hue}, 70%, 60%) 0%, hsl(${(hue + 60) % 360}, 70%, 60%) 100%)`;
+      }
+
+      function initializeFeatures() {
+        const savedStats = localStorage.getItem('snakeGameStats');
+        if (savedStats) gameStats = JSON.parse(savedStats);
+        const savedSkin = localStorage.getItem('snakeSkin');
+        if (savedSkin) currentSkin = savedSkin;
+        const savedWrapWalls = localStorage.getItem('wrapWalls');
+        if (savedWrapWalls) wrapWalls = savedWrapWalls === 'true';
+        const savedDifficulty = localStorage.getItem('difficulty');
+        if (savedDifficulty) difficulty = savedDifficulty;
+        const savedSpeed = localStorage.getItem('gameSpeed');
+        if (savedSpeed) customSpeed = parseInt(savedSpeed);
+        const savedHeadStyle = localStorage.getItem('headStyle');
+        if (savedHeadStyle) headStyle = savedHeadStyle;
+        const savedTrailLength = localStorage.getItem('trailLength');
+        if (savedTrailLength) trailLength = parseInt(savedTrailLength);
+        const savedTrailColor = localStorage.getItem('trailColor');
+        if (savedTrailColor) trailColor = savedTrailColor;
+        const savedTrailPattern = localStorage.getItem('trailPattern');
+        if (savedTrailPattern) trailPattern = savedTrailPattern;
+        const savedAchievements = localStorage.getItem('snakeAchievements');
+        if (savedAchievements) achievements = JSON.parse(savedAchievements);
+        const savedCollectedFoods = localStorage.getItem('collectedFoods');
+        if (savedCollectedFoods) collectedFoods = JSON.parse(savedCollectedFoods);
+        const savedChallenges = localStorage.getItem('snakeChallenges');
+        if (savedChallenges) challenges = JSON.parse(savedChallenges);
+        const savedObjectives = localStorage.getItem('snakeObjectives');
+        if (savedObjectives) objectives = JSON.parse(savedObjectives);
+        const savedRewards = localStorage.getItem('snakeRewards');
+        if (savedRewards) rewards = JSON.parse(savedRewards);
+        const savedEvents = localStorage.getItem('snakeEvents');
+        if (savedEvents) events = JSON.parse(savedEvents);
+        const savedNotifications = localStorage.getItem('snakeNotifications');
+        if (savedNotifications) notifications = JSON.parse(savedNotifications);
+      }
+
+      function saveGameStats() {
+        localStorage.setItem('snakeGameStats', JSON.stringify(gameStats));
+      }
+
+      function saveSnakeSkin() {
+        localStorage.setItem('snakeSkin', currentSkin);
+      }
+
+      function saveGameSettings() {
+        localStorage.setItem('wrapWalls', wrapWalls);
+        localStorage.setItem('difficulty', difficulty);
+        localStorage.setItem('gameSpeed', customSpeed);
+        localStorage.setItem('headStyle', headStyle);
+        localStorage.setItem('trailLength', trailLength);
+        localStorage.setItem('trailColor', trailColor);
+        localStorage.setItem('trailPattern', trailPattern);
+      }
+
+      function saveAchievements() {
+        localStorage.setItem('snakeAchievements', JSON.stringify(achievements));
+      }
+
+      function saveCollectedFoods() {
+        localStorage.setItem('collectedFoods', JSON.stringify(collectedFoods));
+      }
+
+      function saveChallenges() {
+        localStorage.setItem('snakeChallenges', JSON.stringify(challenges));
+      }
+
+      function saveObjectives() {
+        localStorage.setItem('snakeObjectives', JSON.stringify(objectives));
+      }
+
+      function saveRewards() {
+        localStorage.setItem('snakeRewards', JSON.stringify(rewards));
+      }
+
+      function saveEvents() {
+        localStorage.setItem('snakeEvents', JSON.stringify(events));
+      }
+
+      function saveNotifications() {
+        localStorage.setItem('snakeNotifications', JSON.stringify(notifications));
+      }
+
+      function toggleWallWrapping() {
+        wrapWalls = !wrapWalls;
+        localStorage.setItem('wrapWalls', wrapWalls);
+        return wrapWalls;
+      }
+
+      function changeDifficulty(newDifficulty) {
+        difficulty = newDifficulty;
+        localStorage.setItem('difficulty', difficulty);
+        switch(difficulty) {
+          case 'easy': customSpeed = 150; break;
+          case 'medium': customSpeed = 100; break;
+          case 'hard': customSpeed = 70; break;
+          case 'insane': customSpeed = 40; break;
+        }
+        localStorage.setItem('gameSpeed', customSpeed);
+      }
+
+      function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('soundEnabled', soundEnabled);
+        return soundEnabled;
+      }
+
+      function addParticle(x, y, color) {
+        particles.push({
+          x: x,
+          y: y,
+          color: color,
+          size: Math.random() * 5 + 2,
+          speedX: (Math.random() - 0.5) * 4,
+          speedY: (Math.random() - 0.5) * 4,
+          life: 30
+        });
+      }
+
+      function updateParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+          particles[i].x += particles[i].speedX;
+          particles[i].y += particles[i].speedY;
+          particles[i].life--;
+          if (particles[i].life <= 0) {
+            particles.splice(i, 1);
+          }
+        }
+      }
+
+      function drawParticles() {
+        for (let i = 0; i < particles.length; i++) {
+          ctx.fillStyle = particles[i].color;
+          ctx.beginPath();
+          ctx.arc(particles[i].x, particles[i].y, particles[i].size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function updateSnakeTrail() {
+        if (snake.length > 0) {
+          snakeTrail.push({
+            x: snake[0].x,
+            y: snake[0].y,
+            color: '#66BB6A'
+          });
+          if (snakeTrail.length > trailLength) {
+            snakeTrail.shift();
+          }
+        }
+      }
+
+      function drawSnakeTrail() {
+        for (let i = 0; i < snakeTrail.length; i++) {
+          const segment = snakeTrail[i];
+          const alpha = trailFade ? i / snakeTrail.length : 1;
+          ctx.fillStyle = `rgba(102, 187, 106, ${alpha * trailTransparency})`;
+          ctx.fillRect(
+            segment.x * gridSize + 1,
+            segment.y * gridSize + 1,
+            gridSize - 2,
+            gridSize - 2
+          );
+        }
+      }
+
+      function updateFoodCollection(type) {
+        collectedFoods.push({
+          type: type,
+          timestamp: Date.now()
+        });
+        if (type === 'apple') appleCount++;
+        if (type === 'banana') bananaCount++;
+        saveCollectedFoods();
+      }
+
+      function checkAchievements() {
+        if (score >= 5 && !achievements.includes('first_snake')) {
+          achievements.push('first_snake');
+          notifications.push({message: 'First Snake! Score 5 points', time: Date.now()});
+          saveAchievements();
+        }
+        if (collectedFoods.length >= 10 && !achievements.includes('food_collector')) {
+          achievements.push('food_collector');
+          notifications.push({message: 'Food Collector! Collect 10 foods', time: Date.now()});
+          saveAchievements();
+        }
+        if (score >= 20 && !achievements.includes('speed_demon')) {
+          achievements.push('speed_demon');
+          notifications.push({message: 'Speed Demon! Score 20 points', time: Date.now()});
+          saveAchievements();
+        }
+        if (wrapWalls && !achievements.includes('wall_wrangler')) {
+          achievements.push('wall_wrangler');
+          notifications.push({message: 'Wall Wrangler! Wall wrapping enabled', time: Date.now()});
+          saveAchievements();
+        }
+        if (difficulty === 'insane' && !achievements.includes('master_of_difficulty')) {
+          achievements.push('master_of_difficulty');
+          notifications.push({message: 'Master of Difficulty! Insane mode', time: Date.now()});
+          saveAchievements();
+        }
+        if (trailLength >= 20 && !achievements.includes('trail_master')) {
+          achievements.push('trail_master');
+          notifications.push({message: 'Trail Master! Longest trail', time: Date.now()});
+          saveAchievements();
+        }
+        if (currentSkin !== 'classic' && !achievements.includes('color_changer')) {
+          achievements.push('color_changer');
+          notifications.push({message: 'Color Changer! Custom snake skin', time: Date.now()});
+          saveAchievements();
+        }
+        if (score >= highScore && score > 0 && !achievements.includes('high_score')) {
+          achievements.push('high_score');
+          notifications.push({message: 'High Score! Beat your record', time: Date.now()});
+          saveAchievements();
+        }
+        if (streak >= 5 && !achievements.includes('streak_master')) {
+          achievements.push('streak_master');
+          notifications.push({message: 'Streak Master! 5 consecutive foods', time: Date.now()});
+          saveAchievements();
+        }
+        if (gameTime >= 300 && !achievements.includes('time_keeper')) {
+          achievements.push('time_keeper');
+          notifications.push({message: 'Time Keeper! Play for 5 minutes', time: Date.now()});
+          saveAchievements();
+        }
+      }
+
+      function updateGameStats() {
+        gameStats.totalMoves++;
+        gameStats.timePlayed++;
+        if (gameStats.timePlayed % 100 === 0) {
+          saveGameStats();
+        }
+      }
+
+      function drawCustomSnake() {
+        for (let i = 0; i < snake.length; i++) {
+          const segment = snake[i];
+          let color;
+          switch(currentSkin) {
+            case 'rainbow':
+              const hue = (i * 10) % 360;
+              color = `hsl(${hue}, 100%, 50%)`;
+              break;
+            case 'fire':
+              color = i === 0 ? '#FF4500' : '#FF6347';
+              break;
+            case 'ocean':
+              color = i === 0 ? '#1E90FF' : '#00BFFF';
+              break;
+            case 'forest':
+              color = i === 0 ? '#228B22' : '#32CD32';
+              break;
+            default:
+              color = i === 0 ? '#4CAF50' : '#66BB6A';
+          }
+          ctx.fillStyle = color;
+          ctx.fillRect(
+            segment.x * gridSize + 1,
+            segment.y * gridSize + 1,
+            gridSize - 2,
+            gridSize - 2
+          );
+          if (i === 0 && headStyle !== 'classic') {
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(
+              segment.x * gridSize + 1,
+              segment.y * gridSize + 1,
+              gridSize - 2,
+              gridSize - 2
+            );
+          }
+        }
+      }
+
+      function updateFoodAnimation() {
+        if (foodAnimation) {
+          foodAnimationSpeed = Math.sin(Date.now() / 500) * 0.5 + 1;
+        }
+      }
+
+      function drawAnimatedFood() {
+        ctx.font = `${gridSize - 4}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        foods.forEach(food => {
+          let emoji = food.type === 'apple' ? '🍎' : '🍌';
+          if (foodAnimation) {
+            const scale = 0.8 + Math.sin(Date.now() / 200 + food.x) * 0.2;
+            ctx.save();
+            ctx.translate(
+              food.x * gridSize + gridSize / 2,
+              food.y * gridSize + gridSize / 2
+            );
+            ctx.scale(scale, scale);
+            ctx.fillText(emoji, 0, 0);
+            ctx.restore();
+          } else {
+            ctx.fillText(
+              emoji,
+              food.x * gridSize + gridSize / 2,
+              food.y * gridSize + gridSize / 2
+            );
+          }
+        });
+      }
+
+      // Initialize all features
+      initializeFeatures();
 
       function drawGame() {
         // Process buffered input
@@ -683,6 +1119,14 @@
                 highScoreElement.textContent = highScore;
                 localStorage.setItem('snakeHighScore', highScore);
               }
+              // Add particle effects
+              addParticle(
+                foods[i].x * gridSize + gridSize / 2,
+                foods[i].y * gridSize + gridSize / 2,
+                foods[i].type === 'apple' ? '#FF0000' : '#FFFF00'
+              );
+              // Update food collection
+              updateFoodCollection(foods[i].type);
               // Replace the eaten food with a new one
               placeFoodAt(i);
               ateFood = true;
@@ -713,29 +1157,45 @@
           }
         }
 
-        // Draw snake
-        snake.forEach((segment, index) => {
-          ctx.fillStyle = index === 0 ? '#4CAF50' : '#66BB6A';
-          ctx.fillRect(
-            segment.x * gridSize + 1,
-            segment.y * gridSize + 1,
-            gridSize - 2,
-            gridSize - 2
-          );
-        });
+        // Update snake trail
+        updateSnakeTrail();
 
-        // Draw foods (apple and banana emojis)
-        ctx.font = `${gridSize - 4}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        foods.forEach(food => {
-          const emoji = food.type === 'apple' ? '🍎' : '🍌';
-          ctx.fillText(
-            emoji,
-            food.x * gridSize + gridSize / 2,
-            food.y * gridSize + gridSize / 2
-          );
-        });
+        // Draw snake trail
+        drawSnakeTrail();
+
+        // Draw snake with custom skin
+        drawCustomSnake();
+
+        // Draw foods with animation
+        drawAnimatedFood();
+
+        // Draw particles
+        drawParticles();
+
+        // Update game stats
+        updateGameStats();
+
+        // Update food animation
+        updateFoodAnimation();
+
+        // Update particles
+        updateParticles();
+
+        // Update background gradient
+        updateBackgroundGradient();
+
+        // Update multiplier timer
+        if (multiplierTimer > 0) {
+          multiplierTimer--;
+        } else {
+          multiplier = 1;
+        }
+
+        // Update game timer
+        gameTime++;
+
+        // Check achievements
+        checkAchievements();
       }
 
       function placeFoodAt(index) {
