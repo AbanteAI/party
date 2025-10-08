@@ -384,7 +384,7 @@ function App() {
               (sum, voters) => sum + voters.length,
               0
             );
-            const userVote = Object.entries(poll.votes).find(([_, voters]) =>
+            const userVote = Object.entries(poll.votes).find(([, voters]) =>
               voters.includes(username.trim())
             )?.[0];
 
