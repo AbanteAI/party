@@ -227,18 +227,6 @@
             border-radius: 6px;
           "
         >
-          <div
-            style="
-              display: flex;
-              justify-content: space-between;
-              font-size: 12px;
-              color: #6b7280;
-              margin-top: 4px;
-            "
-          >
-            <span>Hard</span>
-            <span>Easy</span>
-          </div>
         </div>
         <div class="controls">Use Arrow Keys or WASD to move</div>
       </div>
@@ -291,7 +279,10 @@
       const tileCount = canvas.width / gridSize;
 
       let snake = [{ x: 10, y: 10 }];
-      let food = { x: 15, y: 15, type: 'apple' }; // type can be 'apple' or 'banana'
+      let foods = [
+        { x: 15, y: 15, type: 'apple' },
+        { x: 5, y: 5, type: 'banana' }
+      ]; // Two fruits on screen at once
       let dx = 0;
       let dy = 0;
       let score = 0;
@@ -409,20 +400,25 @@
           const head = { x: snake[0].x + dx, y: snake[0].y + dy };
           snake.unshift(head);
 
-          // Check if snake ate food
-          if (head.x === food.x && head.y === food.y) {
-            score++;
-            scoreElement.textContent = score;
-            if (score > highScore) {
-              highScore = score;
-              highScoreElement.textContent = highScore;
-              localStorage.setItem('snakeHighScore', highScore);
+          // Check if snake ate any food
+          let ateFood = false;
+          for (let i = 0; i < foods.length; i++) {
+            if (head.x === foods[i].x && head.y === foods[i].y) {
+              score++;
+              scoreElement.textContent = score;
+              if (score > highScore) {
+                highScore = score;
+                highScoreElement.textContent = highScore;
+                localStorage.setItem('snakeHighScore', highScore);
+              }
+              // Replace the eaten food with a new one
+              placeFoodAt(i);
+              ateFood = true;
+              break;
             }
-            placeFood();
-
-            // Note: Progressive acceleration removed to fix lag
-            // Speed is now controlled by the difficulty slider
-          } else {
+          }
+          
+          if (!ateFood) {
             snake.pop();
           }
 
@@ -456,27 +452,37 @@
           );
         });
 
-        // Draw food (apple or banana emoji)
+        // Draw foods (apple and banana emojis)
         ctx.font = `${gridSize - 4}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const emoji = food.type === 'apple' ? '🍎' : '🍌';
-        ctx.fillText(
-          emoji,
-          food.x * gridSize + gridSize / 2,
-          food.y * gridSize + gridSize / 2
+        foods.forEach(food => {
+          const emoji = food.type === 'apple' ? '🍎' : '🍌';
+          ctx.fillText(
+            emoji,
+            food.x * gridSize + gridSize / 2,
+            food.y * gridSize + gridSize / 2
+          );
+        });
+      }
+
+      function placeFoodAt(index) {
+        const types = ['apple', 'banana'];
+        do {
+          foods[index].x = Math.floor(Math.random() * tileCount);
+          foods[index].y = Math.floor(Math.random() * tileCount);
+        } while (
+          snake.some((segment) => segment.x === foods[index].x && segment.y === foods[index].y) ||
+          foods.some((f, i) => i !== index && f.x === foods[index].x && f.y === foods[index].y)
         );
+        // Keep the same type (apple stays apple, banana stays banana)
+        // This way there's always one of each on screen
       }
 
       function placeFood() {
-        do {
-          food.x = Math.floor(Math.random() * tileCount);
-          food.y = Math.floor(Math.random() * tileCount);
-        } while (
-          snake.some((segment) => segment.x === food.x && segment.y === food.y)
-        );
-        // Randomly choose apple or banana
-        food.type = Math.random() < 0.5 ? 'apple' : 'banana';
+        // Place both foods initially
+        placeFoodAt(0);
+        placeFoodAt(1);
       }
 
       function endGame() {
