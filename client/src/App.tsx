@@ -567,236 +567,259 @@ function App() {
             borderRadius: '8px',
           }}
         >
-          {/* Polls */}
-          {polls.map((poll) => {
-            // Safety checks for incomplete poll data
-            if (!poll.options || !poll.votes) {
-              return null;
-            }
+          {/* Combined polls and messages in chronological order */}
+          {[
+            ...polls.map((poll) => ({
+              type: 'poll' as const,
+              data: poll,
+              timestamp: new Date(poll.createdAt).getTime(),
+            })),
+            ...messages.map((msg) => ({
+              type: 'message' as const,
+              data: msg,
+              timestamp: new Date(msg.timestamp).getTime(),
+            })),
+          ]
+            .sort((a, b) => a.timestamp - b.timestamp)
+            .map((item) => {
+              if (item.type === 'poll') {
+                const poll = item.data;
+                // Safety checks for incomplete poll data
+                if (!poll.options || !poll.votes) {
+                  return null;
+                }
 
-            const totalVotes = Object.values(poll.votes).reduce(
-              (sum, voters) => sum + voters.length,
-              0
-            );
-            const userVote = Object.entries(poll.votes).find(([, voters]) =>
-              voters.includes(username.trim())
-            )?.[0];
+                const totalVotes = Object.values(poll.votes).reduce(
+                  (sum, voters) => sum + voters.length,
+                  0
+                );
+                const userVote = Object.entries(poll.votes).find(([, voters]) =>
+                  voters.includes(username.trim())
+                )?.[0];
 
-            return (
-              <div
-                key={poll.id}
-                style={{
-                  marginBottom: '12px',
-                  padding: '12px',
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  border: '2px solid #3b82f6',
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: '600',
-                    fontSize: '15px',
-                    color: '#1f2937',
-                    marginBottom: '8px',
-                  }}
-                >
-                  📊 {poll.question}
-                </div>
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: '#6b7280',
-                    marginBottom: '10px',
-                  }}
-                >
-                  by {poll.createdBy} • {totalVotes} vote
-                  {totalVotes !== 1 ? 's' : ''}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '6px',
-                  }}
-                >
-                  {poll.options.map((option) => {
-                    const votes = poll.votes[option]?.length || 0;
-                    const percentage =
-                      totalVotes > 0
-                        ? Math.round((votes / totalVotes) * 100)
-                        : 0;
-                    const isUserVote = userVote === option;
-
-                    return (
-                      <button
-                        key={option}
-                        onClick={() => vote(poll.id, option)}
-                        style={{
-                          padding: '10px',
-                          borderRadius: '6px',
-                          border: isUserVote
-                            ? '2px solid #3b82f6'
-                            : '1px solid #d1d5db',
-                          backgroundColor: isUserVote ? '#dbeafe' : 'white',
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          position: 'relative',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div
-                          style={{
-                            position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: `${percentage}%`,
-                            backgroundColor: isUserVote ? '#93c5fd' : '#e5e7eb',
-                            transition: 'width 0.3s ease',
-                            zIndex: 0,
-                          }}
-                        />
-                        <div
-                          style={{
-                            position: 'relative',
-                            zIndex: 1,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <span>
-                            {isUserVote && '✓ '}
-                            {option}
-                          </span>
-                          <span style={{ fontWeight: '600', color: '#6b7280' }}>
-                            {percentage}% ({votes})
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Messages */}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              style={{
-                marginBottom: '12px',
-                padding: '8px',
-                backgroundColor: 'white',
-                borderRadius: '6px',
-              }}
-            >
-              <div
-                style={{
-                  fontWeight: '600',
-                  fontSize: '14px',
-                  color: '#1f2937',
-                  marginBottom: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <span>{msg.username}</span>
-                {msg.snakeScore > 0 && (
-                  <span
+                return (
+                  <div
+                    key={poll.id}
                     style={{
-                      fontSize: '12px',
-                      color: '#667eea',
-                      backgroundColor: '#f0f4ff',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      fontWeight: '500',
+                      marginBottom: '12px',
+                      padding: '12px',
+                      backgroundColor: 'white',
+                      borderRadius: '8px',
+                      border: '2px solid #3b82f6',
                     }}
                   >
-                    🐍 {msg.snakeScore}
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: '14px', color: '#374151' }}>
-                {msg.message}
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginTop: '8px',
-                  flexWrap: 'wrap',
-                }}
-              >
-                {/* Existing reactions */}
-                {msg.reactions &&
-                  Object.entries(msg.reactions).map(([emoji, users]) => (
-                    <button
-                      key={emoji}
-                      onClick={() => addReaction(msg.id, emoji)}
+                    <div
                       style={{
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        border: '1px solid #e5e7eb',
-                        backgroundColor: users.includes(username.trim())
-                          ? '#dbeafe'
-                          : '#f9fafb',
+                        fontWeight: '600',
+                        fontSize: '15px',
+                        color: '#1f2937',
+                        marginBottom: '8px',
+                      }}
+                    >
+                      📊 {poll.question}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        marginBottom: '10px',
+                      }}
+                    >
+                      by {poll.createdBy} • {totalVotes} vote
+                      {totalVotes !== 1 ? 's' : ''}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                      }}
+                    >
+                      {poll.options.map((option) => {
+                        const votes = poll.votes[option]?.length || 0;
+                        const percentage =
+                          totalVotes > 0
+                            ? Math.round((votes / totalVotes) * 100)
+                            : 0;
+                        const isUserVote = userVote === option;
+
+                        return (
+                          <button
+                            key={option}
+                            onClick={() => vote(poll.id, option)}
+                            style={{
+                              padding: '10px',
+                              borderRadius: '6px',
+                              border: isUserVote
+                                ? '2px solid #3b82f6'
+                                : '1px solid #d1d5db',
+                              backgroundColor: isUserVote ? '#dbeafe' : 'white',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              position: 'relative',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <div
+                              style={{
+                                position: 'absolute',
+                                left: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: `${percentage}%`,
+                                backgroundColor: isUserVote
+                                  ? '#93c5fd'
+                                  : '#e5e7eb',
+                                transition: 'width 0.3s ease',
+                                zIndex: 0,
+                              }}
+                            />
+                            <div
+                              style={{
+                                position: 'relative',
+                                zIndex: 1,
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <span>
+                                {isUserVote && '✓ '}
+                                {option}
+                              </span>
+                              <span
+                                style={{ fontWeight: '600', color: '#6b7280' }}
+                              >
+                                {percentage}% ({votes})
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              } else {
+                // Message
+                const msg = item.data;
+                return (
+                  <div
+                    key={`msg-${msg.id}`}
+                    style={{
+                      marginBottom: '12px',
+                      padding: '8px',
+                      backgroundColor: 'white',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: '600',
                         fontSize: '14px',
-                        cursor: 'pointer',
+                        color: '#1f2937',
+                        marginBottom: '4px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
+                        gap: '8px',
                       }}
-                      title={users.join(', ')}
                     >
-                      <span>{emoji}</span>
-                      <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                        {users.length}
-                      </span>
-                    </button>
-                  ))}
-                {/* Quick reaction buttons */}
-                {['👍', '❤️', '😂', '🎉', '🔥', '🚀']
-                  .filter(
-                    (emoji) =>
-                      !msg.reactions ||
-                      !msg.reactions[emoji] ||
-                      msg.reactions[emoji].length === 0
-                  )
-                  .map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => addReaction(msg.id, emoji)}
+                      <span>{msg.username}</span>
+                      {msg.snakeScore > 0 && (
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            color: '#667eea',
+                            backgroundColor: '#f0f4ff',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontWeight: '500',
+                          }}
+                        >
+                          🐍 {msg.snakeScore}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '14px', color: '#374151' }}>
+                      {msg.message}
+                    </div>
+                    <div
                       style={{
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        border: '1px solid #e5e7eb',
-                        backgroundColor: '#f9fafb',
-                        fontSize: '14px',
-                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginTop: '8px',
+                        flexWrap: 'wrap',
                       }}
-                      title={`React with ${emoji}`}
                     >
-                      {emoji}
-                    </button>
-                  ))}
-              </div>
-              <div
-                style={{
-                  fontSize: '11px',
-                  color: '#9ca3af',
-                  marginTop: '4px',
-                }}
-              >
-                {new Date(msg.timestamp).toLocaleTimeString()}
-              </div>
-            </div>
-          ))}
+                      {/* Existing reactions */}
+                      {msg.reactions &&
+                        Object.entries(msg.reactions).map(([emoji, users]) => (
+                          <button
+                            key={emoji}
+                            onClick={() => addReaction(msg.id, emoji)}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '12px',
+                              border: '1px solid #e5e7eb',
+                              backgroundColor: users.includes(username.trim())
+                                ? '#dbeafe'
+                                : '#f9fafb',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                            title={users.join(', ')}
+                          >
+                            <span>{emoji}</span>
+                            <span
+                              style={{ fontSize: '12px', color: '#6b7280' }}
+                            >
+                              {users.length}
+                            </span>
+                          </button>
+                        ))}
+                      {/* Quick reaction buttons */}
+                      {['👍', '❤️', '😂', '🎉', '🔥', '🚀']
+                        .filter(
+                          (emoji) =>
+                            !msg.reactions ||
+                            !msg.reactions[emoji] ||
+                            msg.reactions[emoji].length === 0
+                        )
+                        .map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => addReaction(msg.id, emoji)}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '12px',
+                              border: '1px solid #e5e7eb',
+                              backgroundColor: '#f9fafb',
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                            }}
+                            title={`React with ${emoji}`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: '#9ca3af',
+                        marginTop: '4px',
+                      }}
+                    >
+                      {new Date(msg.timestamp).toLocaleTimeString()}
+                    </div>
+                  </div>
+                );
+              }
+            })}
           <div ref={messagesEndRef} />
         </div>
 
