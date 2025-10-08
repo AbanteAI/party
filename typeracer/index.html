@@ -202,11 +202,46 @@
         color: #667eea;
         font-weight: 600;
       }
+
+      .leaderboard.hidden {
+        display: none;
+      }
+
+      .toggle-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        z-index: 1000;
+      }
+
+      .toggle-button:hover {
+        background: #5568d3;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          flex-direction: column;
+        }
+
+        .leaderboard {
+          width: 100%;
+          max-width: 500px;
+        }
+      }
     </style>
   </head>
   <body>
     <h1>🏎️ Code Typeracer 🏎️</h1>
-    <div class="version">v1.0.6</div>
+    <div class="version">v1.0.7</div>
 
     <div class="container">
       <div class="game-container">
@@ -240,7 +275,7 @@
         </button>
       </div>
 
-      <div class="leaderboard">
+      <div class="leaderboard" id="leaderboard">
         <div
           style="
             text-align: center;
@@ -255,6 +290,14 @@
         <div id="leaderboardList"></div>
       </div>
     </div>
+
+    <button
+      class="toggle-button"
+      id="toggleButton"
+      onclick="toggleLeaderboard()"
+    >
+      Hide Leaderboard
+    </button>
 
     <script>
       // Git source code snippets
@@ -487,6 +530,20 @@
       // Initialize
       updateDisplay();
       updateLeaderboard();
+
+      // Toggle leaderboard visibility
+      function toggleLeaderboard() {
+        const leaderboard = document.getElementById('leaderboard');
+        const button = document.getElementById('toggleButton');
+
+        if (leaderboard.classList.contains('hidden')) {
+          leaderboard.classList.remove('hidden');
+          button.textContent = 'Hide Leaderboard';
+        } else {
+          leaderboard.classList.add('hidden');
+          button.textContent = 'Show Leaderboard';
+        }
+      }
 
       async function fetchLeaderboard() {
         console.log('Fetching typeracer leaderboard...');
