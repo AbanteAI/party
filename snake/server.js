@@ -48,6 +48,15 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Add error handlers to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 app.listen(PORT, () => {
   console.log(`Snake game running on http://localhost:${PORT}`);
 });
