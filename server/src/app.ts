@@ -42,12 +42,23 @@ interface TyperacerScore {
   date: string;
 }
 
+// Poll type definition
+interface Poll {
+  id: number;
+  question: string;
+  options: string[];
+  votes: { [option: string]: string[] }; // option -> array of usernames
+  createdBy: string;
+  createdAt: string;
+}
+
 // Data file paths - store outside src to avoid dirtying repo
 // Go up one level from server directory to project root
 const DATA_DIR = path.join(process.cwd(), '../data');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
 const SNAKE_SCORES_FILE = path.join(DATA_DIR, 'snake-scores.json');
 const TYPERACER_SCORES_FILE = path.join(DATA_DIR, 'typeracer-scores.json');
+const POLLS_FILE = path.join(DATA_DIR, 'polls.json');
 
 // Ensure data directory exists
 if (!existsSync(DATA_DIR)) {
@@ -107,6 +118,25 @@ function writeTyperacerScores(scores: TyperacerScore[]): void {
     writeFileSync(TYPERACER_SCORES_FILE, JSON.stringify(scores, null, 2));
   } catch (error) {
     console.error('Error writing typeracer scores:', error);
+    throw error;
+  }
+}
+
+// Helper functions for polls
+function readPolls(): Poll[] {
+  try {
+    const data = readFileSync(POLLS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch {
+    return [];
+  }
+}
+
+function writePolls(polls: Poll[]): void {
+  try {
+    writeFileSync(POLLS_FILE, JSON.stringify(polls, null, 2));
+  } catch (error) {
+    console.error('Error writing polls:', error);
     throw error;
   }
 }
@@ -298,6 +328,94 @@ app.post('/api/typeracer/scores', (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error posting typeracer score:', error);
     res.status(500).json({ error: 'Failed to save score' });
+  }
+});
+
+// Get all polls
+app.get('/api/polls', (req: Request, res: Response) => {
+  const polls = readPolls();
+  res.json(polls);
+});
+
+// Create a new poll
+app.post('/api/polls', (req: Request, res: Response) => {
+  const { question, options, username } = req.body;
+
+  const questionSafe = String(question || '').trim();
+  const optionsSafe = Array.isArray(options)
+    ? options.map((opt) => String(opt).trim()).filter((opt) => opt.length > 0)
+    : [];
+  const usernameSafe = String(username || '').trim();
+
+  if (!questionSafe || optionsSafe.length < 2 || !usernameSafe) {
+    return res.status(400).json({
+      error: 'Question, at least 2 options, and username are required',
+    });
+  }
+
+  try {
+    const polls = readPolls();
+    const newPoll: Poll = {
+      id: polls.length > 0 ? Math.max(...polls.map((p) => p.id)) + 1 : 1,
+      question: questionSafe,
+      options: optionsSafe,
+      votes: {},
+      createdBy: usernameSafe,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Initialize votes object
+    optionsSafe.forEach((option) => {
+      newPoll.votes[option] = [];
+    });
+
+    polls.push(newPoll);
+    writePolls(polls);
+
+    res.json(newPoll);
+  } catch (error) {
+    console.error('Error creating poll:', error);
+    res.status(500).json({ error: 'Failed to create poll' });
+  }
+});
+
+// Vote on a poll
+app.post('/api/polls/:id/vote', (req: Request, res: Response) => {
+  const pollId = parseInt(req.params.id);
+  const { option, username } = req.body;
+
+  const optionSafe = String(option || '').trim();
+  const usernameSafe = String(username || '').trim();
+
+  if (!optionSafe || !usernameSafe) {
+    return res.status(400).json({ error: 'Option and username are required' });
+  }
+
+  try {
+    const polls = readPolls();
+    const poll = polls.find((p) => p.id === pollId);
+
+    if (!poll) {
+      return res.status(404).json({ error: 'Poll not found' });
+    }
+
+    if (!poll.votes[optionSafe]) {
+      return res.status(400).json({ error: 'Invalid option' });
+    }
+
+    // Remove user's previous vote if any
+    Object.keys(poll.votes).forEach((opt) => {
+      poll.votes[opt] = poll.votes[opt].filter((u) => u !== usernameSafe);
+    });
+
+    // Add new vote
+    poll.votes[optionSafe].push(usernameSafe);
+
+    writePolls(polls);
+    res.json(poll);
+  } catch (error) {
+    console.error('Error voting on poll:', error);
+    res.status(500).json({ error: 'Failed to vote' });
   }
 });
 
