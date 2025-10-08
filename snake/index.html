@@ -258,6 +258,7 @@
     <div class="game-over" id="gameOver">
       <h2>Game Over!</h2>
       <p>Final Score: <span id="finalScore">0</span></p>
+      <p id="deathRoast" style="font-size: 14px; color: #666; margin: 10px 0; font-style: italic;"></p>
       <input
         type="text"
         id="playerName"
@@ -274,6 +275,139 @@
       const highScoreElement = document.getElementById('highScore');
       const gameOverElement = document.getElementById('gameOver');
       const finalScoreElement = document.getElementById('finalScore');
+      const deathRoastElement = document.getElementById('deathRoast');
+
+      const snakeDeathRoasts = [
+        "The bot snake sends its regards 🐍 — it left a condolence card and a tiny coffin made of apple seeds.",
+        "Skill issue detected 💀 — your reflexes are slower than a snail in molasses wearing lead boots.",
+        "Better luck next time, snake food 🍎 — the apple's already planning your funeral.",
+        "The bot is now 20% you 😬 — congrats, you've been assimilated into its cold, calculating AI soul.",
+        "You just got outplayed by an AI with 3 lines of code 🤖 — those 3 lines have more ambition than your entire life.",
+        "Your snake didn't die… it just realized it was never meant to be more than a snack.",
+        "The bot didn't win… it just waited for you to embarrass yourself. Patience is a virtue you clearly lack.",
+        "You played snake like it was a documentary about your own mediocrity.",
+        "The AI didn't outsmart you — it just watched you make the same mistake 47 times and then sighed.",
+        "Your high score? A tragic footnote in the annals of snake history.",
+        "You didn't lose… you just gave the bot a free upgrade to 'Elite Snake Mode'.",
+        "The bot's AI is so advanced, it started feeling sorry for you halfway through.",
+        "Your snake's death was so dramatic, even the pixels cried.",
+        "Congratulations! You've achieved the rare 'Human Error: Snake Edition' achievement.",
+        "The bot didn't eat your snake… it just politely asked for your dignity back.",
+        "You thought you were playing a game. The bot was playing existential chess.",
+        "Your reflexes are so slow, the apple had time to write a novel before you turned.",
+        "The bot's code is simpler than your excuses. And it still won.",
+        "You didn't lose to an AI… you lost to the concept of competence.",
+        "Your snake died so hard, it left behind a will: 'Please don't play again.'",
+        "The bot didn't need to think — it just waited for you to self-destruct.",
+        "You're not bad at snake… you're just a walking obstacle for the AI's greatness.",
+        "Your snake's final move? A confused U-turn into a wall. The bot applauded.",
+        "The AI didn't calculate your path… it just predicted your inevitable failure.",
+        "You're the reason 'easy mode' was invented.",
+        "The bot didn't beat you — it just politely corrected your life choices.",
+        "Your snake didn't die from hunger… it died from shame.",
+        "Even the game's tutorial had higher IQ than you.",
+        "The bot's victory dance? A single pixel blinking 'LOL'.",
+        "You didn't lose to an AI — you lost to your own inability to learn.",
+        "The apple you ate? It's now wearing your ghost as a hat.",
+        "Your snake's death was so slow, the bot took a nap and still won.",
+        "You're not playing snake… you're performing a tragedy in 8-bit.",
+        "The bot didn't outplay you — it just realized you were already defeated before the game started.",
+        "Your reflexes are slower than a Windows 95 startup.",
+        "The AI's entire strategy: 'Wait for human to panic.' It worked. Again.",
+        "You didn't die… you just became part of the bot's 'Why Humans Suck' presentation.",
+        "The bot didn't need to be smart — it just needed you to be dumb.",
+        "Your snake's death animation was more emotional than your last breakup.",
+        "You didn't lose to an AI… you lost to the laws of physics you refuse to obey.",
+        "The bot has a PhD in 'How to Watch Humans Fail Gracefully'.",
+        "Your high score is just a polite way of saying 'try again in another life.'",
+        "The apple didn't kill you — your decision-making did.",
+        "You're the reason snakes have nightmares about humans.",
+        "The bot didn't eat your snake… it adopted it as a pet.",
+        "You didn't lose… you just upgraded the bot's confidence level to 'God Mode'.",
+        "Your snake's death was so predictable, the bot wrote a haiku about it.",
+        "The AI didn't win… it just accepted your surrender before you did.",
+        "You didn't play snake — you played 'How to Make an AI Feel Bad for You'.",
+        "The bot's code is shorter than your attention span.",
+        "You didn't die to a snake… you died to your own lack of spatial awareness.",
+        "The bot didn't calculate your moves — it just waited for you to trip over your own ego.",
+        "Your snake's final words: 'I regret everything.'",
+        "The bot didn't need to be fast… it just needed you to be wrong.",
+        "You're not bad at games — you're bad at not being a liability.",
+        "The apple you ate? It's now your tombstone.",
+        "Your snake didn't die… it filed for emotional support.",
+        "The bot's victory screen? Just a single emoji: 🤡",
+        "You didn't lose to AI… you lost to the fact that even a toaster has better instincts.",
+        "The bot didn't outsmart you — it just outlasted your will to live.",
+        "Your snake's death was so slow, the game paused to give you a pep talk.",
+        "You didn't fail… you just provided the bot with its first real challenge: 'How to stay awake.'",
+        "The bot didn't need to think — it just needed you to stop breathing.",
+        "Your reflexes are so slow, the game had to slow down to match your pace.",
+        "The bot didn't beat you — it just showed you what happens when you don't try.",
+        "You didn't lose to a snake… you lost to the concept of 'not being terrible'.",
+        "The apple didn't kill you — your lack of planning did.",
+        "Your snake's death was so embarrassing, even the background music paused.",
+        "The bot didn't need to be smart — it just needed you to be human.",
+        "You didn't lose… you just became a cautionary tale in the game's documentation.",
+        "The bot's AI is so advanced, it started feeling guilty… then ate you anyway.",
+        "Your snake didn't die — it retired to a life of quiet solitude, far from your incompetence.",
+        "You didn't play snake — you played 'Guess How Many Times I Can Hit Myself'.",
+        "The bot didn't win… it just witnessed a slow-motion train wreck and took notes.",
+        "Your high score? A typo. The game meant to say '0'.",
+        "The bot didn't need to calculate your path — it just needed you to stop moving.",
+        "You didn't lose to an AI… you lost to the fact that you didn't even try to learn.",
+        "The apple you ate? It's now your epitaph.",
+        "Your snake's death was so dramatic, the game asked if you wanted to save your progress.",
+        "The bot didn't outplay you — it just waited for you to give up.",
+        "You didn't die… you just became a glitch in the game's 'Human Behavior' dataset.",
+        "The bot's code is shorter than your excuses.",
+        "Your reflexes are slower than a sloth on vacation… with a broken watch.",
+        "You didn't lose to a snake… you lost to your own refusal to evolve.",
+        "The bot didn't need to be fast — it just needed you to be predictable.",
+        "Your snake didn't die… it was euthanized for the greater good.",
+        "The bot didn't win… it just realized you were never a threat.",
+        "You didn't lose to AI — you lost to the fact that you didn't even read the manual.",
+        "The apple didn't kill you — your decision to turn into a wall did.",
+        "Your snake's final move? A desperate, chaotic wiggle. The bot yawned.",
+        "You didn't lose… you just gave the bot its first real laugh.",
+        "The bot didn't need to think — it just needed you to panic.",
+        "Your high score is just the game's way of saying 'you tried, but no.'",
+        "The bot didn't beat you — it just politely reminded you that you're not special.",
+        "You didn't die to a snake… you died to your own arrogance.",
+        "The apple you ate? It's now haunting your dreams.",
+        "Your snake's death was so slow, the game offered you a free restart… you declined.",
+        "The bot didn't need to calculate — it just needed you to be human.",
+        "You didn't lose… you just became the reason the game has a 'Noob Filter'.",
+        "The bot's victory screen? Just a single line: 'You're welcome.'",
+        "Your reflexes are so slow, the game had to add a 'Human Pause' button.",
+        "You didn't lose to AI… you lost to the concept of 'basic competence'.",
+        "The bot didn't eat your snake — it just politely asked for your keyboard back.",
+        "Your snake didn't die… it went on strike for better working conditions.",
+        "You didn't lose… you just became a statistic in the bot's 'Why Humans Shouldn't Play Games' report.",
+        "The apple didn't kill you — your lack of foresight did.",
+        "The bot didn't need to be smart — it just needed you to be… you.",
+        "Your snake's death was so poetic, the game paused to play a funeral dirge.",
+        "You didn't lose to an AI… you lost to the fact that you're not even a challenge.",
+        "The bot didn't win… it just waited for you to realize you're bad.",
+        "Your high score? A sad whisper in the void.",
+        "The bot didn't outplay you — it just outwaited your will to continue.",
+        "You didn't die… you just became the game's new 'How Not To Play' tutorial.",
+        "The apple you ate? It's now your legacy.",
+        "Your snake didn't die — it just realized it was better off as a pixel.",
+        "The bot didn't need to think — it just needed you to be predictable, slow, and tragically human.",
+        "You didn't lose to AI… you lost to the fact that you didn't even try to be good.",
+        "The bot's code is shorter than your last text message to an ex.",
+        "Your reflexes are so slow, the game had to add a 'Human Mode: Glacial' setting.",
+        "You didn't die… you just became the reason the game has a 'Don't Try This' warning.",
+        "The bot didn't eat your snake — it just politely filed a complaint with the Game Gods.",
+        "Your snake's final breath? A sigh. The bot didn't even notice.",
+        "You didn't lose to a snake… you lost to the concept of 'not being a disaster'.",
+        "The apple didn't kill you — your lack of direction did.",
+        "The bot didn't win… it just smiled and whispered, 'Pathetic.'",
+        "Your high score? More of a low point.",
+        "You didn't die… you just became the reason snakes have therapy.",
+        "The bot didn't need to calculate your moves — it just needed you to exist.",
+        "Your snake didn't die… it retired to a life of peace… far away from you."
+      ];
 
       const gridSize = 20;
       const tileCount = canvas.width / gridSize;
@@ -489,6 +623,11 @@
         gameRunning = false;
         clearInterval(gameLoop);
         finalScoreElement.textContent = score;
+        
+        // Display random death roast
+        const randomRoast = snakeDeathRoasts[Math.floor(Math.random() * snakeDeathRoasts.length)];
+        deathRoastElement.textContent = randomRoast;
+        
         gameOverElement.style.display = 'block';
 
         // Focus on name input
