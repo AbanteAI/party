@@ -1326,6 +1326,10 @@
           // Stop single player game
           if (gameRunning) {
             clearInterval(gameLoop);
+            if (gameLoopId) {
+              cancelAnimationFrame(gameLoopId);
+              gameLoopId = null;
+            }
             gameRunning = false;
           }
         }
@@ -1904,6 +1908,10 @@
       function endGame() {
         gameRunning = false;
         clearInterval(gameLoop);
+        if (gameLoopId) {
+          cancelAnimationFrame(gameLoopId);
+          gameLoopId = null;
+        }
         finalScoreElement.textContent = score;
 
         // Display random death roast
@@ -1962,11 +1970,36 @@
         startGame();
       }
 
+      let lastFrameTime = 0;
+      let gameLoopId = null;
+
       function startGame() {
         if (!gameRunning) {
           gameRunning = true;
-          gameLoop = setInterval(drawGame, gameSpeed);
+
+          if (gameMode === 'single') {
+            // Use requestAnimationFrame for smooth single-player
+            lastFrameTime = performance.now();
+            gameLoopId = requestAnimationFrame(singlePlayerGameLoop);
+          } else {
+            // Use setInterval for multiplayer (server-controlled)
+            gameLoop = setInterval(drawMultiplayerGame, 100);
+          }
         }
+      }
+
+      function singlePlayerGameLoop(currentTime) {
+        if (!gameRunning || gameMode !== 'single') return;
+
+        const deltaTime = currentTime - lastFrameTime;
+
+        // Update game logic based on gameSpeed
+        if (deltaTime >= gameSpeed) {
+          lastFrameTime = currentTime - (deltaTime % gameSpeed);
+          drawGame();
+        }
+
+        gameLoopId = requestAnimationFrame(singlePlayerGameLoop);
       }
 
       // Keyboard controls
