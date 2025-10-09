@@ -47,7 +47,7 @@ interface Message {
 }
 
 function Dashboard() {
-  const [linesOfCode] = useState(3991); // Total LOC in repo
+  const [linesOfCode] = useState(3435); // AI-generated LOC (excluding user contributions)
   const [messages, setMessages] = useState<Message[]>([]);
   const [username, setUsername] = useState('');
   const [messageText, setMessageText] = useState('');
@@ -141,7 +141,7 @@ function Dashboard() {
             boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
           }}
         >
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', marginBottom: '30px' }}>
             <div
               style={{
                 fontSize: '48px',
@@ -155,7 +155,57 @@ function Dashboard() {
               {linesOfCode.toLocaleString()}
             </div>
             <div style={{ fontSize: '18px', color: '#666' }}>
-              Lines of Code Generated
+              Lines of AI-Generated Code
+            </div>
+          </div>
+
+          {/* Contributors Section */}
+          <div
+            style={{
+              borderTop: '1px solid #e2e8f0',
+              paddingTop: '20px',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#333',
+                marginBottom: '15px',
+                textAlign: 'center',
+              }}
+            >
+              🌟 Top Contributors
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '20px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '10px 20px',
+                  background: '#f8fafc',
+                  borderRadius: '8px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#667eea',
+                  }}
+                >
+                  @mcgdj
+                </div>
+                <div style={{ fontSize: '12px', color: '#666' }}>
+                  Snake Game (100+ features)
+                </div>
+              </div>
             </div>
           </div>
         </div>
