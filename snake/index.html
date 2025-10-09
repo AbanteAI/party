@@ -360,6 +360,91 @@
     >
       v1.0.10
     </div>
+
+    <!-- Mode Selector -->
+    <div style="margin-bottom: 20px; text-align: center">
+      <div
+        style="
+          display: inline-flex;
+          background: rgba(15, 23, 42, 0.8);
+          backdrop-filter: blur(12px);
+          border-radius: 12px;
+          padding: 6px;
+          gap: 6px;
+        "
+      >
+        <button
+          id="singlePlayerBtn"
+          onclick="switchMode('single')"
+          style="
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+          "
+        >
+          Single Player
+        </button>
+        <button
+          id="multiplayerBtn"
+          onclick="switchMode('multiplayer')"
+          style="
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+          "
+        >
+          Multiplayer
+        </button>
+      </div>
+    </div>
+
+    <!-- Player Name Input (for multiplayer) -->
+    <div
+      id="playerNameInput"
+      style="display: none; margin-bottom: 20px; text-align: center"
+    >
+      <input
+        type="text"
+        id="playerNameField"
+        placeholder="Enter your name"
+        maxlength="20"
+        style="
+          padding: 12px 20px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
+          background: rgba(15, 23, 42, 0.8);
+          color: white;
+          font-size: 16px;
+          text-align: center;
+        "
+      />
+      <button
+        onclick="joinMultiplayer()"
+        style="
+          padding: 12px 24px;
+          margin-left: 10px;
+          border: none;
+          border-radius: 8px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-weight: 600;
+          cursor: pointer;
+        "
+      >
+        Join Game
+      </button>
+    </div>
+
     <div class="container">
       <div class="game-container">
         <canvas id="gameCanvas" width="400" height="400"></canvas>
@@ -424,6 +509,9 @@
       />
       <button onclick="saveScoreAndRestart()">Save & Play Again</button>
     </div>
+
+    <!-- Socket.io Client -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
     <script>
       const canvas = document.getElementById('gameCanvas');
@@ -678,6 +766,14 @@
       let attractionRadius = 0;
       let movementStyle = 'classic';
       let foodSpawnPattern = 'random';
+
+      // Multiplayer variables
+      let gameMode = 'single'; // 'single' or 'multiplayer'
+      let socket = null;
+      let multiplayerPlayers = new Map();
+      let myPlayerId = null;
+      let multiplayerFoods = [];
+      let multiplayerConnected = false;
       let trailLength = 10;
       let inGameMessages = [];
       let headShape = 'square';
@@ -1197,6 +1293,208 @@
         });
       }
 
+      // Mode switching functions
+      function switchMode(mode) {
+        gameMode = mode;
+
+        // Update button styles
+        const singleBtn = document.getElementById('singlePlayerBtn');
+        const multiBtn = document.getElementById('multiplayerBtn');
+        const nameInput = document.getElementById('playerNameInput');
+
+        if (mode === 'single') {
+          singleBtn.style.background =
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+          multiBtn.style.background = 'rgba(255,255,255,0.1)';
+          nameInput.style.display = 'none';
+
+          // Disconnect from multiplayer if connected
+          if (socket) {
+            socket.disconnect();
+            socket = null;
+            multiplayerConnected = false;
+          }
+
+          // Reset to single player game
+          restartGame();
+        } else {
+          singleBtn.style.background = 'rgba(255,255,255,0.1)';
+          multiBtn.style.background =
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+          nameInput.style.display = 'block';
+
+          // Stop single player game
+          if (gameRunning) {
+            clearInterval(gameLoop);
+            gameRunning = false;
+          }
+        }
+      }
+
+      function joinMultiplayer() {
+        const nameField = document.getElementById('playerNameField');
+        const playerName = nameField.value.trim() || 'Player';
+
+        // Connect to Socket.io server
+        socket = io('http://localhost:5000');
+
+        socket.on('connect', () => {
+          console.log('Connected to multiplayer server');
+          socket.emit('join_game', playerName);
+        });
+
+        socket.on('game_joined', (data) => {
+          myPlayerId = data.playerId;
+          multiplayerConnected = true;
+          multiplayerPlayers = new Map();
+
+          // Add all existing players
+          data.gameState.players.forEach((player) => {
+            multiplayerPlayers.set(player.id, player);
+          });
+
+          multiplayerFoods = data.gameState.foods;
+
+          // Start multiplayer rendering
+          if (!gameRunning) {
+            gameRunning = true;
+            gameLoop = setInterval(drawMultiplayerGame, 100);
+          }
+        });
+
+        socket.on('player_joined', (player) => {
+          multiplayerPlayers.set(player.id, player);
+        });
+
+        socket.on('player_left', (playerId) => {
+          multiplayerPlayers.delete(playerId);
+        });
+
+        socket.on('game_update', (gameState) => {
+          // Update all players
+          multiplayerPlayers.clear();
+          gameState.players.forEach((player) => {
+            multiplayerPlayers.set(player.id, player);
+          });
+          multiplayerFoods = gameState.foods;
+        });
+
+        socket.on('player_died', (data) => {
+          const player = multiplayerPlayers.get(data.playerId);
+          if (player) {
+            player.alive = false;
+          }
+
+          if (data.playerId === myPlayerId) {
+            // You died
+            setTimeout(() => {
+              if (socket) {
+                socket.disconnect();
+                socket = null;
+              }
+              multiplayerConnected = false;
+              gameRunning = false;
+              clearInterval(gameLoop);
+              alert('You died! Refresh to play again.');
+            }, 1000);
+          }
+        });
+
+        socket.on('room_full', () => {
+          alert('Room is full! (20 players max)');
+          socket.disconnect();
+          socket = null;
+        });
+      }
+
+      function drawMultiplayerGame() {
+        // Clear canvas
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw foods
+        ctx.font = `${gridSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        multiplayerFoods.forEach((food) => {
+          const emoji = food.type === 'apple' ? '🍎' : '🍌';
+          ctx.fillText(
+            emoji,
+            food.x * gridSize + gridSize / 2,
+            food.y * gridSize + gridSize / 2
+          );
+        });
+
+        // Draw all players
+        multiplayerPlayers.forEach((player) => {
+          if (!player.alive) return;
+
+          // Draw snake
+          for (let i = 0; i < player.snake.length; i++) {
+            const segment = player.snake[i];
+            ctx.fillStyle = player.color;
+            ctx.fillRect(
+              segment.x * gridSize + 1,
+              segment.y * gridSize + 1,
+              gridSize - 2,
+              gridSize - 2
+            );
+          }
+
+          // Draw player name above snake head
+          if (player.snake.length > 0) {
+            const head = player.snake[0];
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeText(
+              player.name,
+              head.x * gridSize + gridSize / 2,
+              head.y * gridSize - 10
+            );
+            ctx.fillText(
+              player.name,
+              head.x * gridSize + gridSize / 2,
+              head.y * gridSize - 10
+            );
+          }
+        });
+
+        // Update leaderboard
+        updateMultiplayerLeaderboard();
+      }
+
+      function updateMultiplayerLeaderboard() {
+        const leaderboardList = document.getElementById('leaderboardList');
+        if (!leaderboardList) return;
+
+        // Sort players by score and kills
+        const sortedPlayers = Array.from(multiplayerPlayers.values())
+          .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return b.kills - a.kills;
+          })
+          .slice(0, 10);
+
+        let html = '';
+        sortedPlayers.forEach((player, index) => {
+          const isMe = player.id === myPlayerId;
+          html += `
+            <div class="leaderboard-entry ${index === 0 ? 'top-score' : ''}" style="${isMe ? 'border: 2px solid #FFD700;' : ''}">
+              <span class="leaderboard-rank">#${index + 1}</span>
+              <span class="leaderboard-name">${player.name}${isMe ? ' (You)' : ''}</span>
+              <span class="leaderboard-score">🍎${player.score} 💀${player.kills}</span>
+            </div>
+          `;
+        });
+
+        leaderboardList.innerHTML =
+          html ||
+          '<p style="text-align: center; color: #666;">No players yet</p>';
+      }
+
       // Initialize all features
       initializeFeatures();
 
@@ -1690,35 +1988,45 @@
         }
 
         // Buffer input to prevent 180-degree turns
+        let newDirection = null;
         switch (e.key) {
           case 'ArrowUp':
           case 'w':
           case 'W':
             if (lastDirection.dy === 0) {
-              inputBuffer = { dx: 0, dy: -1 };
+              newDirection = { dx: 0, dy: -1 };
+              inputBuffer = newDirection;
             }
             break;
           case 'ArrowDown':
           case 's':
           case 'S':
             if (lastDirection.dy === 0) {
-              inputBuffer = { dx: 0, dy: 1 };
+              newDirection = { dx: 0, dy: 1 };
+              inputBuffer = newDirection;
             }
             break;
           case 'ArrowLeft':
           case 'a':
           case 'A':
             if (lastDirection.dx === 0) {
-              inputBuffer = { dx: -1, dy: 0 };
+              newDirection = { dx: -1, dy: 0 };
+              inputBuffer = newDirection;
             }
             break;
           case 'ArrowRight':
           case 'd':
           case 'D':
             if (lastDirection.dx === 0) {
-              inputBuffer = { dx: 1, dy: 0 };
+              newDirection = { dx: 1, dy: 0 };
+              inputBuffer = newDirection;
             }
             break;
+        }
+
+        // Send movement to server in multiplayer mode
+        if (gameMode === 'multiplayer' && socket && newDirection) {
+          socket.emit('player_move', newDirection);
         }
       });
 
