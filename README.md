@@ -25,6 +25,7 @@ docker-compose up -d
 ```
 
 Then visit:
+
 - Main App: http://localhost:5173
 - Snake Game: http://localhost:5173/snake
 - AI Chat: http://localhost:3000
@@ -70,6 +71,7 @@ OpenWebUI provides a chat interface powered by Pollinations AI.
 ### Customization
 
 Edit `docker-compose.yml` to customize:
+
 - Port (default: 3000)
 - UI name and branding
 - Authentication settings
@@ -98,11 +100,13 @@ Edit `docker-compose.yml` to customize:
 - **open-webui** - AI chat interface (port 3000)
 
 To stop services:
+
 ```bash
 docker-compose down
 ```
 
 To view logs:
+
 ```bash
 docker-compose logs -f
 ```

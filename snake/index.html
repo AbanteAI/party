@@ -2071,157 +2071,157 @@
 
           // Check if paused
           if (isPaused) {
-          // Draw everything but don't update
-          drawSnakeTrail();
-          drawEnemySnakes();
-          drawPowerUps();
-          drawCustomSnake();
-          drawAnimatedFood();
-          drawParticles();
+            // Draw everything but don't update
+            drawSnakeTrail();
+            drawEnemySnakes();
+            drawPowerUps();
+            drawCustomSnake();
+            drawAnimatedFood();
+            drawParticles();
 
-          // Draw pause overlay
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 32px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
-          ctx.font = '16px Arial';
-          ctx.fillText(
-            'Press P or click Resume',
-            canvas.width / 2,
-            canvas.height / 2 + 40
-          );
-          return;
-        }
+            // Draw pause overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 32px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+            ctx.font = '16px Arial';
+            ctx.fillText(
+              'Press P or click Resume',
+              canvas.width / 2,
+              canvas.height / 2 + 40
+            );
+            return;
+          }
 
-        // Process buffered input
-        if (inputBuffer) {
-          dx = inputBuffer.dx;
-          dy = inputBuffer.dy;
-          lastDirection = { dx, dy };
-          inputBuffer = null;
-        }
+          // Process buffered input
+          if (inputBuffer) {
+            dx = inputBuffer.dx;
+            dy = inputBuffer.dy;
+            lastDirection = { dx, dy };
+            inputBuffer = null;
+          }
 
-        // Spawn power-ups
-        spawnPowerUp();
+          // Spawn power-ups
+          spawnPowerUp();
 
-        // Move enemy snakes
-        moveEnemySnakes();
+          // Move enemy snakes
+          moveEnemySnakes();
 
-        // Move snake
-        if (dx !== 0 || dy !== 0) {
-          const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-          snake.unshift(head);
+          // Move snake
+          if (dx !== 0 || dy !== 0) {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
 
-          // Check power-up collection
-          collectPowerUp(head);
+            // Check power-up collection
+            collectPowerUp(head);
 
-          // Check if snake ate any food
-          let ateFood = false;
-          for (let i = 0; i < foods.length; i++) {
-            if (head.x === foods[i].x && head.y === foods[i].y) {
-              score++;
-              scoreElement.textContent = score;
-              if (score > highScore) {
-                highScore = score;
-                highScoreElement.textContent = highScore;
-                localStorage.setItem('snakeHighScore', highScore);
+            // Check if snake ate any food
+            let ateFood = false;
+            for (let i = 0; i < foods.length; i++) {
+              if (head.x === foods[i].x && head.y === foods[i].y) {
+                score++;
+                scoreElement.textContent = score;
+                if (score > highScore) {
+                  highScore = score;
+                  highScoreElement.textContent = highScore;
+                  localStorage.setItem('snakeHighScore', highScore);
+                }
+                // Add particle effects
+                addParticle(
+                  foods[i].x * gridSize + gridSize / 2,
+                  foods[i].y * gridSize + gridSize / 2,
+                  foods[i].type === 'apple' ? '#FF0000' : '#FFFF00'
+                );
+                // Update food collection
+                updateFoodCollection(foods[i].type);
+                // Replace the eaten food with a new one
+                placeFoodAt(i);
+                ateFood = true;
+                break;
               }
-              // Add particle effects
-              addParticle(
-                foods[i].x * gridSize + gridSize / 2,
-                foods[i].y * gridSize + gridSize / 2,
-                foods[i].type === 'apple' ? '#FF0000' : '#FFFF00'
-              );
-              // Update food collection
-              updateFoodCollection(foods[i].type);
-              // Replace the eaten food with a new one
-              placeFoodAt(i);
-              ateFood = true;
-              break;
             }
-          }
 
-          if (!ateFood) {
-            snake.pop();
-          }
+            if (!ateFood) {
+              snake.pop();
+            }
 
-          // Check collisions with walls (unless ghost mode active)
-          if (activePowerUps.ghost === 0 && activePowerUps.shield === 0) {
-            if (
-              head.x < 0 ||
-              head.x >= tileCount ||
-              head.y < 0 ||
-              head.y >= tileCount
-            ) {
+            // Check collisions with walls (unless ghost mode active)
+            if (activePowerUps.ghost === 0 && activePowerUps.shield === 0) {
+              if (
+                head.x < 0 ||
+                head.x >= tileCount ||
+                head.y < 0 ||
+                head.y >= tileCount
+              ) {
+                endGame();
+                return;
+              }
+            }
+
+            // Check self collision (unless ghost mode or shield active)
+            if (activePowerUps.ghost === 0 && activePowerUps.shield === 0) {
+              for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                  endGame();
+                  return;
+                }
+              }
+            }
+
+            // Check tail cutting (kill enemies by crossing their tails)
+            checkTailCutting(head);
+
+            // Check enemy collision (unless shield active)
+            if (activePowerUps.shield === 0 && checkEnemyCollision(head)) {
               endGame();
               return;
             }
           }
 
-          // Check self collision (unless ghost mode or shield active)
-          if (activePowerUps.ghost === 0 && activePowerUps.shield === 0) {
-            for (let i = 1; i < snake.length; i++) {
-              if (head.x === snake[i].x && head.y === snake[i].y) {
-                endGame();
-                return;
-              }
-            }
+          // Update power-ups
+          updatePowerUps();
+
+          // Update snake trail
+          updateSnakeTrail();
+
+          // Draw snake trail
+          drawSnakeTrail();
+
+          // Draw enemy snakes
+          drawEnemySnakes();
+
+          // Draw power-ups
+          drawPowerUps();
+
+          // Draw snake with custom skin
+          drawCustomSnake();
+
+          // Draw foods with animation
+          drawAnimatedFood();
+
+          // Draw particles
+          drawParticles();
+
+          // Update game stats
+          updateGameStats();
+
+          // Update food animation
+          updateFoodAnimation();
+
+          // Update particles
+          updateParticles();
+
+          // Update background gradient
+          updateBackgroundGradient();
+
+          // Update multiplier timer
+          if (multiplierTimer > 0) {
+            multiplierTimer--;
+          } else {
+            multiplier = 1;
           }
-
-          // Check tail cutting (kill enemies by crossing their tails)
-          checkTailCutting(head);
-
-          // Check enemy collision (unless shield active)
-          if (activePowerUps.shield === 0 && checkEnemyCollision(head)) {
-            endGame();
-            return;
-          }
-        }
-
-        // Update power-ups
-        updatePowerUps();
-
-        // Update snake trail
-        updateSnakeTrail();
-
-        // Draw snake trail
-        drawSnakeTrail();
-
-        // Draw enemy snakes
-        drawEnemySnakes();
-
-        // Draw power-ups
-        drawPowerUps();
-
-        // Draw snake with custom skin
-        drawCustomSnake();
-
-        // Draw foods with animation
-        drawAnimatedFood();
-
-        // Draw particles
-        drawParticles();
-
-        // Update game stats
-        updateGameStats();
-
-        // Update food animation
-        updateFoodAnimation();
-
-        // Update particles
-        updateParticles();
-
-        // Update background gradient
-        updateBackgroundGradient();
-
-        // Update multiplier timer
-        if (multiplierTimer > 0) {
-          multiplierTimer--;
-        } else {
-          multiplier = 1;
-        }
 
           // Update game timer
           gameTime++;

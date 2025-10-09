@@ -5,12 +5,7 @@ interface Message {
   content: string;
 }
 
-const AVAILABLE_MODELS = [
-  'openai',
-  'mistral',
-  'claude',
-  'llama',
-];
+const AVAILABLE_MODELS = ['openai', 'mistral', 'claude', 'llama'];
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -60,10 +55,7 @@ export default function Chat() {
       let assistantMessage = '';
 
       if (reader) {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: '' },
-        ]);
+        setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
         while (true) {
           const { done, value } = await reader.read();
