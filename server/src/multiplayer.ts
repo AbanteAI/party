@@ -15,6 +15,8 @@ interface Player {
 
 interface GameRoom {
   id: string;
+  name: string;
+  description: string;
   players: Map<string, Player>;
   foods: { x: number; y: number; type: string }[];
   gameLoop: NodeJS.Timeout | null;
@@ -24,7 +26,24 @@ interface GameRoom {
   maxPlayers: number;
 }
 
+interface LobbyConfig {
+  id: string;
+  name: string;
+  description: string;
+}
+
+// Lobby configurations (only editable by Mentat)
+const LOBBY_CONFIGS: LobbyConfig[] = [
+  {
+    id: 'default',
+    name: 'Quick Play',
+    description: 'Jump in and play! Auto-matchmaking with bots.',
+  },
+  // Additional lobbies can be added here by Mentat upon user request
+];
+
 const rooms = new Map<string, GameRoom>();
+const socketRooms = new Map<string, string>(); // Track which room each socket is in
 const COLORS = [
   '#4CAF50',
   '#2196F3',
@@ -49,16 +68,38 @@ const COLORS = [
 ];
 
 export function setupMultiplayerGame(io: Server) {
-  // Create default room
-  const defaultRoom = createRoom('default');
-  rooms.set('default', defaultRoom);
+  // Create rooms for all configured lobbies
+  LOBBY_CONFIGS.forEach((config) => {
+    const room = createRoom(config.id, config.name, config.description);
+    rooms.set(config.id, room);
+  });
 
   io.on('connection', (socket: Socket) => {
     console.log(`Player connected: ${socket.id}`);
 
-    socket.on('join_game', (playerName: string) => {
-      // Join default room (auto-matchmaking)
-      const room = rooms.get('default')!;
+    // Send lobby list
+    socket.on('get_lobbies', () => {
+      const lobbies = LOBBY_CONFIGS.map((config) => {
+        const room = rooms.get(config.id);
+        return {
+          id: config.id,
+          name: config.name,
+          description: config.description,
+          playerCount: room ? room.players.size : 0,
+          maxPlayers: 20,
+        };
+      });
+      socket.emit('lobby_list', lobbies);
+    });
+
+    socket.on('join_game', (data: { playerName: string; roomId?: string }) => {
+      const roomId = data.roomId || 'default';
+      const room = rooms.get(roomId);
+
+      if (!room) {
+        socket.emit('room_not_found');
+        return;
+      }
 
       // Check if room is full
       if (room.players.size >= 20) {
@@ -86,29 +127,35 @@ export function setupMultiplayerGame(io: Server) {
       };
 
       room.players.set(socket.id, player);
-      socket.join('default');
+      socket.join(roomId);
+      socketRooms.set(socket.id, roomId);
 
       // Send initial game state
       socket.emit('game_joined', {
         playerId: socket.id,
         player: player,
         gameState: getGameState(room),
+        roomId: roomId,
+        roomName: room.name,
       });
 
       // Broadcast new player to others
-      socket.to('default').emit('player_joined', player);
+      socket.to(roomId).emit('player_joined', player);
 
       // Manage bots to fill up to 20 players
-      manageBots(room, io);
+      manageBots(room, io, roomId);
 
       // Start game loop if not running
       if (!room.gameLoop) {
-        startGameLoop(room, io);
+        startGameLoop(room, io, roomId);
       }
     });
 
     socket.on('player_move', (direction: { dx: number; dy: number }) => {
-      const room = rooms.get('default');
+      const roomId = socketRooms.get(socket.id);
+      if (!roomId) return;
+
+      const room = rooms.get(roomId);
       if (!room) return;
 
       const player = room.players.get(socket.id);
@@ -127,14 +174,18 @@ export function setupMultiplayerGame(io: Server) {
 
     socket.on('disconnect', () => {
       console.log(`Player disconnected: ${socket.id}`);
-      const room = rooms.get('default');
+      const roomId = socketRooms.get(socket.id);
+      if (!roomId) return;
+
+      const room = rooms.get(roomId);
       if (!room) return;
 
       room.players.delete(socket.id);
-      io.to('default').emit('player_left', socket.id);
+      socketRooms.delete(socket.id);
+      io.to(roomId).emit('player_left', socket.id);
 
       // Manage bots after player leaves
-      manageBots(room, io);
+      manageBots(room, io, roomId);
 
       // Stop game loop if no human players
       const humanPlayers = Array.from(room.players.values()).filter(
@@ -150,12 +201,14 @@ export function setupMultiplayerGame(io: Server) {
   });
 }
 
-function createRoom(id: string): GameRoom {
+function createRoom(id: string, name: string, description: string): GameRoom {
   const gridSize = 20;
   const tileCount = 20;
 
   return {
     id,
+    name,
+    description,
     players: new Map(),
     foods: [
       { x: 15, y: 15, type: 'apple' },
@@ -169,13 +222,13 @@ function createRoom(id: string): GameRoom {
   };
 }
 
-function startGameLoop(room: GameRoom, io: Server) {
+function startGameLoop(room: GameRoom, io: Server, roomId: string) {
   room.gameLoop = setInterval(() => {
-    updateGame(room, io);
+    updateGame(room, io, roomId);
   }, 100); // 100ms = 10 FPS
 }
 
-function updateGame(room: GameRoom, io: Server) {
+function updateGame(room: GameRoom, io: Server, roomId: string) {
   // Move all players
   room.players.forEach((player) => {
     if (
@@ -201,7 +254,7 @@ function updateGame(room: GameRoom, io: Server) {
       if (!player.isBot) {
         player.spectating = true;
       }
-      io.to('default').emit('player_died', {
+      io.to(roomId).emit('player_died', {
         playerId: player.id,
         killer: null,
       });
@@ -215,7 +268,7 @@ function updateGame(room: GameRoom, io: Server) {
         if (!player.isBot) {
           player.spectating = true;
         }
-        io.to('default').emit('player_died', {
+        io.to(roomId).emit('player_died', {
           playerId: player.id,
           killer: null,
         });
@@ -241,7 +294,7 @@ function updateGame(room: GameRoom, io: Server) {
       if (!player.isBot) {
         player.spectating = true;
       }
-      io.to('default').emit('player_died', {
+      io.to(roomId).emit('player_died', {
         playerId: player.id,
         killer: killedBy,
       });
@@ -275,10 +328,10 @@ function updateGame(room: GameRoom, io: Server) {
   updateBotAI(room);
 
   // Broadcast game state
-  io.to('default').emit('game_update', getGameState(room));
+  io.to(roomId).emit('game_update', getGameState(room));
 }
 
-function manageBots(room: GameRoom, io: Server) {
+function manageBots(room: GameRoom, io: Server, roomId: string) {
   const humanPlayers = Array.from(room.players.values()).filter(
     (p) => !p.isBot
   );
@@ -290,7 +343,7 @@ function manageBots(room: GameRoom, io: Server) {
   if (totalPlayers < room.maxPlayers) {
     const botsToAdd = Math.min(neededBots, room.maxPlayers - totalPlayers);
     for (let i = 0; i < botsToAdd; i++) {
-      spawnBot(room, io);
+      spawnBot(room, io, roomId);
     }
   }
 
@@ -300,12 +353,12 @@ function manageBots(room: GameRoom, io: Server) {
     for (let i = 0; i < botsToRemove; i++) {
       const bot = bots[i];
       room.players.delete(bot.id);
-      io.to('default').emit('player_left', bot.id);
+      io.to(roomId).emit('player_left', bot.id);
     }
   }
 }
 
-function spawnBot(room: GameRoom, io: Server) {
+function spawnBot(room: GameRoom, io: Server, roomId: string) {
   room.botCounter++;
   const botId = `bot_${room.botCounter}`;
 
@@ -328,7 +381,7 @@ function spawnBot(room: GameRoom, io: Server) {
   };
 
   room.players.set(botId, bot);
-  io.to('default').emit('player_joined', bot);
+  io.to(roomId).emit('player_joined', bot);
 }
 
 function updateBotAI(room: GameRoom) {
