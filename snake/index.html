@@ -1008,19 +1008,25 @@
 
       function initializeEnemies() {
         enemySnakes = [];
+        // Spawn enemies in different corners/areas
+        const spawnPositions = [
+          { x: 2, y: 2 }, // Top-left
+          { x: tileCount - 3, y: 2 }, // Top-right
+          { x: 2, y: tileCount - 3 }, // Bottom-left
+          { x: tileCount - 3, y: tileCount - 3 }, // Bottom-right
+          { x: Math.floor(tileCount / 2), y: 2 }, // Top-center
+        ];
+
         for (let i = 0; i < NUM_ENEMIES; i++) {
+          const spawnPos = spawnPositions[i % spawnPositions.length];
           enemySnakes.push({
-            snake: [
-              {
-                x: Math.floor(Math.random() * tileCount),
-                y: Math.floor(Math.random() * tileCount),
-              },
-            ],
+            snake: [{ x: spawnPos.x, y: spawnPos.y }],
             dx: 1,
             dy: 0,
             moveCounter: 0,
             color: ENEMY_COLORS[i % ENEMY_COLORS.length],
             alive: true,
+            aggressionLevel: Math.random(), // 0-1, higher = more aggressive
           });
         }
       }
@@ -1827,24 +1833,71 @@
           if (enemy.moveCounter < enemyMoveDelay) return;
           enemy.moveCounter = 0;
 
-          // Simple AI: move towards nearest food
           const head = enemy.snake[0];
-          let nearestFood = foods[0];
-          let minDist =
-            Math.abs(head.x - nearestFood.x) + Math.abs(head.y - nearestFood.y);
+          let target = null;
 
-          for (let i = 1; i < foods.length; i++) {
-            const dist =
-              Math.abs(head.x - foods[i].x) + Math.abs(head.y - foods[i].y);
-            if (dist < minDist) {
-              minDist = dist;
-              nearestFood = foods[i];
+          // Aggressive AI: decide what to chase based on aggression level
+          if (enemy.aggressionLevel > 0.6) {
+            // High aggression: chase nearest snake (player or other enemies)
+            let nearestSnake = null;
+            let minDist = Infinity;
+
+            // Check player snake
+            if (snake.length > 0) {
+              const playerHead = snake[0];
+              const dist =
+                Math.abs(head.x - playerHead.x) +
+                Math.abs(head.y - playerHead.y);
+              if (dist < minDist) {
+                minDist = dist;
+                nearestSnake = playerHead;
+              }
+            }
+
+            // Check other enemy snakes
+            enemySnakes.forEach((otherEnemy) => {
+              if (
+                otherEnemy !== enemy &&
+                otherEnemy.alive &&
+                otherEnemy.snake.length > 0
+              ) {
+                const otherHead = otherEnemy.snake[0];
+                const dist =
+                  Math.abs(head.x - otherHead.x) +
+                  Math.abs(head.y - otherHead.y);
+                if (dist < minDist) {
+                  minDist = dist;
+                  nearestSnake = otherHead;
+                }
+              }
+            });
+
+            if (nearestSnake && minDist < 10) {
+              target = nearestSnake;
             }
           }
 
-          // Decide direction
-          const dx = nearestFood.x - head.x;
-          const dy = nearestFood.y - head.y;
+          // If no target or low aggression, chase food
+          if (!target) {
+            let nearestFood = foods[0];
+            let minDist =
+              Math.abs(head.x - nearestFood.x) +
+              Math.abs(head.y - nearestFood.y);
+
+            for (let i = 1; i < foods.length; i++) {
+              const dist =
+                Math.abs(head.x - foods[i].x) + Math.abs(head.y - foods[i].y);
+              if (dist < minDist) {
+                minDist = dist;
+                nearestFood = foods[i];
+              }
+            }
+            target = nearestFood;
+          }
+
+          // Decide direction towards target
+          const dx = target.x - head.x;
+          const dy = target.y - head.y;
 
           if (Math.abs(dx) > Math.abs(dy)) {
             enemy.dx = dx > 0 ? 1 : -1;
@@ -1864,6 +1917,49 @@
           if (newHead.y >= tileCount) newHead.y = 0;
 
           enemy.snake.unshift(newHead);
+
+          // Check if enemy cuts player's tail
+          for (let i = 1; i < snake.length; i++) {
+            if (newHead.x === snake[i].x && newHead.y === snake[i].y) {
+              // Enemy cut player's tail - player loses tail segments
+              snake.splice(i);
+              break;
+            }
+          }
+
+          // Check if enemy cuts another enemy's tail
+          enemySnakes.forEach((otherEnemy) => {
+            if (otherEnemy !== enemy && otherEnemy.alive) {
+              for (let i = 1; i < otherEnemy.snake.length; i++) {
+                if (
+                  newHead.x === otherEnemy.snake[i].x &&
+                  newHead.y === otherEnemy.snake[i].y
+                ) {
+                  // Enemy cut another enemy's tail - kill it
+                  otherEnemy.alive = false;
+                  setTimeout(() => {
+                    const spawnPositions = [
+                      { x: 2, y: 2 },
+                      { x: tileCount - 3, y: 2 },
+                      { x: 2, y: tileCount - 3 },
+                      { x: tileCount - 3, y: tileCount - 3 },
+                      { x: Math.floor(tileCount / 2), y: 2 },
+                    ];
+                    const spawnPos =
+                      spawnPositions[
+                        Math.floor(Math.random() * spawnPositions.length)
+                      ];
+                    otherEnemy.snake = [{ x: spawnPos.x, y: spawnPos.y }];
+                    otherEnemy.dx = 1;
+                    otherEnemy.dy = 0;
+                    otherEnemy.moveCounter = 0;
+                    otherEnemy.alive = true;
+                  }, 2000);
+                  break;
+                }
+              }
+            }
+          });
 
           // Check if enemy ate food
           let ateFood = false;
