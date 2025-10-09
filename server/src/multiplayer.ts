@@ -9,6 +9,8 @@ interface Player {
   score: number;
   kills: number;
   alive: boolean;
+  isBot: boolean;
+  spectating: boolean;
 }
 
 interface GameRoom {
@@ -18,6 +20,8 @@ interface GameRoom {
   gameLoop: NodeJS.Timeout | null;
   gridSize: number;
   tileCount: number;
+  botCounter: number;
+  maxPlayers: number;
 }
 
 const rooms = new Map<string, GameRoom>();
@@ -77,6 +81,8 @@ export function setupMultiplayerGame(io: Server) {
         score: 0,
         kills: 0,
         alive: true,
+        isBot: false,
+        spectating: false,
       };
 
       room.players.set(socket.id, player);
@@ -91,6 +97,9 @@ export function setupMultiplayerGame(io: Server) {
 
       // Broadcast new player to others
       socket.to('default').emit('player_joined', player);
+
+      // Manage bots to fill up to 20 players
+      manageBots(room, io);
 
       // Start game loop if not running
       if (!room.gameLoop) {
@@ -124,10 +133,18 @@ export function setupMultiplayerGame(io: Server) {
       room.players.delete(socket.id);
       io.to('default').emit('player_left', socket.id);
 
-      // Stop game loop if no players
-      if (room.players.size === 0 && room.gameLoop) {
+      // Manage bots after player leaves
+      manageBots(room, io);
+
+      // Stop game loop if no human players
+      const humanPlayers = Array.from(room.players.values()).filter(
+        (p) => !p.isBot
+      );
+      if (humanPlayers.length === 0 && room.gameLoop) {
         clearInterval(room.gameLoop);
         room.gameLoop = null;
+        // Remove all bots
+        room.players.clear();
       }
     });
   });
@@ -147,6 +164,8 @@ function createRoom(id: string): GameRoom {
     gameLoop: null,
     gridSize,
     tileCount,
+    botCounter: 0,
+    maxPlayers: 20,
   };
 }
 
@@ -179,6 +198,9 @@ function updateGame(room: GameRoom, io: Server) {
       newHead.y >= room.tileCount
     ) {
       player.alive = false;
+      if (!player.isBot) {
+        player.spectating = true;
+      }
       io.to('default').emit('player_died', {
         playerId: player.id,
         killer: null,
@@ -190,6 +212,9 @@ function updateGame(room: GameRoom, io: Server) {
     for (let i = 1; i < player.snake.length; i++) {
       if (newHead.x === player.snake[i].x && newHead.y === player.snake[i].y) {
         player.alive = false;
+        if (!player.isBot) {
+          player.spectating = true;
+        }
         io.to('default').emit('player_died', {
           playerId: player.id,
           killer: null,
@@ -213,6 +238,9 @@ function updateGame(room: GameRoom, io: Server) {
     });
 
     if (!player.alive) {
+      if (!player.isBot) {
+        player.spectating = true;
+      }
       io.to('default').emit('player_died', {
         playerId: player.id,
         killer: killedBy,
@@ -243,8 +271,149 @@ function updateGame(room: GameRoom, io: Server) {
     }
   });
 
+  // Update bot AI
+  updateBotAI(room);
+
   // Broadcast game state
   io.to('default').emit('game_update', getGameState(room));
+}
+
+function manageBots(room: GameRoom, io: Server) {
+  const humanPlayers = Array.from(room.players.values()).filter(
+    (p) => !p.isBot
+  );
+  const bots = Array.from(room.players.values()).filter((p) => p.isBot);
+  const totalPlayers = room.players.size;
+  const neededBots = room.maxPlayers - humanPlayers.length;
+
+  // Add bots if needed
+  if (totalPlayers < room.maxPlayers) {
+    const botsToAdd = Math.min(neededBots, room.maxPlayers - totalPlayers);
+    for (let i = 0; i < botsToAdd; i++) {
+      spawnBot(room, io);
+    }
+  }
+
+  // Remove excess bots if needed
+  if (bots.length > neededBots) {
+    const botsToRemove = bots.length - neededBots;
+    for (let i = 0; i < botsToRemove; i++) {
+      const bot = bots[i];
+      room.players.delete(bot.id);
+      io.to('default').emit('player_left', bot.id);
+    }
+  }
+}
+
+function spawnBot(room: GameRoom, io: Server) {
+  room.botCounter++;
+  const botId = `bot_${room.botCounter}`;
+
+  const bot: Player = {
+    id: botId,
+    name: `Bot ${room.botCounter}`,
+    snake: [
+      {
+        x: Math.floor(Math.random() * room.tileCount),
+        y: Math.floor(Math.random() * room.tileCount),
+      },
+    ],
+    direction: { dx: 1, dy: 0 },
+    color: COLORS[room.players.size % COLORS.length],
+    score: 0,
+    kills: 0,
+    alive: true,
+    isBot: true,
+    spectating: false,
+  };
+
+  room.players.set(botId, bot);
+  io.to('default').emit('player_joined', bot);
+}
+
+function updateBotAI(room: GameRoom) {
+  const bots = Array.from(room.players.values()).filter(
+    (p) => p.isBot && p.alive
+  );
+
+  bots.forEach((bot) => {
+    if (bot.snake.length === 0) return;
+
+    const head = bot.snake[0];
+
+    // Find nearest food
+    let nearestFood = room.foods[0];
+    let minDist =
+      Math.abs(head.x - nearestFood.x) + Math.abs(head.y - nearestFood.y);
+
+    for (let i = 1; i < room.foods.length; i++) {
+      const dist =
+        Math.abs(head.x - room.foods[i].x) + Math.abs(head.y - room.foods[i].y);
+      if (dist < minDist) {
+        minDist = dist;
+        nearestFood = room.foods[i];
+      }
+    }
+
+    // Calculate direction to food
+    const dx = nearestFood.x - head.x;
+    const dy = nearestFood.y - head.y;
+
+    // Choose direction (prefer larger distance)
+    let newDirection = bot.direction;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > 0 && bot.direction.dx !== -1) {
+        newDirection = { dx: 1, dy: 0 };
+      } else if (dx < 0 && bot.direction.dx !== 1) {
+        newDirection = { dx: -1, dy: 0 };
+      }
+    } else {
+      if (dy > 0 && bot.direction.dy !== -1) {
+        newDirection = { dx: 0, dy: 1 };
+      } else if (dy < 0 && bot.direction.dy !== 1) {
+        newDirection = { dx: 0, dy: -1 };
+      }
+    }
+
+    // Check if new direction would cause immediate collision
+    const nextPos = {
+      x: head.x + newDirection.dx,
+      y: head.y + newDirection.dy,
+    };
+
+    // Check wall collision
+    if (
+      nextPos.x < 0 ||
+      nextPos.x >= room.tileCount ||
+      nextPos.y < 0 ||
+      nextPos.y >= room.tileCount
+    ) {
+      // Try alternative directions
+      const alternatives = [
+        { dx: 0, dy: 1 },
+        { dx: 0, dy: -1 },
+        { dx: 1, dy: 0 },
+        { dx: -1, dy: 0 },
+      ].filter(
+        (dir) => !(dir.dx === -bot.direction.dx && dir.dy === -bot.direction.dy)
+      );
+
+      for (const alt of alternatives) {
+        const altPos = { x: head.x + alt.dx, y: head.y + alt.dy };
+        if (
+          altPos.x >= 0 &&
+          altPos.x < room.tileCount &&
+          altPos.y >= 0 &&
+          altPos.y < room.tileCount
+        ) {
+          newDirection = alt;
+          break;
+        }
+      }
+    }
+
+    bot.direction = newDirection;
+  });
 }
 
 interface PlayerState {
@@ -255,6 +424,8 @@ interface PlayerState {
   score: number;
   kills: number;
   alive: boolean;
+  isBot: boolean;
+  spectating: boolean;
 }
 
 function getGameState(room: GameRoom) {
@@ -268,6 +439,8 @@ function getGameState(room: GameRoom) {
       score: player.score,
       kills: player.kills,
       alive: player.alive,
+      isBot: player.isBot,
+      spectating: player.spectating,
     });
   });
 
