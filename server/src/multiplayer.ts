@@ -247,8 +247,18 @@ function updateGame(room: GameRoom, io: Server) {
   io.to('default').emit('game_update', getGameState(room));
 }
 
+interface PlayerState {
+  id: string;
+  name: string;
+  snake: { x: number; y: number }[];
+  color: string;
+  score: number;
+  kills: number;
+  alive: boolean;
+}
+
 function getGameState(room: GameRoom) {
-  const players: any[] = [];
+  const players: PlayerState[] = [];
   room.players.forEach((player) => {
     players.push({
       id: player.id,
