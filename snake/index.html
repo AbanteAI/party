@@ -1430,17 +1430,30 @@
         joinMultiplayer(playerName, roomId);
       }
 
-      function joinMultiplayer() {
-        const nameField = document.getElementById('playerNameField');
-        const playerName = nameField.value.trim() || 'Player';
+      function joinMultiplayer(playerName, roomId) {
+        // If called without parameters, get them from the form
+        if (!playerName) {
+          const nameField = document.getElementById('playerNameField');
+          playerName = nameField.value.trim() || 'Player';
+        }
+        if (!roomId) {
+          roomId = 'default';
+        }
 
-        // Connect to Socket.io server
-        socket = io('http://localhost:5000');
+        // Connect to Socket.io server if not already connected
+        if (!socket || !socket.connected) {
+          socket = io('http://localhost:5000');
+        }
 
         socket.on('connect', () => {
           console.log('Connected to multiplayer server');
-          socket.emit('join_game', playerName);
+          socket.emit('join_game', { playerName, roomId });
         });
+
+        // If already connected, join immediately
+        if (socket.connected) {
+          socket.emit('join_game', { playerName, roomId });
+        }
 
         socket.on('game_joined', (data) => {
           myPlayerId = data.playerId;
