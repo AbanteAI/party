@@ -13,8 +13,14 @@
 
       body {
         font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0f0c29 0%,
+          #302b63 50%,
+          #24243e 100%
+        );
         color: #e2e8f0;
         display: flex;
         flex-direction: column;
@@ -44,7 +50,7 @@
         -webkit-backdrop-filter: blur(12px);
         border-radius: 20px;
         padding: 25px;
-        box-shadow: 
+        box-shadow:
           0 25px 50px -12px rgba(0, 0, 0, 0.5),
           0 0 0 1px rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -96,7 +102,7 @@
         border-radius: 24px;
         text-align: center;
         display: none;
-        box-shadow: 
+        box-shadow:
           0 25px 50px -12px rgba(0, 0, 0, 0.5),
           0 0 0 1px rgba(255, 255, 255, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -181,7 +187,7 @@
         -webkit-backdrop-filter: blur(12px);
         border-radius: 20px;
         padding: 25px;
-        box-shadow: 
+        box-shadow:
           0 25px 50px -12px rgba(0, 0, 0, 0.5),
           0 0 0 1px rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -219,7 +225,11 @@
       }
 
       .leaderboard-entry.top-score {
-        background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.2) 100%);
+        background: linear-gradient(
+          135deg,
+          rgba(139, 92, 246, 0.2) 0%,
+          rgba(236, 72, 153, 0.2) 100%
+        );
         border: 1px solid rgba(139, 92, 246, 0.3);
         box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
       }
@@ -267,7 +277,7 @@
         font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
-        box-shadow: 
+        box-shadow:
           0 10px 25px rgba(139, 92, 246, 0.4),
           0 0 0 1px rgba(255, 255, 255, 0.1);
         z-index: 1000;
@@ -278,7 +288,7 @@
 
       .toggle-button:hover {
         transform: translateY(-3px);
-        box-shadow: 
+        box-shadow:
           0 15px 35px rgba(139, 92, 246, 0.5),
           0 0 0 1px rgba(255, 255, 255, 0.1);
       }
@@ -364,8 +374,7 @@
             background: #f8fafc;
             border-radius: 6px;
           "
-        >
-        </div>
+        ></div>
         <div class="controls">Use Arrow Keys or WASD to move</div>
       </div>
 
@@ -396,7 +405,10 @@
     <div class="game-over" id="gameOver">
       <h2>Game Over!</h2>
       <p>Final Score: <span id="finalScore">0</span></p>
-      <p id="deathRoast" style="font-size: 14px; color: #666; margin: 10px 0; font-style: italic;"></p>
+      <p
+        id="deathRoast"
+        style="font-size: 14px; color: #666; margin: 10px 0; font-style: italic"
+      ></p>
       <input
         type="text"
         id="playerName"
@@ -416,23 +428,23 @@
       const deathRoastElement = document.getElementById('deathRoast');
 
       const snakeDeathRoasts = [
-        "The bot snake sends its regards 🐍 — it left a condolence card and a tiny coffin made of apple seeds.",
-        "Skill issue detected 💀 — your reflexes are slower than a snail in molasses wearing lead boots.",
+        'The bot snake sends its regards 🐍 — it left a condolence card and a tiny coffin made of apple seeds.',
+        'Skill issue detected 💀 — your reflexes are slower than a snail in molasses wearing lead boots.',
         "Better luck next time, snake food 🍎 — the apple's already planning your funeral.",
         "The bot is now 20% you 😬 — congrats, you've been assimilated into its cold, calculating AI soul.",
-        "You just got outplayed by an AI with 3 lines of code 🤖 — those 3 lines have more ambition than your entire life.",
+        'You just got outplayed by an AI with 3 lines of code 🤖 — those 3 lines have more ambition than your entire life.',
         "Your snake didn't die… it just realized it was never meant to be more than a snack.",
         "The bot didn't win… it just waited for you to embarrass yourself. Patience is a virtue you clearly lack.",
-        "You played snake like it was a documentary about your own mediocrity.",
+        'You played snake like it was a documentary about your own mediocrity.',
         "The AI didn't outsmart you — it just watched you make the same mistake 47 times and then sighed.",
-        "Your high score? A tragic footnote in the annals of snake history.",
+        'Your high score? A tragic footnote in the annals of snake history.',
         "You didn't lose… you just gave the bot a free upgrade to 'Elite Snake Mode'.",
         "The bot's AI is so advanced, it started feeling sorry for you halfway through.",
         "Your snake's death was so dramatic, even the pixels cried.",
         "Congratulations! You've achieved the rare 'Human Error: Snake Edition' achievement.",
         "The bot didn't eat your snake… it just politely asked for your dignity back.",
-        "You thought you were playing a game. The bot was playing existential chess.",
-        "Your reflexes are so slow, the apple had time to write a novel before you turned.",
+        'You thought you were playing a game. The bot was playing existential chess.',
+        'Your reflexes are so slow, the apple had time to write a novel before you turned.',
         "The bot's code is simpler than your excuses. And it still won.",
         "You didn't lose to an AI… you lost to the concept of competence.",
         "Your snake died so hard, it left behind a will: 'Please don't play again.'",
@@ -450,7 +462,7 @@
         "Your snake's death was so slow, the bot took a nap and still won.",
         "You're not playing snake… you're performing a tragedy in 8-bit.",
         "The bot didn't outplay you — it just realized you were already defeated before the game started.",
-        "Your reflexes are slower than a Windows 95 startup.",
+        'Your reflexes are slower than a Windows 95 startup.',
         "The AI's entire strategy: 'Wait for human to panic.' It worked. Again.",
         "You didn't die… you just became part of the bot's 'Why Humans Suck' presentation.",
         "The bot didn't need to be smart — it just needed you to be dumb.",
@@ -479,7 +491,7 @@
         "Your snake's death was so slow, the game paused to give you a pep talk.",
         "You didn't fail… you just provided the bot with its first real challenge: 'How to stay awake.'",
         "The bot didn't need to think — it just needed you to stop breathing.",
-        "Your reflexes are so slow, the game had to slow down to match your pace.",
+        'Your reflexes are so slow, the game had to slow down to match your pace.',
         "The bot didn't beat you — it just showed you what happens when you don't try.",
         "You didn't lose to a snake… you lost to the concept of 'not being terrible'.",
         "The apple didn't kill you — your lack of planning did.",
@@ -498,7 +510,7 @@
         "The bot didn't outplay you — it just waited for you to give up.",
         "You didn't die… you just became a glitch in the game's 'Human Behavior' dataset.",
         "The bot's code is shorter than your excuses.",
-        "Your reflexes are slower than a sloth on vacation… with a broken watch.",
+        'Your reflexes are slower than a sloth on vacation… with a broken watch.',
         "You didn't lose to a snake… you lost to your own refusal to evolve.",
         "The bot didn't need to be fast — it just needed you to be predictable.",
         "Your snake didn't die… it was euthanized for the greater good.",
@@ -526,7 +538,7 @@
         "Your snake's death was so poetic, the game paused to play a funeral dirge.",
         "You didn't lose to an AI… you lost to the fact that you're not even a challenge.",
         "The bot didn't win… it just waited for you to realize you're bad.",
-        "Your high score? A sad whisper in the void.",
+        'Your high score? A sad whisper in the void.',
         "The bot didn't outplay you — it just outwaited your will to continue.",
         "You didn't die… you just became the game's new 'How Not To Play' tutorial.",
         "The apple you ate? It's now your legacy.",
@@ -541,10 +553,10 @@
         "You didn't lose to a snake… you lost to the concept of 'not being a disaster'.",
         "The apple didn't kill you — your lack of direction did.",
         "The bot didn't win… it just smiled and whispered, 'Pathetic.'",
-        "Your high score? More of a low point.",
+        'Your high score? More of a low point.',
         "You didn't die… you just became the reason snakes have therapy.",
         "The bot didn't need to calculate your moves — it just needed you to exist.",
-        "Your snake didn't die… it retired to a life of peace… far away from you."
+        "Your snake didn't die… it retired to a life of peace… far away from you.",
       ];
 
       const gridSize = 20;
@@ -553,7 +565,7 @@
       let snake = [{ x: 10, y: 10 }];
       let foods = [
         { x: 15, y: 15, type: 'apple' },
-        { x: 5, y: 5, type: 'banana' }
+        { x: 5, y: 5, type: 'banana' },
       ]; // Two fruits on screen at once
       let dx = 0;
       let dy = 0;
@@ -598,7 +610,7 @@
         up: 'ArrowUp',
         down: 'ArrowDown',
         left: 'ArrowLeft',
-        right: 'ArrowRight'
+        right: 'ArrowRight',
       };
       let snakeSize = 1;
       let gameTimer = 0;
@@ -615,10 +627,17 @@
         totalMoves: 0,
         totalFoodEaten: 0,
         deaths: 0,
-        timePlayed: 0
+        timePlayed: 0,
       };
       let headStyle = 'classic';
-      const foodTypes = ['apple', 'banana', 'cherry', 'orange', 'strawberry', 'grape'];
+      const foodTypes = [
+        'apple',
+        'banana',
+        'cherry',
+        'orange',
+        'strawberry',
+        'grape',
+      ];
       let dynamicDifficulty = true;
       let timeMultiplier = 1;
       let trailColor = '#66BB6A';
@@ -801,7 +820,8 @@
         const savedAchievements = localStorage.getItem('snakeAchievements');
         if (savedAchievements) achievements = JSON.parse(savedAchievements);
         const savedCollectedFoods = localStorage.getItem('collectedFoods');
-        if (savedCollectedFoods) collectedFoods = JSON.parse(savedCollectedFoods);
+        if (savedCollectedFoods)
+          collectedFoods = JSON.parse(savedCollectedFoods);
         const savedChallenges = localStorage.getItem('snakeChallenges');
         if (savedChallenges) challenges = JSON.parse(savedChallenges);
         const savedObjectives = localStorage.getItem('snakeObjectives');
@@ -857,7 +877,10 @@
       }
 
       function saveNotifications() {
-        localStorage.setItem('snakeNotifications', JSON.stringify(notifications));
+        localStorage.setItem(
+          'snakeNotifications',
+          JSON.stringify(notifications)
+        );
       }
 
       function toggleWallWrapping() {
@@ -869,11 +892,19 @@
       function changeDifficulty(newDifficulty) {
         difficulty = newDifficulty;
         localStorage.setItem('difficulty', difficulty);
-        switch(difficulty) {
-          case 'easy': customSpeed = 150; break;
-          case 'medium': customSpeed = 100; break;
-          case 'hard': customSpeed = 70; break;
-          case 'insane': customSpeed = 40; break;
+        switch (difficulty) {
+          case 'easy':
+            customSpeed = 150;
+            break;
+          case 'medium':
+            customSpeed = 100;
+            break;
+          case 'hard':
+            customSpeed = 70;
+            break;
+          case 'insane':
+            customSpeed = 40;
+            break;
         }
         localStorage.setItem('gameSpeed', customSpeed);
       }
@@ -892,7 +923,7 @@
           size: Math.random() * 5 + 2,
           speedX: (Math.random() - 0.5) * 4,
           speedY: (Math.random() - 0.5) * 4,
-          life: 30
+          life: 30,
         });
       }
 
@@ -911,7 +942,13 @@
         for (let i = 0; i < particles.length; i++) {
           ctx.fillStyle = particles[i].color;
           ctx.beginPath();
-          ctx.arc(particles[i].x, particles[i].y, particles[i].size, 0, Math.PI * 2);
+          ctx.arc(
+            particles[i].x,
+            particles[i].y,
+            particles[i].size,
+            0,
+            Math.PI * 2
+          );
           ctx.fill();
         }
       }
@@ -921,7 +958,7 @@
           snakeTrail.push({
             x: snake[0].x,
             y: snake[0].y,
-            color: '#66BB6A'
+            color: '#66BB6A',
           });
           if (snakeTrail.length > trailLength) {
             snakeTrail.shift();
@@ -946,7 +983,7 @@
       function updateFoodCollection(type) {
         collectedFoods.push({
           type: type,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
         if (type === 'apple') appleCount++;
         if (type === 'banana') bananaCount++;
@@ -956,52 +993,95 @@
       function checkAchievements() {
         if (score >= 5 && !achievements.includes('first_snake')) {
           achievements.push('first_snake');
-          notifications.push({message: 'First Snake! Score 5 points', time: Date.now()});
+          notifications.push({
+            message: 'First Snake! Score 5 points',
+            time: Date.now(),
+          });
           saveAchievements();
         }
-        if (collectedFoods.length >= 10 && !achievements.includes('food_collector')) {
+        if (
+          collectedFoods.length >= 10 &&
+          !achievements.includes('food_collector')
+        ) {
           achievements.push('food_collector');
-          notifications.push({message: 'Food Collector! Collect 10 foods', time: Date.now()});
+          notifications.push({
+            message: 'Food Collector! Collect 10 foods',
+            time: Date.now(),
+          });
           saveAchievements();
         }
         if (score >= 20 && !achievements.includes('speed_demon')) {
           achievements.push('speed_demon');
-          notifications.push({message: 'Speed Demon! Score 20 points', time: Date.now()});
+          notifications.push({
+            message: 'Speed Demon! Score 20 points',
+            time: Date.now(),
+          });
           saveAchievements();
         }
         if (wrapWalls && !achievements.includes('wall_wrangler')) {
           achievements.push('wall_wrangler');
-          notifications.push({message: 'Wall Wrangler! Wall wrapping enabled', time: Date.now()});
+          notifications.push({
+            message: 'Wall Wrangler! Wall wrapping enabled',
+            time: Date.now(),
+          });
           saveAchievements();
         }
-        if (difficulty === 'insane' && !achievements.includes('master_of_difficulty')) {
+        if (
+          difficulty === 'insane' &&
+          !achievements.includes('master_of_difficulty')
+        ) {
           achievements.push('master_of_difficulty');
-          notifications.push({message: 'Master of Difficulty! Insane mode', time: Date.now()});
+          notifications.push({
+            message: 'Master of Difficulty! Insane mode',
+            time: Date.now(),
+          });
           saveAchievements();
         }
         if (trailLength >= 20 && !achievements.includes('trail_master')) {
           achievements.push('trail_master');
-          notifications.push({message: 'Trail Master! Longest trail', time: Date.now()});
+          notifications.push({
+            message: 'Trail Master! Longest trail',
+            time: Date.now(),
+          });
           saveAchievements();
         }
-        if (currentSkin !== 'classic' && !achievements.includes('color_changer')) {
+        if (
+          currentSkin !== 'classic' &&
+          !achievements.includes('color_changer')
+        ) {
           achievements.push('color_changer');
-          notifications.push({message: 'Color Changer! Custom snake skin', time: Date.now()});
+          notifications.push({
+            message: 'Color Changer! Custom snake skin',
+            time: Date.now(),
+          });
           saveAchievements();
         }
-        if (score >= highScore && score > 0 && !achievements.includes('high_score')) {
+        if (
+          score >= highScore &&
+          score > 0 &&
+          !achievements.includes('high_score')
+        ) {
           achievements.push('high_score');
-          notifications.push({message: 'High Score! Beat your record', time: Date.now()});
+          notifications.push({
+            message: 'High Score! Beat your record',
+            time: Date.now(),
+          });
           saveAchievements();
         }
         if (streak >= 5 && !achievements.includes('streak_master')) {
           achievements.push('streak_master');
-          notifications.push({message: 'Streak Master! 5 consecutive foods', time: Date.now()});
+          notifications.push({
+            message: 'Streak Master! 5 consecutive foods',
+            time: Date.now(),
+          });
           saveAchievements();
         }
         if (gameTime >= 300 && !achievements.includes('time_keeper')) {
           achievements.push('time_keeper');
-          notifications.push({message: 'Time Keeper! Play for 5 minutes', time: Date.now()});
+          notifications.push({
+            message: 'Time Keeper! Play for 5 minutes',
+            time: Date.now(),
+          });
           saveAchievements();
         }
       }
@@ -1018,7 +1098,7 @@
         for (let i = 0; i < snake.length; i++) {
           const segment = snake[i];
           let color;
-          switch(currentSkin) {
+          switch (currentSkin) {
             case 'rainbow':
               const hue = (i * 10) % 360;
               color = `hsl(${hue}, 100%, 50%)`;
@@ -1065,7 +1145,7 @@
         ctx.font = `${gridSize - 4}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        foods.forEach(food => {
+        foods.forEach((food) => {
           let emoji = food.type === 'apple' ? '🍎' : '🍌';
           if (foodAnimation) {
             const scale = 0.8 + Math.sin(Date.now() / 200 + food.x) * 0.2;
@@ -1133,7 +1213,7 @@
               break;
             }
           }
-          
+
           if (!ateFood) {
             snake.pop();
           }
@@ -1204,8 +1284,14 @@
           foods[index].x = Math.floor(Math.random() * tileCount);
           foods[index].y = Math.floor(Math.random() * tileCount);
         } while (
-          snake.some((segment) => segment.x === foods[index].x && segment.y === foods[index].y) ||
-          foods.some((f, i) => i !== index && f.x === foods[index].x && f.y === foods[index].y)
+          snake.some(
+            (segment) =>
+              segment.x === foods[index].x && segment.y === foods[index].y
+          ) ||
+          foods.some(
+            (f, i) =>
+              i !== index && f.x === foods[index].x && f.y === foods[index].y
+          )
         );
         // Keep the same type (apple stays apple, banana stays banana)
         // This way there's always one of each on screen
@@ -1221,11 +1307,12 @@
         gameRunning = false;
         clearInterval(gameLoop);
         finalScoreElement.textContent = score;
-        
+
         // Display random death roast
-        const randomRoast = snakeDeathRoasts[Math.floor(Math.random() * snakeDeathRoasts.length)];
+        const randomRoast =
+          snakeDeathRoasts[Math.floor(Math.random() * snakeDeathRoasts.length)];
         deathRoastElement.textContent = randomRoast;
-        
+
         gameOverElement.style.display = 'block';
 
         // Focus on name input

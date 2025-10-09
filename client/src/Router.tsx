@@ -9,12 +9,14 @@ function Router() {
   return (
     <>
       {!isSnakePage && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 1000
-        }}>
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 1000,
+          }}
+        >
           <Link
             to="/snake"
             style={{
@@ -27,29 +29,33 @@ function Router() {
               fontWeight: '600',
               fontSize: '14px',
               boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+              e.currentTarget.style.boxShadow =
+                '0 6px 16px rgba(102, 126, 234, 0.5)';
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 12px rgba(102, 126, 234, 0.4)';
             }}
           >
             🐍 Play Snake
           </Link>
         </div>
       )}
-      
+
       {isSnakePage && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          left: '20px',
-          zIndex: 1000
-        }}>
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            left: '20px',
+            zIndex: 1000,
+          }}
+        >
           <Link
             to="/"
             style={{
@@ -62,15 +68,17 @@ function Router() {
               fontWeight: '600',
               fontSize: '14px',
               boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+              e.currentTarget.style.boxShadow =
+                '0 6px 16px rgba(102, 126, 234, 0.5)';
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 12px rgba(102, 126, 234, 0.4)';
             }}
           >
             ← Back to Chat
