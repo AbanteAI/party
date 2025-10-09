@@ -6,12 +6,29 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 export const app = express();
 export const PORT = process.env.PORT || 5000;
 export const CLIENT_DIST_PATH = path.join(__dirname, '../../client/dist');
-export const SNAKE_PATH = path.join(__dirname, '../../snake');
 
 // Middleware
 app.use(cors()); // Enable CORS for frontend communication
 app.use(express.json()); // Parse JSON bodies
-app.use('/snake-game', express.static(SNAKE_PATH)); // Serve snake game
+
+// Proxy snake game requests to port 5174
+app.use('/snake-game', async (req: Request, res: Response) => {
+  try {
+    const targetUrl = `http://localhost:5174${req.url}`;
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers: {
+        'content-type': req.headers['content-type'] || 'text/html',
+      },
+    });
+    const data = await response.text();
+    res.status(response.status).send(data);
+  } catch (error) {
+    console.error('Snake proxy error:', error);
+    res.status(500).send('Snake game unavailable');
+  }
+});
+
 app.use(express.static(CLIENT_DIST_PATH)); // Serve static files from client/dist
 
 // Simple request logging
