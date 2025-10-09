@@ -110,7 +110,7 @@ export function setupMultiplayerGame(io: Server) {
       // Create player
       const player: Player = {
         id: socket.id,
-        name: playerName || `Player${room.players.size + 1}`,
+        name: data.playerName || `Player${room.players.size + 1}`,
         snake: [
           {
             x: Math.floor(Math.random() * room.tileCount),
