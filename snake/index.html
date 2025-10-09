@@ -368,11 +368,18 @@
           <div>High Score: <span id="highScore">0</span></div>
         </div>
         <div
+          id="powerUpStatus"
           style="
             margin-top: 10px;
             padding: 10px;
             background: #f8fafc;
             border-radius: 6px;
+            min-height: 40px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
           "
         ></div>
         <div class="controls">Use Arrow Keys or WASD to move</div>
@@ -586,6 +593,29 @@
       const powerUps = [];
       let powerUpTimer = 0;
       const powerUpInterval = 500;
+
+      // Enemy snake
+      let enemySnake = [{ x: 20, y: 20 }];
+      let enemyDx = 1;
+      let enemyDy = 0;
+      let enemyMoveCounter = 0;
+      const enemyMoveDelay = 2; // Enemy moves every 2 frames (slower than player)
+
+      // Power-up types
+      const powerUpTypes = [
+        { type: 'speed', color: '#FFD700', duration: 200, icon: '⚡' },
+        { type: 'ghost', color: '#9370DB', duration: 150, icon: '👻' },
+        { type: 'multiplier', color: '#FF69B4', duration: 250, icon: '✨' },
+        { type: 'shield', color: '#00CED1', duration: 180, icon: '🛡️' },
+      ];
+
+      // Active power-up effects
+      let activePowerUps = {
+        speed: 0,
+        ghost: 0,
+        multiplier: 0,
+        shield: 0,
+      };
       const snakeTrail = [];
       const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
       let audioContext = null;
@@ -1170,6 +1200,247 @@
       // Initialize all features
       initializeFeatures();
 
+      // Power-up functions
+      function spawnPowerUp() {
+        if (powerUps.length < 2 && Math.random() < 0.02) {
+          const powerUpType =
+            powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+          let x, y;
+          do {
+            x = Math.floor(Math.random() * tileCount);
+            y = Math.floor(Math.random() * tileCount);
+          } while (
+            snake.some((s) => s.x === x && s.y === y) ||
+            enemySnake.some((s) => s.x === x && s.y === y) ||
+            foods.some((f) => f.x === x && f.y === y) ||
+            powerUps.some((p) => p.x === x && p.y === y)
+          );
+          powerUps.push({ x, y, ...powerUpType });
+        }
+      }
+
+      function collectPowerUp(head) {
+        for (let i = powerUps.length - 1; i >= 0; i--) {
+          if (head.x === powerUps[i].x && head.y === powerUps[i].y) {
+            const powerUp = powerUps[i];
+            activePowerUps[powerUp.type] = powerUp.duration;
+
+            // Apply immediate effects
+            if (powerUp.type === 'multiplier') {
+              multiplier = 2;
+              multiplierTimer = powerUp.duration;
+            }
+
+            // Add particles
+            for (let j = 0; j < 20; j++) {
+              addParticle(
+                powerUp.x * gridSize + gridSize / 2,
+                powerUp.y * gridSize + gridSize / 2,
+                powerUp.color
+              );
+            }
+
+            powerUps.splice(i, 1);
+            break;
+          }
+        }
+      }
+
+      function updatePowerUps() {
+        // Decrease active power-up timers
+        for (let key in activePowerUps) {
+          if (activePowerUps[key] > 0) {
+            activePowerUps[key]--;
+            if (activePowerUps[key] === 0 && key === 'multiplier') {
+              multiplier = 1;
+            }
+          }
+        }
+
+        // Update power-up status display
+        updatePowerUpDisplay();
+      }
+
+      function updatePowerUpDisplay() {
+        const statusDiv = document.getElementById('powerUpStatus');
+        if (!statusDiv) return;
+
+        let html = '';
+        const iconMap = {
+          speed: '⚡',
+          ghost: '👻',
+          multiplier: '✨',
+          shield: '🛡️',
+        };
+        const colorMap = {
+          speed: '#FFD700',
+          ghost: '#9370DB',
+          multiplier: '#FF69B4',
+          shield: '#00CED1',
+        };
+
+        for (let key in activePowerUps) {
+          if (activePowerUps[key] > 0) {
+            const timeLeft = Math.ceil(activePowerUps[key] / 60); // Convert to seconds
+            html += `
+              <div style="
+                background: ${colorMap[key]};
+                color: white;
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 600;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              ">
+                <span>${iconMap[key]}</span>
+                <span>${key.charAt(0).toUpperCase() + key.slice(1)}</span>
+                <span style="font-size: 12px; opacity: 0.9;">${timeLeft}s</span>
+              </div>
+            `;
+          }
+        }
+
+        if (html === '') {
+          html =
+            '<span style="color: #999; font-size: 14px;">No active power-ups</span>';
+        }
+
+        statusDiv.innerHTML = html;
+      }
+
+      function drawPowerUps() {
+        powerUps.forEach((powerUp) => {
+          // Draw glow effect
+          const glowSize = 5 + Math.sin(Date.now() / 100) * 2;
+          ctx.shadowBlur = glowSize;
+          ctx.shadowColor = powerUp.color;
+          ctx.fillStyle = powerUp.color;
+          ctx.fillRect(
+            powerUp.x * gridSize + 2,
+            powerUp.y * gridSize + 2,
+            gridSize - 4,
+            gridSize - 4
+          );
+          ctx.shadowBlur = 0;
+
+          // Draw icon
+          ctx.font = `${gridSize - 6}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(
+            powerUp.icon,
+            powerUp.x * gridSize + gridSize / 2,
+            powerUp.y * gridSize + gridSize / 2
+          );
+        });
+      }
+
+      // Enemy snake functions
+      function moveEnemySnake() {
+        enemyMoveCounter++;
+        if (enemyMoveCounter < enemyMoveDelay) return;
+        enemyMoveCounter = 0;
+
+        // Simple AI: move towards nearest food
+        const head = enemySnake[0];
+        let nearestFood = foods[0];
+        let minDist =
+          Math.abs(head.x - nearestFood.x) + Math.abs(head.y - nearestFood.y);
+
+        for (let i = 1; i < foods.length; i++) {
+          const dist =
+            Math.abs(head.x - foods[i].x) + Math.abs(head.y - foods[i].y);
+          if (dist < minDist) {
+            minDist = dist;
+            nearestFood = foods[i];
+          }
+        }
+
+        // Decide direction
+        const dx = nearestFood.x - head.x;
+        const dy = nearestFood.y - head.y;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+          enemyDx = dx > 0 ? 1 : -1;
+          enemyDy = 0;
+        } else {
+          enemyDx = 0;
+          enemyDy = dy > 0 ? 1 : -1;
+        }
+
+        // Move enemy
+        const newHead = { x: head.x + enemyDx, y: head.y + enemyDy };
+
+        // Wrap around walls
+        if (newHead.x < 0) newHead.x = tileCount - 1;
+        if (newHead.x >= tileCount) newHead.x = 0;
+        if (newHead.y < 0) newHead.y = tileCount - 1;
+        if (newHead.y >= tileCount) newHead.y = 0;
+
+        enemySnake.unshift(newHead);
+
+        // Check if enemy ate food
+        let ateFood = false;
+        for (let i = 0; i < foods.length; i++) {
+          if (newHead.x === foods[i].x && newHead.y === foods[i].y) {
+            placeFoodAt(i);
+            ateFood = true;
+            break;
+          }
+        }
+
+        if (!ateFood) {
+          enemySnake.pop();
+        }
+
+        // Keep enemy snake from getting too long
+        if (enemySnake.length > 10) {
+          enemySnake.pop();
+        }
+      }
+
+      function drawEnemySnake() {
+        for (let i = 0; i < enemySnake.length; i++) {
+          const segment = enemySnake[i];
+          // Red color for enemy
+          ctx.fillStyle = i === 0 ? '#FF0000' : '#FF6B6B';
+          ctx.fillRect(
+            segment.x * gridSize + 1,
+            segment.y * gridSize + 1,
+            gridSize - 2,
+            gridSize - 2
+          );
+
+          // Add glow effect to head
+          if (i === 0) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#FF0000';
+            ctx.fillRect(
+              segment.x * gridSize + 1,
+              segment.y * gridSize + 1,
+              gridSize - 2,
+              gridSize - 2
+            );
+            ctx.shadowBlur = 0;
+          }
+        }
+      }
+
+      function checkEnemyCollision(head) {
+        // Check if player collides with enemy (unless ghost mode active)
+        if (activePowerUps.ghost > 0) return false;
+
+        for (let i = 0; i < enemySnake.length; i++) {
+          if (head.x === enemySnake[i].x && head.y === enemySnake[i].y) {
+            return true;
+          }
+        }
+        return false;
+      }
+
       function drawGame() {
         // Process buffered input
         if (inputBuffer) {
@@ -1183,10 +1454,19 @@
         ctx.fillStyle = '#f0f0f0';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // Spawn power-ups
+        spawnPowerUp();
+
+        // Move enemy snake
+        moveEnemySnake();
+
         // Move snake
         if (dx !== 0 || dy !== 0) {
           const head = { x: snake[0].x + dx, y: snake[0].y + dy };
           snake.unshift(head);
+
+          // Check power-up collection
+          collectPowerUp(head);
 
           // Check if snake ate any food
           let ateFood = false;
@@ -1218,30 +1498,50 @@
             snake.pop();
           }
 
-          // Check collisions
-          if (
-            head.x < 0 ||
-            head.x >= tileCount ||
-            head.y < 0 ||
-            head.y >= tileCount
-          ) {
-            endGame();
-            return;
-          }
-
-          for (let i = 1; i < snake.length; i++) {
-            if (head.x === snake[i].x && head.y === snake[i].y) {
+          // Check collisions with walls (unless ghost mode active)
+          if (activePowerUps.ghost === 0 && activePowerUps.shield === 0) {
+            if (
+              head.x < 0 ||
+              head.x >= tileCount ||
+              head.y < 0 ||
+              head.y >= tileCount
+            ) {
               endGame();
               return;
             }
           }
+
+          // Check self collision (unless ghost mode or shield active)
+          if (activePowerUps.ghost === 0 && activePowerUps.shield === 0) {
+            for (let i = 1; i < snake.length; i++) {
+              if (head.x === snake[i].x && head.y === snake[i].y) {
+                endGame();
+                return;
+              }
+            }
+          }
+
+          // Check enemy collision (unless shield active)
+          if (activePowerUps.shield === 0 && checkEnemyCollision(head)) {
+            endGame();
+            return;
+          }
         }
+
+        // Update power-ups
+        updatePowerUps();
 
         // Update snake trail
         updateSnakeTrail();
 
         // Draw snake trail
         drawSnakeTrail();
+
+        // Draw enemy snake
+        drawEnemySnake();
+
+        // Draw power-ups
+        drawPowerUps();
 
         // Draw snake with custom skin
         drawCustomSnake();
@@ -1338,12 +1638,28 @@
 
       function restartGame() {
         snake = [{ x: 10, y: 10 }];
+        enemySnake = [{ x: 20, y: 20 }];
+        enemyDx = 1;
+        enemyDy = 0;
+        enemyMoveCounter = 0;
         dx = 0;
         dy = 0;
         score = 0;
         gameSpeed = 100; // Reset speed
         scoreElement.textContent = score;
         gameOverElement.style.display = 'none';
+
+        // Reset power-ups
+        powerUps.length = 0;
+        activePowerUps = {
+          speed: 0,
+          ghost: 0,
+          multiplier: 0,
+          shield: 0,
+        };
+        multiplier = 1;
+        multiplierTimer = 0;
+
         placeFood();
         startGame();
       }
