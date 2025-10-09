@@ -11,22 +11,11 @@ export const CLIENT_DIST_PATH = path.join(__dirname, '../../client/dist');
 app.use(cors()); // Enable CORS for frontend communication
 app.use(express.json()); // Parse JSON bodies
 
-// Proxy snake game requests to port 5174
-app.use('/snake-game', async (req: Request, res: Response) => {
-  try {
-    const targetUrl = `http://localhost:5174${req.url}`;
-    const response = await fetch(targetUrl, {
-      method: req.method,
-      headers: {
-        'content-type': req.headers['content-type'] || 'text/html',
-      },
-    });
-    const data = await response.text();
-    res.status(response.status).send(data);
-  } catch (error) {
-    console.error('Snake proxy error:', error);
-    res.status(500).send('Snake game unavailable');
-  }
+// Serve snake game directly
+const SNAKE_PATH = path.join(__dirname, '../../snake');
+app.use('/snake', express.static(SNAKE_PATH));
+app.get('/snake', (req: Request, res: Response) => {
+  res.sendFile(path.join(SNAKE_PATH, 'index.html'));
 });
 
 app.use(express.static(CLIENT_DIST_PATH)); // Serve static files from client/dist

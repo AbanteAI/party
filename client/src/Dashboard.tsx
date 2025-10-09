@@ -8,6 +8,7 @@ interface AppCard {
   icon: string;
   path: string;
   color: string;
+  external?: boolean;
 }
 
 const apps: AppCard[] = [
@@ -18,6 +19,7 @@ const apps: AppCard[] = [
     icon: '🐍',
     path: '/snake',
     color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    external: true,
   },
   {
     id: 'stock',
@@ -167,61 +169,86 @@ function Dashboard() {
             marginBottom: '40px',
           }}
         >
-          {apps.map((app) => (
-            <Link
-              key={app.id}
-              to={app.path}
-              style={{
-                textDecoration: 'none',
-                background: 'rgba(255,255,255,0.95)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: '20px',
-                padding: '30px',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer',
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-5px)';
-                e.currentTarget.style.boxShadow = '0 15px 50px rgba(0,0,0,0.3)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0,0,0,0.2)';
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '64px',
-                  marginBottom: '15px',
-                  textAlign: 'center',
-                }}
+          {apps.map((app) => {
+            const cardStyle = {
+              textDecoration: 'none',
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              padding: '30px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+              transition: 'all 0.3s ease',
+              cursor: 'pointer',
+              display: 'block',
+            };
+
+            const handleMouseOver = (e: React.MouseEvent<HTMLElement>) => {
+              e.currentTarget.style.transform = 'translateY(-5px)';
+              e.currentTarget.style.boxShadow = '0 15px 50px rgba(0,0,0,0.3)';
+            };
+
+            const handleMouseOut = (e: React.MouseEvent<HTMLElement>) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 10px 40px rgba(0,0,0,0.2)';
+            };
+
+            const cardContent = (
+              <>
+                <div
+                  style={{
+                    fontSize: '64px',
+                    marginBottom: '15px',
+                    textAlign: 'center',
+                  }}
+                >
+                  {app.icon}
+                </div>
+                <h3
+                  style={{
+                    fontSize: '24px',
+                    fontWeight: '600',
+                    color: '#333',
+                    marginBottom: '10px',
+                    textAlign: 'center',
+                  }}
+                >
+                  {app.name}
+                </h3>
+                <p
+                  style={{
+                    fontSize: '14px',
+                    color: '#666',
+                    textAlign: 'center',
+                    lineHeight: '1.5',
+                  }}
+                >
+                  {app.description}
+                </p>
+              </>
+            );
+
+            return app.external ? (
+              <a
+                key={app.id}
+                href={app.path}
+                style={cardStyle}
+                onMouseOver={handleMouseOver}
+                onMouseOut={handleMouseOut}
               >
-                {app.icon}
-              </div>
-              <h3
-                style={{
-                  fontSize: '24px',
-                  fontWeight: '600',
-                  color: '#333',
-                  marginBottom: '10px',
-                  textAlign: 'center',
-                }}
+                {cardContent}
+              </a>
+            ) : (
+              <Link
+                key={app.id}
+                to={app.path}
+                style={cardStyle}
+                onMouseOver={handleMouseOver}
+                onMouseOut={handleMouseOut}
               >
-                {app.name}
-              </h3>
-              <p
-                style={{
-                  fontSize: '14px',
-                  color: '#666',
-                  textAlign: 'center',
-                  lineHeight: '1.5',
-                }}
-              >
-                {app.description}
-              </p>
-            </Link>
-          ))}
+                {cardContent}
+              </Link>
+            );
+          })}
         </div>
 
         {/* Chat Section */}
