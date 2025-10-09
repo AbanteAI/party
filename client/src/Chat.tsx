@@ -91,7 +91,7 @@ export default function Chat() {
                     return newMessages;
                   });
                 }
-              } catch (e) {
+              } catch (_e) {
                 // Skip invalid JSON
               }
             }
