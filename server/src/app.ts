@@ -6,10 +6,12 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 export const app = express();
 export const PORT = process.env.PORT || 5000;
 export const CLIENT_DIST_PATH = path.join(__dirname, '../../client/dist');
+export const SNAKE_PATH = path.join(__dirname, '../../snake');
 
 // Middleware
 app.use(cors()); // Enable CORS for frontend communication
 app.use(express.json()); // Parse JSON bodies
+app.use('/snake-game', express.static(SNAKE_PATH)); // Serve snake game
 app.use(express.static(CLIENT_DIST_PATH)); // Serve static files from client/dist
 
 // Simple request logging

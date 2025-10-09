@@ -22,7 +22,7 @@ function Snake() {
       }}
     >
       <iframe
-        src="http://localhost:5174"
+        src="/snake-game/"
         style={{
           width: '100%',
           height: '100%',
