@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Line } from 'react-chartjs-2';
 
@@ -13,13 +13,7 @@ function Stock() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchStockData();
-    const interval = setInterval(fetchStockData, 60000); // Update every minute
-    return () => clearInterval(interval);
-  }, [symbol]);
-
-  const fetchStockData = async () => {
+  const fetchStockData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/stock/${symbol}`);
@@ -32,7 +26,13 @@ function Stock() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [symbol]);
+
+  useEffect(() => {
+    fetchStockData();
+    const interval = setInterval(fetchStockData, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, [fetchStockData]);
 
   const chartData = stockData
     ? {

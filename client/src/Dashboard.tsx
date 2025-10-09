@@ -37,9 +37,16 @@ const apps: AppCard[] = [
   },
 ];
 
+interface Message {
+  id: number;
+  username: string;
+  message: string;
+  timestamp: string;
+}
+
 function Dashboard() {
   const [linesOfCode] = useState(3991); // Total LOC in repo
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [username, setUsername] = useState('');
   const [messageText, setMessageText] = useState('');
 

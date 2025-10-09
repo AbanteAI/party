@@ -283,7 +283,7 @@ function Polls() {
               0
             );
             const userVote = username
-              ? Object.entries(poll.votes).find(([_, voters]) =>
+              ? Object.entries(poll.votes).find(([, voters]) =>
                   voters.includes(username)
                 )?.[0]
               : null;
