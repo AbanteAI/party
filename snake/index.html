@@ -1424,7 +1424,7 @@
       function requestLobbyList() {
         // Connect temporarily to get lobby list
         if (!socket) {
-          socket = io('http://localhost:5000');
+          socket = io();
           socket.on('connect', () => {
             socket.emit('get_lobbies');
           });
@@ -1496,7 +1496,7 @@
 
         // Connect to Socket.io server if not already connected
         if (!socket || !socket.connected) {
-          socket = io('http://localhost:5000');
+          socket = io();
         }
 
         socket.on('connect', () => {
