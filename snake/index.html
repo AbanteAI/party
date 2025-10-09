@@ -494,6 +494,24 @@
           "
         ></div>
         <div class="controls">Use Arrow Keys or WASD to move</div>
+        <button
+          id="pauseButton"
+          onclick="togglePause()"
+          style="
+            margin-top: 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+          "
+        >
+          ⏸️ Pause
+        </button>
       </div>
 
       <div class="leaderboard" id="leaderboard">
@@ -708,12 +726,14 @@
       let powerUpTimer = 0;
       const powerUpInterval = 500;
 
-      // Enemy snake
-      let enemySnake = [{ x: 20, y: 20 }];
-      let enemyDx = 1;
-      let enemyDy = 0;
-      let enemyMoveCounter = 0;
-      const enemyMoveDelay = 2; // Enemy moves every 2 frames (slower than player)
+      // Enemy snakes (multiple)
+      const NUM_ENEMIES = 3;
+      const ENEMY_COLORS = ['#FF0000', '#FF6B00', '#FF00FF'];
+      let enemySnakes = [];
+      const enemyMoveDelay = 2; // Enemies move every 2 frames (slower than player)
+
+      // Pause state
+      let isPaused = false;
 
       // Power-up types
       const powerUpTypes = [
@@ -984,6 +1004,38 @@
         if (savedEvents) events = JSON.parse(savedEvents);
         const savedNotifications = localStorage.getItem('snakeNotifications');
         if (savedNotifications) notifications = JSON.parse(savedNotifications);
+      }
+
+      function initializeEnemies() {
+        enemySnakes = [];
+        for (let i = 0; i < NUM_ENEMIES; i++) {
+          enemySnakes.push({
+            snake: [
+              {
+                x: Math.floor(Math.random() * tileCount),
+                y: Math.floor(Math.random() * tileCount),
+              },
+            ],
+            dx: 1,
+            dy: 0,
+            moveCounter: 0,
+            color: ENEMY_COLORS[i % ENEMY_COLORS.length],
+            alive: true,
+          });
+        }
+      }
+
+      function togglePause() {
+        if (gameMode !== 'single' || !gameRunning) return;
+
+        isPaused = !isPaused;
+        const pauseButton = document.getElementById('pauseButton');
+
+        if (isPaused) {
+          pauseButton.textContent = '▶️ Resume';
+        } else {
+          pauseButton.textContent = '⏸️ Pause';
+        }
       }
 
       function saveGameStats() {
@@ -1328,6 +1380,7 @@
         const multiBtn = document.getElementById('multiplayerBtn');
         const nameInput = document.getElementById('playerNameInput');
         const lobbyList = document.getElementById('lobbyList');
+        const pauseButton = document.getElementById('pauseButton');
 
         if (mode === 'single') {
           singleBtn.style.background =
@@ -1351,6 +1404,7 @@
             'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
           nameInput.style.display = 'block';
           lobbyList.style.display = 'block';
+          pauseButton.style.display = 'none';
 
           // Stop single player game
           if (gameRunning) {
@@ -1765,109 +1819,185 @@
       }
 
       // Enemy snake functions
-      function moveEnemySnake() {
-        enemyMoveCounter++;
-        if (enemyMoveCounter < enemyMoveDelay) return;
-        enemyMoveCounter = 0;
+      function moveEnemySnakes() {
+        enemySnakes.forEach((enemy) => {
+          if (!enemy.alive) return;
 
-        // Simple AI: move towards nearest food
-        const head = enemySnake[0];
-        let nearestFood = foods[0];
-        let minDist =
-          Math.abs(head.x - nearestFood.x) + Math.abs(head.y - nearestFood.y);
+          enemy.moveCounter++;
+          if (enemy.moveCounter < enemyMoveDelay) return;
+          enemy.moveCounter = 0;
 
-        for (let i = 1; i < foods.length; i++) {
-          const dist =
-            Math.abs(head.x - foods[i].x) + Math.abs(head.y - foods[i].y);
-          if (dist < minDist) {
-            minDist = dist;
-            nearestFood = foods[i];
+          // Simple AI: move towards nearest food
+          const head = enemy.snake[0];
+          let nearestFood = foods[0];
+          let minDist =
+            Math.abs(head.x - nearestFood.x) + Math.abs(head.y - nearestFood.y);
+
+          for (let i = 1; i < foods.length; i++) {
+            const dist =
+              Math.abs(head.x - foods[i].x) + Math.abs(head.y - foods[i].y);
+            if (dist < minDist) {
+              minDist = dist;
+              nearestFood = foods[i];
+            }
           }
-        }
 
-        // Decide direction
-        const dx = nearestFood.x - head.x;
-        const dy = nearestFood.y - head.y;
+          // Decide direction
+          const dx = nearestFood.x - head.x;
+          const dy = nearestFood.y - head.y;
 
-        if (Math.abs(dx) > Math.abs(dy)) {
-          enemyDx = dx > 0 ? 1 : -1;
-          enemyDy = 0;
-        } else {
-          enemyDx = 0;
-          enemyDy = dy > 0 ? 1 : -1;
-        }
-
-        // Move enemy
-        const newHead = { x: head.x + enemyDx, y: head.y + enemyDy };
-
-        // Wrap around walls
-        if (newHead.x < 0) newHead.x = tileCount - 1;
-        if (newHead.x >= tileCount) newHead.x = 0;
-        if (newHead.y < 0) newHead.y = tileCount - 1;
-        if (newHead.y >= tileCount) newHead.y = 0;
-
-        enemySnake.unshift(newHead);
-
-        // Check if enemy ate food
-        let ateFood = false;
-        for (let i = 0; i < foods.length; i++) {
-          if (newHead.x === foods[i].x && newHead.y === foods[i].y) {
-            placeFoodAt(i);
-            ateFood = true;
-            break;
+          if (Math.abs(dx) > Math.abs(dy)) {
+            enemy.dx = dx > 0 ? 1 : -1;
+            enemy.dy = 0;
+          } else {
+            enemy.dx = 0;
+            enemy.dy = dy > 0 ? 1 : -1;
           }
-        }
 
-        if (!ateFood) {
-          enemySnake.pop();
-        }
+          // Move enemy
+          const newHead = { x: head.x + enemy.dx, y: head.y + enemy.dy };
 
-        // Keep enemy snake from getting too long
-        if (enemySnake.length > 10) {
-          enemySnake.pop();
-        }
+          // Wrap around walls
+          if (newHead.x < 0) newHead.x = tileCount - 1;
+          if (newHead.x >= tileCount) newHead.x = 0;
+          if (newHead.y < 0) newHead.y = tileCount - 1;
+          if (newHead.y >= tileCount) newHead.y = 0;
+
+          enemy.snake.unshift(newHead);
+
+          // Check if enemy ate food
+          let ateFood = false;
+          for (let i = 0; i < foods.length; i++) {
+            if (newHead.x === foods[i].x && newHead.y === foods[i].y) {
+              placeFoodAt(i);
+              ateFood = true;
+              break;
+            }
+          }
+
+          if (!ateFood) {
+            enemy.snake.pop();
+          }
+
+          // Keep enemy snake from getting too long
+          if (enemy.snake.length > 10) {
+            enemy.snake.pop();
+          }
+        });
       }
 
-      function drawEnemySnake() {
-        for (let i = 0; i < enemySnake.length; i++) {
-          const segment = enemySnake[i];
-          // Red color for enemy
-          ctx.fillStyle = i === 0 ? '#FF0000' : '#FF6B6B';
-          ctx.fillRect(
-            segment.x * gridSize + 1,
-            segment.y * gridSize + 1,
-            gridSize - 2,
-            gridSize - 2
-          );
+      function drawEnemySnakes() {
+        enemySnakes.forEach((enemy) => {
+          if (!enemy.alive) return;
 
-          // Add glow effect to head
-          if (i === 0) {
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#FF0000';
+          for (let i = 0; i < enemy.snake.length; i++) {
+            const segment = enemy.snake[i];
+            // Use enemy's unique color
+            ctx.fillStyle = i === 0 ? enemy.color : enemy.color + '99';
             ctx.fillRect(
               segment.x * gridSize + 1,
               segment.y * gridSize + 1,
               gridSize - 2,
               gridSize - 2
             );
-            ctx.shadowBlur = 0;
+
+            // Add glow effect to head
+            if (i === 0) {
+              ctx.shadowBlur = 10;
+              ctx.shadowColor = enemy.color;
+              ctx.fillRect(
+                segment.x * gridSize + 1,
+                segment.y * gridSize + 1,
+                gridSize - 2,
+                gridSize - 2
+              );
+              ctx.shadowBlur = 0;
+            }
           }
-        }
+        });
       }
 
       function checkEnemyCollision(head) {
-        // Check if player collides with enemy (unless ghost mode active)
+        // Check if player collides with any enemy (unless ghost mode active)
         if (activePowerUps.ghost > 0) return false;
 
-        for (let i = 0; i < enemySnake.length; i++) {
-          if (head.x === enemySnake[i].x && head.y === enemySnake[i].y) {
-            return true;
+        for (const enemy of enemySnakes) {
+          if (!enemy.alive) continue;
+
+          for (let i = 0; i < enemy.snake.length; i++) {
+            if (head.x === enemy.snake[i].x && head.y === enemy.snake[i].y) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      function checkTailCutting(head) {
+        // Check if player cuts through any enemy's tail
+        for (const enemy of enemySnakes) {
+          if (!enemy.alive) continue;
+
+          // Check if player head crosses enemy's body (not head)
+          for (let i = 1; i < enemy.snake.length; i++) {
+            if (head.x === enemy.snake[i].x && head.y === enemy.snake[i].y) {
+              // Kill enemy and respawn
+              enemy.alive = false;
+              score += 50; // Bonus for killing enemy
+              document.getElementById('score').textContent = score;
+
+              // Respawn enemy after delay
+              setTimeout(() => {
+                enemy.snake = [
+                  {
+                    x: Math.floor(Math.random() * tileCount),
+                    y: Math.floor(Math.random() * tileCount),
+                  },
+                ];
+                enemy.dx = 1;
+                enemy.dy = 0;
+                enemy.moveCounter = 0;
+                enemy.alive = true;
+              }, 2000);
+
+              return true;
+            }
           }
         }
         return false;
       }
 
       function drawGame() {
+        // Clear canvas
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Check if paused
+        if (isPaused) {
+          // Draw everything but don't update
+          drawSnakeTrail();
+          drawEnemySnakes();
+          drawPowerUps();
+          drawCustomSnake();
+          drawAnimatedFood();
+          drawParticles();
+
+          // Draw pause overlay
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 32px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+          ctx.font = '16px Arial';
+          ctx.fillText(
+            'Press P or click Resume',
+            canvas.width / 2,
+            canvas.height / 2 + 40
+          );
+          return;
+        }
+
         // Process buffered input
         if (inputBuffer) {
           dx = inputBuffer.dx;
@@ -1876,15 +2006,11 @@
           inputBuffer = null;
         }
 
-        // Clear canvas
-        ctx.fillStyle = '#f0f0f0';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         // Spawn power-ups
         spawnPowerUp();
 
-        // Move enemy snake
-        moveEnemySnake();
+        // Move enemy snakes
+        moveEnemySnakes();
 
         // Move snake
         if (dx !== 0 || dy !== 0) {
@@ -1946,6 +2072,9 @@
               }
             }
           }
+
+          // Check tail cutting (kill enemies by crossing their tails)
+          checkTailCutting(head);
 
           // Check enemy collision (unless shield active)
           if (activePowerUps.shield === 0 && checkEnemyCollision(head)) {
@@ -2068,16 +2197,14 @@
 
       function restartGame() {
         snake = [{ x: 10, y: 10 }];
-        enemySnake = [{ x: 20, y: 20 }];
-        enemyDx = 1;
-        enemyDy = 0;
-        enemyMoveCounter = 0;
+        initializeEnemies();
         dx = 0;
         dy = 0;
         score = 0;
         gameSpeed = 100; // Reset speed
         scoreElement.textContent = score;
         gameOverElement.style.display = 'none';
+        isPaused = false;
 
         // Reset power-ups
         powerUps.length = 0;
@@ -2091,6 +2218,16 @@
         multiplierTimer = 0;
 
         placeFood();
+
+        // Show pause button in single player
+        const pauseButton = document.getElementById('pauseButton');
+        if (gameMode === 'single') {
+          pauseButton.style.display = 'block';
+          pauseButton.textContent = '⏸️ Pause';
+        } else {
+          pauseButton.style.display = 'none';
+        }
+
         startGame();
       }
 
@@ -2134,6 +2271,16 @@
           if (gameOverElement.style.display === 'block' && e.key === 'Enter') {
             saveScoreAndRestart();
           }
+          return;
+        }
+
+        // Pause/Resume with P key (single player only)
+        if (
+          (e.key === 'p' || e.key === 'P') &&
+          gameMode === 'single' &&
+          gameRunning
+        ) {
+          togglePause();
           return;
         }
 
