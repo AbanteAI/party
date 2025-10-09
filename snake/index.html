@@ -2064,12 +2064,13 @@
       }
 
       function drawGame() {
-        // Clear canvas
-        ctx.fillStyle = '#f0f0f0';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        try {
+          // Clear canvas
+          ctx.fillStyle = '#f0f0f0';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Check if paused
-        if (isPaused) {
+          // Check if paused
+          if (isPaused) {
           // Draw everything but don't update
           drawSnakeTrail();
           drawEnemySnakes();
@@ -2222,11 +2223,22 @@
           multiplier = 1;
         }
 
-        // Update game timer
-        gameTime++;
+          // Update game timer
+          gameTime++;
 
-        // Check achievements
-        checkAchievements();
+          // Check achievements
+          checkAchievements();
+        } catch (error) {
+          console.error('Error in drawGame:', error);
+          // Try to recover by restarting
+          if (gameRunning) {
+            gameRunning = false;
+            setTimeout(() => {
+              console.log('Attempting to recover...');
+              restartGame();
+            }, 1000);
+          }
+        }
       }
 
       function placeFoodAt(index) {
@@ -2346,17 +2358,26 @@
       }
 
       function singlePlayerGameLoop(currentTime) {
-        if (!gameRunning || gameMode !== 'single') return;
+        try {
+          if (!gameRunning || gameMode !== 'single') return;
 
-        const deltaTime = currentTime - lastFrameTime;
+          const deltaTime = currentTime - lastFrameTime;
 
-        // Update game logic based on gameSpeed
-        if (deltaTime >= gameSpeed) {
-          lastFrameTime = currentTime - (deltaTime % gameSpeed);
-          drawGame();
+          // Update game logic based on gameSpeed
+          if (deltaTime >= gameSpeed) {
+            lastFrameTime = currentTime - (deltaTime % gameSpeed);
+            drawGame();
+          }
+
+          gameLoopId = requestAnimationFrame(singlePlayerGameLoop);
+        } catch (error) {
+          console.error('Error in game loop:', error);
+          gameRunning = false;
+          if (gameLoopId) {
+            cancelAnimationFrame(gameLoopId);
+            gameLoopId = null;
+          }
         }
-
-        gameLoopId = requestAnimationFrame(singlePlayerGameLoop);
       }
 
       // Keyboard controls
