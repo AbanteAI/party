@@ -22,6 +22,14 @@ const apps: AppCard[] = [
     external: true,
   },
   {
+    id: 'ai-chat',
+    name: 'AI Chat',
+    description: 'Chat with AI powered by Pollinations API',
+    icon: '🤖',
+    path: '/ai',
+    color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  },
+  {
     id: 'stock',
     name: 'Stock Ticker',
     description: 'Real-time stock data and charts',
