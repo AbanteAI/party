@@ -2,3 +2,4 @@
 **/dist
 .mentat/logs
 **/package-lock.json
+data/

@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code Typeracer 🏎️</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      h1 {
+        color: white;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .version {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #666;
+      }
+
+      .container {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        max-width: 1200px;
+        width: 100%;
+      }
+
+      .game-container {
+        background: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        flex: 1;
+      }
+
+      .stats {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8fafc;
+        border-radius: 8px;
+      }
+
+      .stat {
+        text-align: center;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+
+      .code-display {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 16px;
+        line-height: 1.6;
+        min-height: 150px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .code-display .correct {
+        color: #4ade80;
+      }
+
+      .code-display .incorrect {
+        color: #f87171;
+        background: rgba(248, 113, 113, 0.2);
+      }
+
+      .code-display .cursor {
+        border-left: 3px solid #60a5fa;
+        animation: blink 1s infinite;
+      }
+
+      @keyframes blink {
+        0%,
+        50% {
+          border-left-color: #60a5fa;
+        }
+        51%,
+        100% {
+          border-left-color: transparent;
+        }
+      }
+
+      .input-area {
+        width: 100%;
+        padding: 15px;
+        font-family: inherit;
+        font-size: 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 15px;
+      }
+
+      .input-area:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .input-area:disabled {
+        background: #f3f4f6;
+      }
+
+      .button {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+      }
+
+      .button:hover {
+        background: #5568d3;
+      }
+
+      .button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      .leaderboard {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        min-width: 300px;
+      }
+
+      .leaderboard h2 {
+        color: #333;
+        margin-bottom: 15px;
+        text-align: center;
+        font-size: 20px;
+      }
+
+      .leaderboard-entry {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 12px;
+        margin-bottom: 5px;
+        background: #f8fafc;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      .leaderboard-entry.top-score {
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        font-weight: 600;
+      }
+
+      .leaderboard-rank {
+        color: #666;
+        font-weight: 600;
+        min-width: 30px;
+      }
+
+      .leaderboard-name {
+        flex: 1;
+      }
+
+      .leaderboard-wpm {
+        color: #667eea;
+        font-weight: 600;
+      }
+
+      .leaderboard.hidden {
+        display: none;
+      }
+
+      .toggle-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        z-index: 1000;
+      }
+
+      .toggle-button:hover {
+        background: #5568d3;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          flex-direction: column;
+        }
+
+        .leaderboard {
+          width: 100%;
+          max-width: 500px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🏎️ Code Typeracer 🏎️</h1>
+    <div class="version">v1.1.0</div>
+
+    <div class="container">
+      <div class="game-container">
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">WPM</div>
+            <div class="stat-value" id="wpm">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Accuracy</div>
+            <div class="stat-value" id="accuracy">100%</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Time</div>
+            <div class="stat-value" id="time">0s</div>
+          </div>
+        </div>
+
+        <div class="code-display" id="codeDisplay"></div>
+
+        <input
+          type="text"
+          class="input-area"
+          id="inputArea"
+          placeholder="Click 'Start Race' to begin..."
+          disabled
+        />
+
+        <button class="button" id="startButton" onclick="startRace()">
+          Start Race
+        </button>
+      </div>
+
+      <div class="leaderboard" id="leaderboard">
+        <div
+          style="
+            text-align: center;
+            margin-bottom: 10px;
+            color: #666;
+            font-size: 14px;
+          "
+        >
+          ❤️ @techfren
+        </div>
+        <h2>🏆 Leaderboard</h2>
+        <div id="leaderboardList"></div>
+      </div>
+    </div>
+
+    <button
+      class="toggle-button"
+      id="toggleButton"
+      onclick="toggleLeaderboard()"
+    >
+      Hide Leaderboard
+    </button>
+
+    <script>
+      // Git source code snippets
+      const codeSnippets = [
+        `function apply_patch(state, patch) {
+        const lines = patch.split('\\n');
+        let current_line = 0;
+
+        for (const line of lines) {
+          if (line.startsWith('@@')) {
+            current_line = parse_hunk_header(line);
+          } else if (line.startsWith('+')) {
+            state.insert(current_line++, line.slice(1));
+          } else if (line.startsWith('-')) {
+            state.delete(current_line);
+          } else {
+            current_line++;
+          }
+        }
+      }`,
+        `static int diff_tree(struct tree *t1, struct tree *t2) {
+        struct tree_desc desc[2];
+        void *tree1, *tree2;
+
+        tree1 = read_object_file(&t1->object.oid, &type, &size);
+        tree2 = read_object_file(&t2->object.oid, &type, &size);
+
+        init_tree_desc(&desc[0], tree1, size);
+        init_tree_desc(&desc[1], tree2, size);
+
+        return diff_tree_paths(&desc[0], &desc[1]);
+      }`,
+        `def merge_commits(base, ours, theirs):
+          """Perform a three-way merge."""
+          conflicts = []
+          result = {}
+
+          for key in set(base) | set(ours) | set(theirs):
+              if key not in base:
+                  result[key] = ours.get(key) or theirs.get(key)
+              elif ours.get(key) == theirs.get(key):
+                  result[key] = ours.get(key)
+              else:
+                  conflicts.append(key)
+
+          return result, conflicts`,
+      ];
+
+      let currentSnippet = '';
+      let currentPosition = 0;
+      let startTime = null;
+      let timerInterval = null;
+      let correctChars = 0;
+      let totalChars = 0;
+      let isRacing = false;
+
+      const codeDisplay = document.getElementById('codeDisplay');
+      const inputArea = document.getElementById('inputArea');
+      const startButton = document.getElementById('startButton');
+      const wpmElement = document.getElementById('wpm');
+      const accuracyElement = document.getElementById('accuracy');
+      const timeElement = document.getElementById('time');
+
+      function startRace() {
+        // Reset state
+        currentSnippet =
+          codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+        currentPosition = 0;
+        correctChars = 0;
+        totalChars = 0;
+        startTime = null;
+        isRacing = true;
+
+        // Update UI
+        updateDisplay();
+        inputArea.value = '';
+        inputArea.disabled = false;
+        inputArea.focus();
+        startButton.disabled = true;
+        wpmElement.textContent = '0';
+        accuracyElement.textContent = '100%';
+        timeElement.textContent = '0s';
+      }
+
+      function updateDisplay() {
+        const before = currentSnippet.slice(0, currentPosition);
+        const current = currentSnippet[currentPosition] || '';
+        const after = currentSnippet.slice(currentPosition + 1);
+
+        codeDisplay.innerHTML =
+          `<span class="correct">${escapeHtml(before)}</span>` +
+          `<span class="cursor">${escapeHtml(current)}</span>` +
+          `<span>${escapeHtml(after)}</span>`;
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function updateStats() {
+        if (!startTime) return;
+
+        const elapsed = (Date.now() - startTime) / 1000;
+        const minutes = elapsed / 60;
+        const words = correctChars / 5; // Standard: 5 chars = 1 word
+        const wpm = Math.round(words / minutes) || 0;
+        const accuracy =
+          totalChars > 0 ? Math.round((correctChars / totalChars) * 100) : 100;
+
+        wpmElement.textContent = wpm;
+        accuracyElement.textContent = accuracy + '%';
+        timeElement.textContent = Math.round(elapsed) + 's';
+      }
+
+      async function finishRace() {
+        isRacing = false;
+        clearInterval(timerInterval);
+        inputArea.disabled = true;
+        startButton.disabled = false;
+
+        const elapsed = (Date.now() - startTime) / 1000;
+        const minutes = elapsed / 60;
+        const words = correctChars / 5;
+        const wpm = Math.round(words / minutes) || 0;
+        const accuracy = Math.round((correctChars / totalChars) * 100);
+
+        // Wait a moment before prompting to avoid accidental Enter key submission
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Prompt for name and save score
+        const name =
+          prompt('Enter your name for the leaderboard:') || 'Anonymous';
+        await saveScore(name, wpm, accuracy);
+
+        alert(
+          `Race complete!\\nWPM: ${wpm}\\nAccuracy: ${accuracy}%\\nTime: ${Math.round(elapsed)}s`
+        );
+      }
+
+      inputArea.addEventListener('keydown', (e) => {
+        if (!isRacing) return;
+
+        // Handle Enter key as newline
+        if (e.key === 'Enter') {
+          e.preventDefault();
+
+          if (!startTime) {
+            startTime = Date.now();
+            timerInterval = setInterval(updateStats, 100);
+          }
+
+          const expectedChar = currentSnippet[currentPosition];
+
+          if (expectedChar === '\n') {
+            correctChars++;
+            currentPosition++;
+
+            if (currentPosition >= currentSnippet.length) {
+              finishRace();
+            } else {
+              updateDisplay();
+            }
+          }
+
+          totalChars++;
+          updateStats();
+        }
+
+        // Handle Tab key for indentation
+        if (e.key === 'Tab') {
+          e.preventDefault();
+
+          if (!startTime) {
+            startTime = Date.now();
+            timerInterval = setInterval(updateStats, 100);
+          }
+
+          // Skip through spaces (indentation) when Tab is pressed
+          let spacesSkipped = 0;
+          while (
+            currentPosition < currentSnippet.length &&
+            currentSnippet[currentPosition] === ' ' &&
+            spacesSkipped < 4 // Max 4 spaces per tab
+          ) {
+            correctChars++;
+            currentPosition++;
+            spacesSkipped++;
+          }
+
+          if (spacesSkipped > 0) {
+            totalChars += spacesSkipped;
+            if (currentPosition >= currentSnippet.length) {
+              finishRace();
+            } else {
+              updateDisplay();
+            }
+          }
+
+          updateStats();
+        }
+      });
+
+      inputArea.addEventListener('input', (e) => {
+        if (!isRacing) return;
+
+        if (!startTime) {
+          startTime = Date.now();
+          timerInterval = setInterval(updateStats, 100);
+        }
+
+        const typed = e.target.value;
+        if (typed.length === 0) return;
+
+        const lastChar = typed[typed.length - 1];
+        const expectedChar = currentSnippet[currentPosition];
+
+        // Check if the character is correct
+        if (lastChar === expectedChar) {
+          correctChars++;
+          currentPosition++;
+          e.target.value = '';
+
+          if (currentPosition >= currentSnippet.length) {
+            finishRace();
+          } else {
+            updateDisplay();
+          }
+        } else {
+          // Incorrect character - don't advance
+          e.target.value = '';
+        }
+
+        totalChars++;
+        updateStats();
+      });
+
+      // Initialize
+      updateDisplay();
+      updateLeaderboard();
+
+      // Toggle leaderboard visibility
+      function toggleLeaderboard() {
+        const leaderboard = document.getElementById('leaderboard');
+        const button = document.getElementById('toggleButton');
+
+        if (leaderboard.classList.contains('hidden')) {
+          leaderboard.classList.remove('hidden');
+          button.textContent = 'Hide Leaderboard';
+        } else {
+          leaderboard.classList.add('hidden');
+          button.textContent = 'Show Leaderboard';
+        }
+      }
+
+      async function fetchLeaderboard() {
+        console.log('Fetching typeracer leaderboard...');
+        try {
+          const response = await fetch('/api/typeracer/scores');
+          console.log('Leaderboard response status:', response.status);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Leaderboard data:', data);
+            return data;
+          }
+        } catch (error) {
+          console.error('Error fetching leaderboard:', error);
+        }
+        return [];
+      }
+
+      async function updateLeaderboard() {
+        const leaderboard = await fetchLeaderboard();
+        const leaderboardList = document.getElementById('leaderboardList');
+
+        if (leaderboard.length === 0) {
+          leaderboardList.innerHTML =
+            '<div style="text-align: center; color: #999; padding: 20px;">No scores yet!</div>';
+          return;
+        }
+
+        leaderboardList.innerHTML = leaderboard
+          .map(
+            (entry, index) => `
+                  <div class="leaderboard-entry ${index === 0 ? 'top-score' : ''}">
+                    <span class="leaderboard-rank">#${index + 1}</span>
+                    <span class="leaderboard-name">${entry.name}</span>
+                    <span class="leaderboard-wpm">${entry.wpm} WPM</span>
+                  </div>
+                `
+          )
+          .join('');
+      }
+
+      async function saveScore(name, wpm, accuracy) {
+        console.log('Attempting to save score:', { name, wpm, accuracy });
+        try {
+          const response = await fetch('/api/typeracer/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, wpm, accuracy }),
+          });
+
+          console.log('Response status:', response.status);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Score saved successfully:', data);
+            await updateLeaderboard();
+          } else {
+            const errorText = await response.text();
+            console.error('Failed to save score:', response.status, errorText);
+          }
+        } catch (error) {
+          console.error('Error posting score:', error);
+        }
+      }
+    </script>
+  </body>
+</html>
