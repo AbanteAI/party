@@ -1387,20 +1387,22 @@
           const player = multiplayerPlayers.get(data.playerId);
           if (player) {
             player.alive = false;
+            if (!player.isBot) {
+              player.spectating = true;
+            }
           }
 
           if (data.playerId === myPlayerId) {
-            // You died
+            // You died - enter spectator mode
+            const myPlayer = multiplayerPlayers.get(myPlayerId);
+            if (myPlayer) {
+              myPlayer.spectating = true;
+            }
+
+            // Show spectator message
             setTimeout(() => {
-              if (socket) {
-                socket.disconnect();
-                socket = null;
-              }
-              multiplayerConnected = false;
-              gameRunning = false;
-              clearInterval(gameLoop);
-              alert('You died! Refresh to play again.');
-            }, 1000);
+              alert('You died! You are now spectating. Refresh to play again.');
+            }, 500);
           }
         });
 
@@ -1448,23 +1450,37 @@
           // Draw player name above snake head
           if (player.snake.length > 0) {
             const head = player.snake[0];
+            const displayName = player.isBot
+              ? `🤖 ${player.name}`
+              : player.name;
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 3;
             ctx.font = '12px Arial';
             ctx.textAlign = 'center';
             ctx.strokeText(
-              player.name,
+              displayName,
               head.x * gridSize + gridSize / 2,
               head.y * gridSize - 10
             );
             ctx.fillText(
-              player.name,
+              displayName,
               head.x * gridSize + gridSize / 2,
               head.y * gridSize - 10
             );
           }
         });
+
+        // Draw spectator indicator if player is spectating
+        const myPlayer = multiplayerPlayers.get(myPlayerId);
+        if (myPlayer && myPlayer.spectating) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(0, 0, canvas.width, 40);
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 16px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('👁️ SPECTATING', canvas.width / 2, 25);
+        }
 
         // Update leaderboard
         updateMultiplayerLeaderboard();
