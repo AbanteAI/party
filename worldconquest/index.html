@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Conquest - Mentat Party</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Arial', sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        overflow: hidden;
+      }
+
+      #gameContainer {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 20px;
+      }
+
+      #header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        font-size: 36px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      #gameArea {
+        display: flex;
+        gap: 20px;
+        flex: 1;
+      }
+
+      #mapContainer {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 20px;
+        position: relative;
+      }
+
+      #worldMap {
+        width: 100%;
+        height: 100%;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        background: #2c3e50;
+      }
+
+      #sidebar {
+        width: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .panel {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+      }
+
+      .panel h3 {
+        margin-bottom: 10px;
+        color: #ffd700;
+      }
+
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        margin: 5px 0;
+        padding: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+      }
+
+      button {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 5px;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      button:hover {
+        transform: scale(1.05);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      #countryList {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .country-item {
+        padding: 8px;
+        margin: 5px 0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .country-item:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .country-item.selected {
+        background: rgba(102, 126, 234, 0.5);
+        border: 2px solid #667eea;
+      }
+
+      #startScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      #startScreen h2 {
+        font-size: 48px;
+        margin-bottom: 30px;
+      }
+
+      #startScreen p {
+        font-size: 18px;
+        margin-bottom: 40px;
+        text-align: center;
+        max-width: 600px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="startScreen">
+      <h2>🌍 World Conquest 🌍</h2>
+      <p>
+        Choose your country and conquer the world through strategy, economy, and
+        diplomacy!
+      </p>
+      <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="gameContainer" style="display: none">
+      <div id="header">
+        <h1>🌍 World Conquest</h1>
+      </div>
+
+      <div id="gameArea">
+        <div id="mapContainer">
+          <canvas id="worldMap"></canvas>
+        </div>
+
+        <div id="sidebar">
+          <div class="panel">
+            <h3>Your Empire</h3>
+            <div class="stat">
+              <span>Country:</span>
+              <span id="playerCountry">None</span>
+            </div>
+            <div class="stat">
+              <span>Territories:</span>
+              <span id="territoryCount">0</span>
+            </div>
+            <div class="stat">
+              <span>💰 Gold:</span>
+              <span id="gold">1000</span>
+            </div>
+            <div class="stat">
+              <span>⚔️ Army:</span>
+              <span id="army">100</span>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Actions</h3>
+            <button onclick="recruitArmy()">Recruit Army (100💰)</button>
+            <button onclick="improveEconomy()">Improve Economy (200💰)</button>
+          </div>
+
+          <div class="panel">
+            <h3>Select Country</h3>
+            <div id="countryList"></div>
+          </div>
+
+          <div class="panel">
+            <h3>Game Info</h3>
+            <div class="stat">
+              <span>Turn:</span>
+              <span id="turn">1</span>
+            </div>
+            <button onclick="nextTurn()">Next Turn</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Game state
+      const gameState = {
+        playerCountry: null,
+        countries: {},
+        turn: 1,
+        gold: 1000,
+        army: 100,
+        economyLevel: 1,
+      };
+
+      // Simplified world map data
+      const worldCountries = [
+        {
+          id: 'usa',
+          name: 'United States',
+          x: 150,
+          y: 200,
+          neighbors: ['canada', 'mexico'],
+        },
+        { id: 'canada', name: 'Canada', x: 150, y: 100, neighbors: ['usa'] },
+        { id: 'mexico', name: 'Mexico', x: 150, y: 300, neighbors: ['usa'] },
+        {
+          id: 'brazil',
+          name: 'Brazil',
+          x: 300,
+          y: 450,
+          neighbors: ['argentina'],
+        },
+        {
+          id: 'argentina',
+          name: 'Argentina',
+          x: 280,
+          y: 550,
+          neighbors: ['brazil'],
+        },
+        {
+          id: 'uk',
+          name: 'United Kingdom',
+          x: 500,
+          y: 150,
+          neighbors: ['france', 'germany'],
+        },
+        {
+          id: 'france',
+          name: 'France',
+          x: 520,
+          y: 200,
+          neighbors: ['uk', 'germany', 'spain', 'italy'],
+        },
+        {
+          id: 'germany',
+          name: 'Germany',
+          x: 550,
+          y: 180,
+          neighbors: ['uk', 'france', 'poland', 'russia'],
+        },
+        { id: 'spain', name: 'Spain', x: 480, y: 240, neighbors: ['france'] },
+        { id: 'italy', name: 'Italy', x: 560, y: 240, neighbors: ['france'] },
+        {
+          id: 'poland',
+          name: 'Poland',
+          x: 600,
+          y: 170,
+          neighbors: ['germany', 'russia'],
+        },
+        {
+          id: 'russia',
+          name: 'Russia',
+          x: 700,
+          y: 150,
+          neighbors: ['germany', 'poland', 'china'],
+        },
+        {
+          id: 'china',
+          name: 'China',
+          x: 800,
+          y: 250,
+          neighbors: ['russia', 'india', 'japan'],
+        },
+        { id: 'india', name: 'India', x: 750, y: 300, neighbors: ['china'] },
+        { id: 'japan', name: 'Japan', x: 900, y: 230, neighbors: ['china'] },
+        { id: 'australia', name: 'Australia', x: 850, y: 500, neighbors: [] },
+        {
+          id: 'egypt',
+          name: 'Egypt',
+          x: 580,
+          y: 300,
+          neighbors: ['southafrica'],
+        },
+        {
+          id: 'southafrica',
+          name: 'South Africa',
+          x: 600,
+          y: 500,
+          neighbors: ['egypt'],
+        },
+      ];
+
+      // Initialize countries
+      worldCountries.forEach((country) => {
+        gameState.countries[country.id] = {
+          ...country,
+          owner: null,
+          army: Math.floor(Math.random() * 50) + 50,
+          color: '#888',
+        };
+      });
+
+      let canvas, ctx;
+
+      function startGame() {
+        document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('gameContainer').style.display = 'flex';
+
+        canvas = document.getElementById('worldMap');
+        ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+        // Populate country list
+        const countryList = document.getElementById('countryList');
+        worldCountries.forEach((country) => {
+          const div = document.createElement('div');
+          div.className = 'country-item';
+          div.textContent = country.name;
+          div.onclick = () => selectCountry(country.id);
+          div.id = `country-${country.id}`;
+          countryList.appendChild(div);
+        });
+
+        drawMap();
+      }
+
+      function selectCountry(countryId) {
+        if (gameState.playerCountry) return; // Already selected
+
+        gameState.playerCountry = countryId;
+        gameState.countries[countryId].owner = 'player';
+        gameState.countries[countryId].color = '#4CAF50';
+
+        document.getElementById('playerCountry').textContent =
+          gameState.countries[countryId].name;
+        document
+          .getElementById(`country-${countryId}`)
+          .classList.add('selected');
+
+        updateUI();
+        drawMap();
+      }
+
+      function drawMap() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw connections
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 1;
+        Object.values(gameState.countries).forEach((country) => {
+          country.neighbors.forEach((neighborId) => {
+            const neighbor = gameState.countries[neighborId];
+            ctx.beginPath();
+            ctx.moveTo(country.x, country.y);
+            ctx.lineTo(neighbor.x, neighbor.y);
+            ctx.stroke();
+          });
+        });
+
+        // Draw countries
+        Object.values(gameState.countries).forEach((country) => {
+          // Draw circle for country
+          ctx.fillStyle = country.color;
+          ctx.beginPath();
+          ctx.arc(country.x, country.y, 20, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Draw border
+          ctx.strokeStyle =
+            country.owner === 'player' ? '#FFD700' : 'rgba(255,255,255,0.5)';
+          ctx.lineWidth = country.owner === 'player' ? 3 : 1;
+          ctx.stroke();
+
+          // Draw name
+          ctx.fillStyle = 'white';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(country.name, country.x, country.y + 35);
+
+          // Draw army count
+          ctx.fillText(`⚔️${country.army}`, country.x, country.y);
+        });
+      }
+
+      function updateUI() {
+        const playerTerritories = Object.values(gameState.countries).filter(
+          (c) => c.owner === 'player'
+        ).length;
+        document.getElementById('territoryCount').textContent =
+          playerTerritories;
+        document.getElementById('gold').textContent = gameState.gold;
+        document.getElementById('army').textContent = gameState.army;
+        document.getElementById('turn').textContent = gameState.turn;
+      }
+
+      function recruitArmy() {
+        if (gameState.gold >= 100) {
+          gameState.gold -= 100;
+          gameState.army += 50;
+          updateUI();
+        } else {
+          alert('Not enough gold!');
+        }
+      }
+
+      function improveEconomy() {
+        if (gameState.gold >= 200) {
+          gameState.gold -= 200;
+          gameState.economyLevel++;
+          alert('Economy improved! You will earn more gold per turn.');
+          updateUI();
+        } else {
+          alert('Not enough gold!');
+        }
+      }
+
+      function nextTurn() {
+        gameState.turn++;
+
+        // Generate income
+        const playerTerritories = Object.values(gameState.countries).filter(
+          (c) => c.owner === 'player'
+        ).length;
+        const income = playerTerritories * 50 * gameState.economyLevel;
+        gameState.gold += income;
+
+        // AI moves (simplified)
+        Object.values(gameState.countries).forEach((country) => {
+          if (country.owner !== 'player' && country.owner !== null) {
+            country.army += Math.floor(Math.random() * 10);
+          }
+        });
+
+        updateUI();
+        alert(`Turn ${gameState.turn}\nIncome: +${income}💰`);
+      }
+
+      // Canvas click handler for conquering
+      document.getElementById('worldMap').addEventListener('click', (e) => {
+        if (!gameState.playerCountry) {
+          alert('Please select your starting country first!');
+          return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Find clicked country
+        Object.values(gameState.countries).forEach((country) => {
+          const distance = Math.sqrt(
+            (x - country.x) ** 2 + (y - country.y) ** 2
+          );
+          if (distance < 20) {
+            attemptConquest(country.id);
+          }
+        });
+      });
+
+      function attemptConquest(targetId) {
+        const target = gameState.countries[targetId];
+
+        if (target.owner === 'player') {
+          alert('You already own this territory!');
+          return;
+        }
+
+        // Check if target is neighbor of player territory
+        const playerTerritories = Object.values(gameState.countries).filter(
+          (c) => c.owner === 'player'
+        );
+        const isNeighbor = playerTerritories.some((territory) =>
+          territory.neighbors.includes(targetId)
+        );
+
+        if (!isNeighbor) {
+          alert('You can only attack neighboring territories!');
+          return;
+        }
+
+        // Battle
+        if (gameState.army > target.army) {
+          const casualties = Math.floor(target.army * 0.7);
+          gameState.army -= casualties;
+          target.owner = 'player';
+          target.color = '#4CAF50';
+          target.army = gameState.army - casualties;
+          alert(
+            `Victory! You conquered ${target.name}!\nCasualties: ${casualties}`
+          );
+        } else {
+          alert(`Defeat! ${target.name} has a stronger army.`);
+        }
+
+        updateUI();
+        drawMap();
+      }
+
+      // Resize canvas on window resize
+      window.addEventListener('resize', () => {
+        if (canvas) {
+          canvas.width = canvas.offsetWidth;
+          canvas.height = canvas.offsetHeight;
+          drawMap();
+        }
+      });
+    </script>
+  </body>
+</html>
