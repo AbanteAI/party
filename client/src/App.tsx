@@ -81,7 +81,11 @@ function App() {
             ['Backend', 'Node.js, Express, Jest'],
             ['Utilities', 'TypeScript, ESLint, Prettier'],
           ].map(([title, techs]) => (
-            <div className="section" style={{ textAlign: 'center' }} key={title}>
+            <div
+              className="section"
+              style={{ textAlign: 'center' }}
+              key={title}
+            >
               <div
                 style={{
                   fontWeight: '500',
