@@ -38,11 +38,11 @@ const THEMES = {
     headerBg: 'rgba(0, 0, 0, 0.2)',
     headerText: 'white',
     messageBg: 'rgba(0, 0, 0, 0.3)',
-    userBg: 'rgba(255, 255, 255, 0.9)',
+    userBg: '#ffffff',
     assistantBg: 'rgba(0, 0, 0, 0.3)',
     text: 'white',
     userText: '#1f2937',
-    border: 'rgba(255, 255, 255, 0.1)',
+    border: 'rgba(255, 255, 255, 0.2)',
   },
   ocean: {
     bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
@@ -521,6 +521,14 @@ export default function Chat() {
                         : currentTheme.text,
                     backdropFilter: 'blur(10px)',
                     wordBreak: 'break-word',
+                    border:
+                      message.role === 'user'
+                        ? '2px solid rgba(102, 126, 234, 0.5)'
+                        : 'none',
+                    boxShadow:
+                      message.role === 'user'
+                        ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                        : 'none',
                   }}
                 >
                   {formatMessage(message.content)}
