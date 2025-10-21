@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface AppCard {
   id: string;
@@ -12,6 +13,7 @@ interface AppCard {
 
 export default function Dashboard() {
   const [time, setTime] = useState(new Date());
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -34,7 +36,8 @@ export default function Dashboard() {
       description: 'Chat with AI powered by Pollinations',
       icon: '🤖',
       color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      comingSoon: true,
+      link: '/ai',
+      comingSoon: false,
     },
     {
       id: 'world',
@@ -269,7 +272,14 @@ export default function Dashboard() {
               <button
                 onClick={() => {
                   if (app.link) {
-                    window.open(app.link, '_blank');
+                    if (
+                      app.link.startsWith('/') &&
+                      !app.link.startsWith('/snake')
+                    ) {
+                      navigate(app.link);
+                    } else {
+                      window.open(app.link, '_blank');
+                    }
                   }
                 }}
                 style={{
