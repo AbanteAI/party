@@ -45,7 +45,8 @@ export default function Dashboard() {
       description: 'Strategy game - conquer the world',
       icon: '🌍',
       color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      comingSoon: true,
+      link: '/worldconquest',
+      comingSoon: false,
     },
     {
       id: 'stock',
