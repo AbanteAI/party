@@ -26,7 +26,7 @@ export default function Dashboard() {
       icon: '🐍',
       color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       link: '/snake',
-      comingSoon: true,
+      comingSoon: false,
     },
     {
       id: 'chat',
@@ -267,6 +267,11 @@ export default function Dashboard() {
               </div>
             ) : (
               <button
+                onClick={() => {
+                  if (app.link) {
+                    window.open(app.link, '_blank');
+                  }
+                }}
                 style={{
                   width: '100%',
                   padding: '12px 24px',
