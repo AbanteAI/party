@@ -1425,9 +1425,9 @@ export default function Chat() {
                               style={{
                                 padding: '4px 12px',
                                 borderRadius: '4px',
-                                border: 'none',
-                                background: 'rgba(107, 114, 128, 0.8)',
-                                color: 'white',
+                                border: `1px solid ${currentTheme.border}`,
+                                background: currentTheme.messageBg,
+                                color: currentTheme.text,
                                 fontSize: '11px',
                                 cursor: 'pointer',
                                 fontWeight: 500,
