@@ -58,6 +58,9 @@ const MODE_PROMPTS = {
   rush: 'Respond quickly and concisely. Get straight to the point. Prioritize speed and brevity over detailed explanations.',
 };
 
+const WEB_SEARCH_PROMPT =
+  'You have access to web search. When you need current information or want to search the web, use this format: [SEARCH: your search query]. The system will perform the search and provide you with results. Always cite your sources when using search results.';
+
 const THEMES = {
   light: {
     bg: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
@@ -161,6 +164,7 @@ export default function Chat() {
   const [codeOutputs, setCodeOutputs] = useState<{
     [key: string]: { output: string; error?: string };
   }>({});
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -323,7 +327,7 @@ export default function Chat() {
         return { role: msg.role, content: msg.content };
       });
 
-      // Add system prompts (mode prompt + custom prompt)
+      // Add system prompts (mode prompt + custom prompt + web search)
       const systemPrompts = [];
       if (MODE_PROMPTS[responseMode]) {
         systemPrompts.push({
@@ -335,6 +339,12 @@ export default function Chat() {
         systemPrompts.push({
           role: 'system',
           content: customSettings.systemPrompt,
+        });
+      }
+      if (webSearchEnabled) {
+        systemPrompts.push({
+          role: 'system',
+          content: WEB_SEARCH_PROMPT,
         });
       }
       const messagesWithSystem =
@@ -1999,6 +2009,39 @@ export default function Chat() {
                 </select>
               </div>
             )}
+
+            {/* Web Search Toggle */}
+            <div style={{ marginBottom: '12px' }}>
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '12px',
+                  color: currentTheme.text,
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={webSearchEnabled}
+                  onChange={(e) => setWebSearchEnabled(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                🔍 Enable Web Search (Experimental)
+              </label>
+              <div
+                style={{
+                  fontSize: '10px',
+                  color: currentTheme.text,
+                  opacity: 0.6,
+                  marginTop: '4px',
+                  marginLeft: '24px',
+                }}
+              >
+                AI can search the web using DuckDuckGo and cite sources
+              </div>
+            </div>
 
             <div
               style={{
