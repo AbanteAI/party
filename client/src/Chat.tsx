@@ -14,6 +14,14 @@ import {
   Circle,
   ChevronRight,
   ChevronDown,
+  Image as ImageIcon,
+  Bot,
+  Sun,
+  Moon,
+  Palette,
+  Waves,
+  Trees,
+  Eye,
 } from 'lucide-react';
 
 interface Message {
@@ -918,9 +926,13 @@ export default function Chat() {
               color: currentTheme.headerText,
               fontSize: '24px',
               fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            🤖 AI Chat Enhanced
+            <Bot size={24} />
+            AI Chat Enhanced
           </h1>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
@@ -992,10 +1004,10 @@ export default function Chat() {
                 style={{ color: 'black' }}
               >
                 {model.description}
-                {model.vision ? ' 👁️' : ''}
-                {model.audio ? ' 🎤' : ''}
-                {model.reasoning ? ' 🧠' : ''}
-                {model.tier === 'seed' ? ' 🔑' : ''}
+                {model.vision ? ' [Vision]' : ''}
+                {model.audio ? ' [Audio]' : ''}
+                {model.reasoning ? ' [Reasoning]' : ''}
+                {model.tier === 'seed' ? ' [API Key Required]' : ''}
               </option>
             ))}
           </select>
@@ -1034,22 +1046,22 @@ export default function Chat() {
             }}
           >
             <option value="light" style={{ color: 'black' }}>
-              ☀️ Light
+              Light
             </option>
             <option value="dark" style={{ color: 'black' }}>
-              🌙 Dark
+              Dark
             </option>
             <option value="purple" style={{ color: 'black' }}>
-              💜 Purple
+              Purple
             </option>
             <option value="ocean" style={{ color: 'black' }}>
-              🌊 Ocean
+              Ocean
             </option>
             <option value="forest" style={{ color: 'black' }}>
-              🌲 Forest
+              Forest
             </option>
             <option value="openwebui" style={{ color: 'black' }}>
-              🎨 OpenWebUI
+              OpenWebUI
             </option>
           </select>
           <span style={{ fontSize: '12px', color: currentTheme.text }}>
@@ -1708,10 +1720,13 @@ export default function Chat() {
                   fontSize: '20px',
                   cursor: isLoading ? 'not-allowed' : 'pointer',
                   transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
                 title="Upload images"
               >
-                🖼️
+                <ImageIcon size={20} />
               </button>
             </>
           )}
