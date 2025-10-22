@@ -1801,6 +1801,70 @@ export default function Chat() {
               >
                 📝 System Prompt (optional)
               </label>
+
+              {/* Personality Templates */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '6px',
+                  marginBottom: '8px',
+                  flexWrap: 'wrap',
+                }}
+              >
+                {[
+                  {
+                    name: 'Friendly',
+                    prompt:
+                      'You are a friendly and warm assistant. Be encouraging, use casual language, and show enthusiasm in your responses.',
+                  },
+                  {
+                    name: 'Professional',
+                    prompt:
+                      'You are a professional assistant. Be formal, precise, and maintain a business-like tone in all responses.',
+                  },
+                  {
+                    name: 'Sardonic',
+                    prompt:
+                      'You are a sardonic assistant with a dry wit. Use subtle humor and irony, but remain helpful and informative.',
+                  },
+                  {
+                    name: 'Concise',
+                    prompt:
+                      'You are a concise assistant. Give brief, to-the-point answers without unnecessary elaboration.',
+                  },
+                  {
+                    name: 'Teacher',
+                    prompt:
+                      'You are a patient teacher. Explain concepts clearly, use examples, and encourage learning through questions.',
+                  },
+                ].map((template) => (
+                  <button
+                    key={template.name}
+                    onClick={() =>
+                      setCustomSettings((prev) => ({
+                        ...prev,
+                        systemPrompt: template.prompt,
+                      }))
+                    }
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      border: `1px solid ${currentTheme.border}`,
+                      background:
+                        customSettings.systemPrompt === template.prompt
+                          ? 'rgba(102, 126, 234, 0.3)'
+                          : currentTheme.messageBg,
+                      color: currentTheme.text,
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {template.name}
+                  </button>
+                ))}
+              </div>
+
               <textarea
                 value={customSettings.systemPrompt}
                 onChange={(e) =>
