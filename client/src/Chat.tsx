@@ -154,6 +154,9 @@ export default function Chat() {
   const [thinkingTimestamps, setThinkingTimestamps] = useState<{
     [key: string]: { start: number; end?: number };
   }>({});
+  const [codeOutputs, setCodeOutputs] = useState<{
+    [key: string]: { output: string; error?: string };
+  }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -727,6 +730,47 @@ export default function Chat() {
     }
   };
 
+  const executeCode = (code: string, language: string, codeId: string) => {
+    try {
+      if (language === 'html') {
+        // For HTML, we'll show it in an iframe
+        setCodeOutputs((prev) => ({
+          ...prev,
+          [codeId]: { output: code },
+        }));
+        showToast('HTML rendered successfully!', 'success');
+      } else if (language === 'python') {
+        // For Python, we'll show a message that it's not yet implemented
+        setCodeOutputs((prev) => ({
+          ...prev,
+          [codeId]: {
+            output: '',
+            error:
+              'Python execution coming soon! Install Pyodide library for full Python support.',
+          },
+        }));
+        showToast('Python execution not yet implemented', 'info');
+      } else {
+        setCodeOutputs((prev) => ({
+          ...prev,
+          [codeId]: {
+            output: '',
+            error: `Execution not supported for ${language}`,
+          },
+        }));
+      }
+    } catch (error) {
+      setCodeOutputs((prev) => ({
+        ...prev,
+        [codeId]: {
+          output: '',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      }));
+      showToast('Code execution failed', 'error');
+    }
+  };
+
   const formatMessage = (content: string, messageId: string) => {
     // Check for incomplete <think> tag (streaming in progress)
     const hasOpenThink = content.includes('<think>');
@@ -871,17 +915,203 @@ export default function Chat() {
             );
           } else {
             // Parse markdown for regular text
+            const htmlContent = marked(part.content) as string;
+
+            // Extract code blocks and add run buttons
+            const codeBlockRegex =
+              /<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g;
+            const segments: Array<{
+              type: 'html' | 'code';
+              content: string;
+              language?: string;
+            }> = [];
+            let lastIdx = 0;
+            let codeMatch;
+
+            while ((codeMatch = codeBlockRegex.exec(htmlContent)) !== null) {
+              // Add HTML before code block
+              if (codeMatch.index > lastIdx) {
+                segments.push({
+                  type: 'html',
+                  content: htmlContent.slice(lastIdx, codeMatch.index),
+                });
+              }
+              // Add code block
+              segments.push({
+                type: 'code',
+                content: codeMatch[2]
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&#39;/g, "'"),
+                language: codeMatch[1],
+              });
+              lastIdx = codeMatch.index + codeMatch[0].length;
+            }
+
+            // Add remaining HTML
+            if (lastIdx < htmlContent.length) {
+              segments.push({
+                type: 'html',
+                content: htmlContent.slice(lastIdx),
+              });
+            }
+
+            // If no code blocks, just render the HTML
+            if (segments.length === 0) {
+              return (
+                <div
+                  key={i}
+                  dangerouslySetInnerHTML={{ __html: htmlContent }}
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                  }}
+                />
+              );
+            }
+
+            // Render segments with code execution buttons
             return (
-              <div
-                key={i}
-                dangerouslySetInnerHTML={{
-                  __html: marked(part.content) as string,
-                }}
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '1.6',
-                }}
-              />
+              <div key={i} style={{ fontSize: '14px', lineHeight: '1.6' }}>
+                {segments.map((segment, segIdx) => {
+                  if (segment.type === 'html') {
+                    return (
+                      <div
+                        key={segIdx}
+                        dangerouslySetInnerHTML={{ __html: segment.content }}
+                      />
+                    );
+                  } else {
+                    const codeId = `${messageId}-code-${i}-${segIdx}`;
+                    const output = codeOutputs[codeId];
+                    const isExecutable =
+                      segment.language === 'html' ||
+                      segment.language === 'python';
+
+                    return (
+                      <div key={segIdx} style={{ margin: '12px 0' }}>
+                        <div
+                          style={{
+                            background: 'rgba(0, 0, 0, 0.05)',
+                            borderRadius: '8px 8px 0 0',
+                            padding: '8px 12px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            borderBottom: `1px solid ${currentTheme.border}`,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: '12px',
+                              color: currentTheme.text,
+                              opacity: 0.7,
+                            }}
+                          >
+                            {segment.language}
+                          </span>
+                          {isExecutable && (
+                            <button
+                              onClick={() =>
+                                executeCode(
+                                  segment.content || '',
+                                  segment.language || '',
+                                  codeId
+                                )
+                              }
+                              style={{
+                                padding: '4px 12px',
+                                borderRadius: '4px',
+                                border: 'none',
+                                background: '#10b981',
+                                color: 'white',
+                                fontSize: '11px',
+                                cursor: 'pointer',
+                                fontWeight: 500,
+                              }}
+                            >
+                              ▶ Run Code
+                            </button>
+                          )}
+                        </div>
+                        <pre
+                          style={{
+                            margin: 0,
+                            background: 'rgba(0, 0, 0, 0.03)',
+                            padding: '12px',
+                            borderRadius: '0 0 8px 8px',
+                            overflow: 'auto',
+                          }}
+                        >
+                          <code
+                            style={{
+                              fontSize: '13px',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {segment.content}
+                          </code>
+                        </pre>
+                        {output && (
+                          <div
+                            style={{
+                              marginTop: '8px',
+                              padding: '12px',
+                              background: output.error
+                                ? 'rgba(239, 68, 68, 0.1)'
+                                : 'rgba(16, 185, 129, 0.1)',
+                              borderRadius: '8px',
+                              border: `1px solid ${output.error ? '#ef4444' : '#10b981'}`,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                marginBottom: '8px',
+                                color: output.error ? '#ef4444' : '#10b981',
+                              }}
+                            >
+                              {output.error ? '❌ Error' : '✓ Output'}
+                            </div>
+                            {output.error ? (
+                              <div
+                                style={{ fontSize: '13px', color: '#ef4444' }}
+                              >
+                                {output.error}
+                              </div>
+                            ) : segment.language === 'html' ? (
+                              <iframe
+                                srcDoc={output.output}
+                                style={{
+                                  width: '100%',
+                                  minHeight: '200px',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  background: 'white',
+                                }}
+                                sandbox="allow-scripts"
+                              />
+                            ) : (
+                              <pre
+                                style={{
+                                  margin: 0,
+                                  fontSize: '13px',
+                                  whiteSpace: 'pre-wrap',
+                                }}
+                              >
+                                {output.output}
+                              </pre>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                })}
+              </div>
             );
           }
         })}
