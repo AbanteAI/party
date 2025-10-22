@@ -103,6 +103,8 @@ export default function Chat() {
     reasoningEffort: 'medium',
   });
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -340,7 +342,82 @@ export default function Chat() {
       ]);
     } finally {
       setIsLoading(false);
+      // Generate follow-up questions after assistant responds
+      if (assistantMessage) {
+        generateFollowUpQuestions(assistantMessage);
+      }
     }
+  };
+
+  const generateFollowUpQuestions = async (lastResponse: string) => {
+    setIsGeneratingQuestions(true);
+    setFollowUpQuestions([]);
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      const response = await fetch(
+        'https://text.pollinations.ai/openai/chat/completions',
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: 'openai', // Use fast model for questions
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'Generate 3-5 relevant follow-up questions based on the conversation. Return ONLY a JSON array of strings, nothing else. Example: ["Question 1?", "Question 2?", "Question 3?"]',
+              },
+              {
+                role: 'user',
+                content: `Based on this response, generate follow-up questions:\n\n${lastResponse}`,
+              },
+            ],
+            stream: false,
+            temperature: 0.7,
+            seed: Math.floor(Math.random() * 1000000),
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || '';
+
+        try {
+          // Try to parse as JSON array
+          const questions = JSON.parse(content);
+          if (Array.isArray(questions)) {
+            setFollowUpQuestions(questions.slice(0, 5)); // Max 5 questions
+          }
+        } catch {
+          // If not valid JSON, try to extract questions from text
+          const lines = content
+            .split('\n')
+            .filter((line: string) => line.trim().length > 0)
+            .slice(0, 5);
+          setFollowUpQuestions(lines);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate follow-up questions:', error);
+    } finally {
+      setIsGeneratingQuestions(false);
+    }
+  };
+
+  const sendFollowUpQuestion = (question: string) => {
+    setInput(question);
+    setFollowUpQuestions([]);
+    // Trigger send after a brief delay to allow input to update
+    setTimeout(() => sendMessage(), 100);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1025,6 +1102,75 @@ export default function Chat() {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Follow-up Questions */}
+      {(followUpQuestions.length > 0 || isGeneratingQuestions) && (
+        <div
+          style={{
+            padding: '12px 20px',
+            background: currentTheme.headerBg,
+            borderTop: `1px solid ${currentTheme.border}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: '12px',
+              color: currentTheme.text,
+              marginBottom: '8px',
+              opacity: 0.8,
+            }}
+          >
+            💡 Suggested follow-up questions:
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap',
+            }}
+          >
+            {isGeneratingQuestions ? (
+              <div
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  background: 'rgba(102, 126, 234, 0.2)',
+                  color: currentTheme.text,
+                  fontSize: '13px',
+                }}
+              >
+                ⏳ Generating questions...
+              </div>
+            ) : (
+              followUpQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  onClick={() => sendFollowUpQuestion(question)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: `1px solid ${currentTheme.border}`,
+                    background: currentTheme.messageBg,
+                    color: currentTheme.text,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background =
+                      'rgba(102, 126, 234, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = currentTheme.messageBg;
+                  }}
+                >
+                  {question}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Input */}
       <div
