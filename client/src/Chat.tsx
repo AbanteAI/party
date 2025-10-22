@@ -369,7 +369,7 @@ export default function Chat() {
           method: 'POST',
           headers,
           body: JSON.stringify({
-            model: 'openai', // Use fast model for questions
+            model: 'mistral', // Use Mistral for follow-up questions
             messages: [
               {
                 role: 'system',
