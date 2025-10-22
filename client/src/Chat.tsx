@@ -16,12 +16,6 @@ import {
   ChevronDown,
   Image as ImageIcon,
   Bot,
-  Sun,
-  Moon,
-  Palette,
-  Waves,
-  Trees,
-  Eye,
 } from 'lucide-react';
 
 interface Message {
