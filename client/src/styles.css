@@ -38,3 +38,33 @@ h1 {
     transform: rotate(360deg);
   }
 }
+
+/* Smooth transitions for collapsible content */
+.collapsible-content {
+  transition:
+    max-height 0.3s ease-in-out,
+    opacity 0.3s ease-in-out;
+  overflow: hidden;
+}
+
+.collapsible-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.collapsible-button:hover {
+  opacity: 0.8;
+}
+
+/* Smooth transitions for buttons */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+  transform: translateY(0);
+}
