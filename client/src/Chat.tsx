@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { marked } from 'marked';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -32,7 +33,7 @@ type Theme = 'light' | 'dark' | 'purple' | 'ocean' | 'forest' | 'openwebui';
 const MODE_PROMPTS = {
   none: '',
   reason:
-    'Think through your response step-by-step. Show your reasoning process. Break down complex problems into smaller parts. Explain your thought process clearly.',
+    'Think through your response step-by-step. Wrap your internal reasoning and thought process in <think></think> tags. After your thinking, provide your final answer. Example:\n\n<think>\nLet me break this down:\n1. First consideration...\n2. Second point...\n3. Conclusion...\n</think>\n\nFinal answer here.',
   rush: 'Respond quickly and concisely. Get straight to the point. Prioritize speed and brevity over detailed explanations.',
 };
 
@@ -129,6 +130,9 @@ export default function Chat() {
   const [toasts, setToasts] = useState<
     Array<{ id: string; message: string; type: 'success' | 'error' | 'info' }>
   >([]);
+  const [expandedThinking, setExpandedThinking] = useState<{
+    [key: string]: boolean;
+  }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -702,46 +706,107 @@ export default function Chat() {
     }
   };
 
-  const formatMessage = (content: string) => {
-    // Simple code block detection
-    const parts = content.split(/(```[\s\S]*?```|`[^`]+`)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('```') && part.endsWith('```')) {
-        const code = part.slice(3, -3);
-        return (
-          <pre
-            key={i}
-            style={{
-              background: 'rgba(0, 0, 0, 0.3)',
-              padding: '12px',
-              borderRadius: '8px',
-              overflow: 'auto',
-              margin: '8px 0',
-            }}
-          >
-            <code style={{ fontSize: '13px', fontFamily: 'monospace' }}>
-              {code}
-            </code>
-          </pre>
-        );
-      } else if (part.startsWith('`') && part.endsWith('`')) {
-        return (
-          <code
-            key={i}
-            style={{
-              background: 'rgba(0, 0, 0, 0.2)',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              fontSize: '13px',
-              fontFamily: 'monospace',
-            }}
-          >
-            {part.slice(1, -1)}
-          </code>
-        );
+  const formatMessage = (content: string, messageId: string) => {
+    // Extract <think> tags
+    const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
+    const parts: Array<{ type: 'text' | 'think'; content: string }> = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = thinkRegex.exec(content)) !== null) {
+      // Add text before <think>
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'text',
+          content: content.slice(lastIndex, match.index),
+        });
       }
-      return <span key={i}>{part}</span>;
-    });
+      // Add <think> content
+      parts.push({ type: 'think', content: match[1] });
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < content.length) {
+      parts.push({ type: 'text', content: content.slice(lastIndex) });
+    }
+
+    return (
+      <>
+        {parts.map((part, i) => {
+          if (part.type === 'think') {
+            const thinkId = `${messageId}-think-${i}`;
+            const isExpanded = expandedThinking[thinkId] || false;
+
+            return (
+              <div
+                key={i}
+                style={{
+                  margin: '12px 0',
+                  border: `1px solid ${currentTheme.border}`,
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                }}
+              >
+                <button
+                  onClick={() =>
+                    setExpandedThinking((prev) => ({
+                      ...prev,
+                      [thinkId]: !prev[thinkId],
+                    }))
+                  }
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'rgba(0, 0, 0, 0.05)',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    color: currentTheme.text,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <span>{isExpanded ? '▼' : '▶'}</span>
+                  <span style={{ fontWeight: 500 }}>💭 Chain of Thought</span>
+                </button>
+                {isExpanded && (
+                  <div
+                    style={{
+                      padding: '12px',
+                      background: 'rgba(0, 0, 0, 0.02)',
+                      fontSize: '13px',
+                      whiteSpace: 'pre-wrap',
+                      color: currentTheme.text,
+                      opacity: 0.8,
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: marked(part.content) as string,
+                    }}
+                  />
+                )}
+              </div>
+            );
+          } else {
+            // Parse markdown for regular text
+            return (
+              <div
+                key={i}
+                dangerouslySetInnerHTML={{
+                  __html: marked(part.content) as string,
+                }}
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                }}
+              />
+            );
+          }
+        })}
+      </>
+    );
   };
 
   return (
@@ -1251,7 +1316,7 @@ export default function Chat() {
                           : 'none',
                   }}
                 >
-                  {formatMessage(message.content)}
+                  {formatMessage(message.content, message.id)}
                 </div>
                 <div
                   style={{
