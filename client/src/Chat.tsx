@@ -148,6 +148,9 @@ export default function Chat() {
   const [expandedThinking, setExpandedThinking] = useState<{
     [key: string]: boolean;
   }>({});
+  const [thinkingTimestamps, setThinkingTimestamps] = useState<{
+    [key: string]: { start: number; end?: number };
+  }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -722,6 +725,50 @@ export default function Chat() {
   };
 
   const formatMessage = (content: string, messageId: string) => {
+    // Check for incomplete <think> tag (streaming in progress)
+    const hasOpenThink = content.includes('<think>');
+    const hasCloseThink = content.includes('</think>');
+    const isThinking = hasOpenThink && !hasCloseThink;
+
+    // Track thinking timestamps
+    if (hasOpenThink && !thinkingTimestamps[messageId]) {
+      setThinkingTimestamps((prev) => ({
+        ...prev,
+        [messageId]: { start: Date.now() },
+      }));
+    } else if (
+      hasCloseThink &&
+      thinkingTimestamps[messageId] &&
+      !thinkingTimestamps[messageId].end
+    ) {
+      setThinkingTimestamps((prev) => ({
+        ...prev,
+        [messageId]: { ...prev[messageId], end: Date.now() },
+      }));
+    }
+
+    // If still thinking, show indicator
+    if (isThinking) {
+      return (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px',
+            background: 'rgba(0, 0, 0, 0.05)',
+            borderRadius: '8px',
+            margin: '8px 0',
+          }}
+        >
+          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+          <span style={{ fontSize: '14px', fontStyle: 'italic' }}>
+            Thinking...
+          </span>
+        </div>
+      );
+    }
+
     // Extract <think> tags
     const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
     const parts: Array<{ type: 'text' | 'think'; content: string }> = [];
@@ -752,6 +799,12 @@ export default function Chat() {
           if (part.type === 'think') {
             const thinkId = `${messageId}-think-${i}`;
             const isExpanded = expandedThinking[thinkId] || false;
+
+            // Calculate duration
+            const timestamps = thinkingTimestamps[messageId];
+            const duration = timestamps?.end
+              ? ((timestamps.end - timestamps.start) / 1000).toFixed(1)
+              : null;
 
             return (
               <div
@@ -790,7 +843,11 @@ export default function Chat() {
                     <ChevronRight size={14} />
                   )}
                   <Brain size={14} />
-                  <span style={{ fontWeight: 500 }}>Chain of Thought</span>
+                  <span style={{ fontWeight: 500 }}>
+                    {duration
+                      ? `Thought for ${duration} seconds`
+                      : 'Chain of Thought'}
+                  </span>
                 </button>
                 {isExpanded && (
                   <div
