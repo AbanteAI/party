@@ -552,13 +552,178 @@ export default function Chat() {
     setEditContent(content);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editingId) return;
-    setMessages((prev) =>
-      prev.map((m) => (m.id === editingId ? { ...m, content: editContent } : m))
+
+    // Find the edited message
+    const editedMessage = messages.find((m) => m.id === editingId);
+    if (!editedMessage) return;
+
+    // Update the message
+    const updatedMessages = messages.map((m) =>
+      m.id === editingId ? { ...m, content: editContent } : m
     );
-    setEditingId(null);
-    setEditContent('');
+
+    // If it's a user message, regenerate the response
+    if (editedMessage.role === 'user') {
+      // Find the index of the edited message
+      const editedIndex = updatedMessages.findIndex((m) => m.id === editingId);
+
+      // Remove all messages after the edited message
+      const messagesUpToEdit = updatedMessages.slice(0, editedIndex + 1);
+      setMessages(messagesUpToEdit);
+      setEditingId(null);
+      setEditContent('');
+
+      // Trigger regeneration
+      setIsLoading(true);
+      let assistantMessage = '';
+
+      try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+
+        if (apiKey) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+
+        // Format messages for API
+        const formattedMessages = messagesUpToEdit.map((msg) => {
+          if (msg.images && msg.images.length > 0) {
+            return {
+              role: msg.role,
+              content: [
+                { type: 'text', text: msg.content },
+                ...msg.images.map((img) => ({
+                  type: 'image_url',
+                  image_url: { url: img },
+                })),
+              ],
+            };
+          }
+          return { role: msg.role, content: msg.content };
+        });
+
+        // Add system prompts
+        const systemPrompts = [];
+        if (MODE_PROMPTS[responseMode]) {
+          systemPrompts.push({
+            role: 'system',
+            content: MODE_PROMPTS[responseMode],
+          });
+        }
+        if (customSettings.systemPrompt) {
+          systemPrompts.push({
+            role: 'system',
+            content: customSettings.systemPrompt,
+          });
+        }
+        const messagesWithSystem =
+          systemPrompts.length > 0
+            ? [...systemPrompts, ...formattedMessages]
+            : formattedMessages;
+
+        const currentModel = models.find((m) => m.name === selectedModel);
+        const requestBody: {
+          model: string;
+          messages: unknown[];
+          stream: boolean;
+          seed: number;
+          temperature: number;
+          reasoning_effort?: string;
+        } = {
+          model: selectedModel,
+          messages: messagesWithSystem,
+          stream: true,
+          seed: Math.floor(Math.random() * 1000000),
+          temperature: customSettings.temperature,
+        };
+
+        if (currentModel?.reasoning) {
+          requestBody.reasoning_effort = customSettings.reasoningEffort;
+        }
+
+        const response = await fetch(
+          'https://text.pollinations.ai/openai/chat/completions',
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to get response');
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (reader) {
+          const assistantId = (Date.now() + 1).toString();
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: '', id: assistantId },
+          ]);
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+
+                try {
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content;
+                  if (content) {
+                    assistantMessage += content;
+                    setMessages((prev) => {
+                      const newMessages = [...prev];
+                      newMessages[newMessages.length - 1] = {
+                        role: 'assistant',
+                        content: assistantMessage,
+                        id: assistantId,
+                      };
+                      return newMessages;
+                    });
+                  }
+                } catch {
+                  // Skip invalid JSON
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('Failed to regenerate response. Please try again.', 'error');
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Sorry, I encountered an error. Please try again.',
+            id: Date.now().toString(),
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+        if (assistantMessage) {
+          generateFollowUpQuestions(assistantMessage);
+        }
+      }
+    } else {
+      // If it's not a user message, just update it
+      setMessages(updatedMessages);
+      setEditingId(null);
+      setEditContent('');
+    }
   };
 
   const regenerateResponse = async () => {
