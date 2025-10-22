@@ -341,7 +341,7 @@ export default function Chat() {
           content: customSettings.systemPrompt,
         });
       }
-      if (webSearchEnabled) {
+      if (webSearchEnabled && selectedModel !== 'gemini-search') {
         systemPrompts.push({
           role: 'system',
           content: WEB_SEARCH_PROMPT,
