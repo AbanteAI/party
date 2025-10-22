@@ -25,7 +25,16 @@ interface CustomSettings {
   reasoningEffort: 'low' | 'medium' | 'high';
 }
 
+type ResponseMode = 'none' | 'reason' | 'rush';
+
 type Theme = 'light' | 'dark' | 'purple' | 'ocean' | 'forest';
+
+const MODE_PROMPTS = {
+  none: '',
+  reason:
+    'Think through your response step-by-step. Show your reasoning process. Break down complex problems into smaller parts. Explain your thought process clearly.',
+  rush: 'Respond quickly and concisely. Get straight to the point. Prioritize speed and brevity over detailed explanations.',
+};
 
 const THEMES = {
   light: {
@@ -105,6 +114,7 @@ export default function Chat() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [responseMode, setResponseMode] = useState<ResponseMode>('none');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,6 +124,7 @@ export default function Chat() {
     const savedTheme = localStorage.getItem('chat-theme');
     const savedApiKey = localStorage.getItem('chat-api-key');
     const savedSettings = localStorage.getItem('chat-custom-settings');
+    const savedMode = localStorage.getItem('chat-response-mode');
 
     if (saved) {
       try {
@@ -134,6 +145,9 @@ export default function Chat() {
       } catch (e) {
         console.error('Failed to load settings:', e);
       }
+    }
+    if (savedMode) {
+      setResponseMode(savedMode as ResponseMode);
     }
   }, []);
 
@@ -186,6 +200,11 @@ export default function Chat() {
       JSON.stringify(customSettings)
     );
   }, [customSettings]);
+
+  // Save response mode
+  useEffect(() => {
+    localStorage.setItem('chat-response-mode', responseMode);
+  }, [responseMode]);
 
   const currentTheme = THEMES[theme];
 
@@ -245,13 +264,24 @@ export default function Chat() {
         return { role: msg.role, content: msg.content };
       });
 
-      // Add system prompt if set
-      const messagesWithSystem = customSettings.systemPrompt
-        ? [
-            { role: 'system', content: customSettings.systemPrompt },
-            ...formattedMessages,
-          ]
-        : formattedMessages;
+      // Add system prompts (mode prompt + custom prompt)
+      const systemPrompts = [];
+      if (MODE_PROMPTS[responseMode]) {
+        systemPrompts.push({
+          role: 'system',
+          content: MODE_PROMPTS[responseMode],
+        });
+      }
+      if (customSettings.systemPrompt) {
+        systemPrompts.push({
+          role: 'system',
+          content: customSettings.systemPrompt,
+        });
+      }
+      const messagesWithSystem =
+        systemPrompts.length > 0
+          ? [...systemPrompts, ...formattedMessages]
+          : formattedMessages;
 
       const currentModel = models.find((m) => m.name === selectedModel);
       const requestBody: {
@@ -504,12 +534,24 @@ export default function Chat() {
         return { role: msg.role, content: msg.content };
       });
 
-      const messagesWithSystem = customSettings.systemPrompt
-        ? [
-            { role: 'system', content: customSettings.systemPrompt },
-            ...formattedMessages,
-          ]
-        : formattedMessages;
+      // Add system prompts (mode prompt + custom prompt)
+      const systemPrompts = [];
+      if (MODE_PROMPTS[responseMode]) {
+        systemPrompts.push({
+          role: 'system',
+          content: MODE_PROMPTS[responseMode],
+        });
+      }
+      if (customSettings.systemPrompt) {
+        systemPrompts.push({
+          role: 'system',
+          content: customSettings.systemPrompt,
+        });
+      }
+      const messagesWithSystem =
+        systemPrompts.length > 0
+          ? [...systemPrompts, ...formattedMessages]
+          : formattedMessages;
 
       const currentModel = models.find((m) => m.name === selectedModel);
       const requestBody: {
@@ -1310,6 +1352,50 @@ export default function Chat() {
           borderTop: `1px solid ${currentTheme.border}`,
         }}
       >
+        {/* Response Mode Selector */}
+        <div
+          style={{
+            marginBottom: '12px',
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '12px',
+              color: currentTheme.text,
+              opacity: 0.8,
+            }}
+          >
+            Mode:
+          </span>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {(['none', 'reason', 'rush'] as ResponseMode[]).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setResponseMode(mode)}
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: '6px',
+                  border: `1px solid ${currentTheme.border}`,
+                  background:
+                    responseMode === mode
+                      ? 'rgba(102, 126, 234, 0.3)'
+                      : currentTheme.messageBg,
+                  color: currentTheme.text,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {mode === 'none' && '⭕ None'}
+                {mode === 'reason' && '🧠 Reason'}
+                {mode === 'rush' && '⚡ Rush'}
+              </button>
+            ))}
+          </div>
+        </div>
         {/* Image Preview */}
         {uploadedImages.length > 0 && (
           <div
