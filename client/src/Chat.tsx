@@ -1,5 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
 import { marked } from 'marked';
+import {
+  Settings,
+  Key,
+  Trash2,
+  Copy,
+  Edit3,
+  RotateCcw,
+  Send,
+  Loader2,
+  Lightbulb,
+  Brain,
+  Eye,
+  Mic,
+  Zap,
+  Circle,
+  ChevronRight,
+  ChevronDown,
+  Thermometer,
+  Sparkles,
+} from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -33,7 +53,7 @@ type Theme = 'light' | 'dark' | 'purple' | 'ocean' | 'forest' | 'openwebui';
 const MODE_PROMPTS = {
   none: '',
   reason:
-    'Think through your response step-by-step. Wrap your internal reasoning and thought process in <think></think> tags. After your thinking, provide your final answer. Example:\n\n<think>\nLet me break this down:\n1. First consideration...\n2. Second point...\n3. Conclusion...\n</think>\n\nFinal answer here.',
+    'You are in reasoning mode. Show your complete chain of thought by wrapping your internal reasoning process in <think></think> tags.\n\nInside <think> tags:\n- Break down the problem step-by-step\n- Consider multiple approaches\n- Evaluate trade-offs and alternatives\n- Show your logical progression\n- Question your assumptions\n- Verify your conclusions\n\nAfter the </think> tag, provide your final, polished answer.\n\nExample structure:\n<think>\n1. Understanding the problem: [analysis]\n2. Possible approaches: [options]\n3. Evaluating trade-offs: [comparison]\n4. Selected approach: [decision]\n5. Verification: [check]\n</think>\n\n[Your final, clear answer here]',
   rush: 'Respond quickly and concisely. Get straight to the point. Prioritize speed and brevity over detailed explanations.',
 };
 
@@ -769,8 +789,13 @@ export default function Chat() {
                     gap: '8px',
                   }}
                 >
-                  <span>{isExpanded ? '▼' : '▶'}</span>
-                  <span style={{ fontWeight: 500 }}>💭 Chain of Thought</span>
+                  {isExpanded ? (
+                    <ChevronDown size={14} />
+                  ) : (
+                    <ChevronRight size={14} />
+                  )}
+                  <Brain size={14} />
+                  <span style={{ fontWeight: 500 }}>Chain of Thought</span>
                 </button>
                 {isExpanded && (
                   <div
@@ -860,7 +885,8 @@ export default function Chat() {
                 cursor: 'pointer',
               }}
             >
-              ⚙️ Settings
+              <Settings size={14} style={{ marginRight: '4px' }} />
+              Settings
             </button>
             <button
               onClick={clearChat}
@@ -872,9 +898,12 @@ export default function Chat() {
                 color: 'white',
                 fontSize: '12px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
               }}
             >
-              🗑️ Clear
+              <Trash2 size={14} style={{ marginRight: '4px' }} />
+              Clear
             </button>
           </div>
         </div>
@@ -920,6 +949,7 @@ export default function Chat() {
           </select>
           <button
             onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+            title={apiKey ? 'API Key Set' : 'Set API Key'}
             style={{
               padding: '8px 12px',
               borderRadius: '8px',
@@ -930,10 +960,13 @@ export default function Chat() {
               color: currentTheme.text,
               fontSize: '14px',
               cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
             }}
-            title={apiKey ? 'API Key Set' : 'Set API Key'}
           >
-            🔑 {apiKey ? '✓' : 'API Key'}
+            <Key size={14} />
+            {apiKey ? '✓' : 'API Key'}
           </button>
           <select
             value={theme}
@@ -1339,7 +1372,7 @@ export default function Chat() {
                     }}
                     title="Copy"
                   >
-                    📋
+                    <Copy size={14} />
                   </button>
                   {message.role === 'user' && (
                     <button
@@ -1355,7 +1388,7 @@ export default function Chat() {
                       }}
                       title="Edit"
                     >
-                      ✏️
+                      <Edit3 size={14} />
                     </button>
                   )}
                   <button
@@ -1371,7 +1404,7 @@ export default function Chat() {
                     }}
                     title="Delete"
                   >
-                    🗑️
+                    <Trash2 size={14} />
                   </button>
                   {message.role === 'assistant' &&
                     messages[messages.length - 1].id === message.id && (
@@ -1388,7 +1421,7 @@ export default function Chat() {
                         }}
                         title="Regenerate"
                       >
-                        🔄
+                        <RotateCcw size={14} />
                       </button>
                     )}
                 </div>
@@ -1513,11 +1546,29 @@ export default function Chat() {
                   fontSize: '12px',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
                 }}
               >
-                {mode === 'none' && '⭕ None'}
-                {mode === 'reason' && '🧠 Reason'}
-                {mode === 'rush' && '⚡ Rush'}
+                {mode === 'none' && (
+                  <>
+                    <Circle size={12} />
+                    None
+                  </>
+                )}
+                {mode === 'reason' && (
+                  <>
+                    <Brain size={12} />
+                    Reason
+                  </>
+                )}
+                {mode === 'rush' && (
+                  <>
+                    <Zap size={12} />
+                    Rush
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -1645,9 +1696,23 @@ export default function Chat() {
               cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s',
               minWidth: '80px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              justifyContent: 'center',
             }}
           >
-            {isLoading ? '⏳' : '📤 Send'}
+            {isLoading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Sending
+              </>
+            ) : (
+              <>
+                <Send size={16} />
+                Send
+              </>
+            )}
           </button>
         </div>
         <div
