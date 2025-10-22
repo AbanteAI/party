@@ -4,6 +4,7 @@ interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   id: string;
+  images?: string[]; // Base64 encoded images
 }
 
 interface Model {
@@ -16,6 +17,12 @@ interface Model {
   reasoning?: boolean;
   maxInputChars?: number;
   aliases?: string[];
+}
+
+interface CustomSettings {
+  systemPrompt: string;
+  temperature: number;
+  reasoningEffort: 'low' | 'medium' | 'high';
 }
 
 type Theme = 'light' | 'dark' | 'purple' | 'ocean' | 'forest';
@@ -89,13 +96,22 @@ export default function Chat() {
   const [apiKey, setApiKey] = useState('');
   const [models, setModels] = useState<Model[]>([]);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [customSettings, setCustomSettings] = useState<CustomSettings>({
+    systemPrompt: '',
+    temperature: 0.7,
+    reasoningEffort: 'medium',
+  });
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved data
   useEffect(() => {
     const saved = localStorage.getItem('chat-messages');
     const savedTheme = localStorage.getItem('chat-theme');
     const savedApiKey = localStorage.getItem('chat-api-key');
+    const savedSettings = localStorage.getItem('chat-custom-settings');
 
     if (saved) {
       try {
@@ -109,6 +125,13 @@ export default function Chat() {
     }
     if (savedApiKey) {
       setApiKey(savedApiKey);
+    }
+    if (savedSettings) {
+      try {
+        setCustomSettings(JSON.parse(savedSettings));
+      } catch (e) {
+        console.error('Failed to load settings:', e);
+      }
     }
   }, []);
 
@@ -154,6 +177,14 @@ export default function Chat() {
     }
   }, [apiKey]);
 
+  // Save custom settings
+  useEffect(() => {
+    localStorage.setItem(
+      'chat-custom-settings',
+      JSON.stringify(customSettings)
+    );
+  }, [customSettings]);
+
   const currentTheme = THEMES[theme];
 
   // Filter models based on API key
@@ -177,9 +208,11 @@ export default function Chat() {
       role: 'user',
       content: input,
       id: Date.now().toString(),
+      images: uploadedImages.length > 0 ? [...uploadedImages] : undefined,
     };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setUploadedImages([]); // Clear uploaded images after sending
     setIsLoading(true);
 
     try {
@@ -191,17 +224,51 @@ export default function Chat() {
         headers['Authorization'] = `Bearer ${apiKey}`;
       }
 
+      // Format messages for API (handle images for vision models)
+      const formattedMessages = [...messages, userMessage].map((msg) => {
+        if (msg.images && msg.images.length > 0) {
+          return {
+            role: msg.role,
+            content: [
+              { type: 'text', text: msg.content },
+              ...msg.images.map((img) => ({
+                type: 'image_url',
+                image_url: { url: img },
+              })),
+            ],
+          };
+        }
+        return { role: msg.role, content: msg.content };
+      });
+
+      // Add system prompt if set
+      const messagesWithSystem = customSettings.systemPrompt
+        ? [
+            { role: 'system', content: customSettings.systemPrompt },
+            ...formattedMessages,
+          ]
+        : formattedMessages;
+
+      const currentModel = models.find((m) => m.name === selectedModel);
+      const requestBody: any = {
+        model: selectedModel,
+        messages: messagesWithSystem,
+        stream: true,
+        seed: Math.floor(Math.random() * 1000000), // Cache busting
+        temperature: customSettings.temperature,
+      };
+
+      // Add reasoning effort for reasoning models
+      if (currentModel?.reasoning) {
+        requestBody.reasoning_effort = customSettings.reasoningEffort;
+      }
+
       const response = await fetch(
         'https://text.pollinations.ai/openai/chat/completions',
         {
           method: 'POST',
           headers,
-          body: JSON.stringify({
-            model: selectedModel,
-            messages: [...messages, userMessage],
-            stream: true,
-            seed: Math.floor(Math.random() * 1000000), // Cache busting
-          }),
+          body: JSON.stringify(requestBody),
         }
       );
 
@@ -267,6 +334,26 @@ export default function Chat() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target?.result as string;
+          setUploadedImages((prev) => [...prev, base64]);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const copyMessage = (content: string) => {
@@ -399,6 +486,22 @@ export default function Chat() {
             🤖 AI Chat Enhanced
           </h1>
           <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: showSettings
+                  ? 'rgba(102, 126, 234, 0.8)'
+                  : 'rgba(107, 114, 128, 0.8)',
+                color: 'white',
+                fontSize: '12px',
+                cursor: 'pointer',
+              }}
+            >
+              ⚙️ Settings
+            </button>
             <button
               onClick={clearChat}
               style={{
@@ -563,6 +666,155 @@ export default function Chat() {
               }}
             >
               💡 Seed-tier models (marked with 🔑) require an API key
+            </div>
+          </div>
+        )}
+        {showSettings && (
+          <div
+            style={{
+              marginTop: '10px',
+              padding: '12px',
+              background: 'rgba(0, 0, 0, 0.1)',
+              borderRadius: '8px',
+            }}
+          >
+            <div
+              style={{
+                marginBottom: '12px',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: currentTheme.text,
+              }}
+            >
+              ⚙️ Custom Settings
+            </div>
+
+            {/* System Prompt */}
+            <div style={{ marginBottom: '12px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '6px',
+                  fontSize: '12px',
+                  color: currentTheme.text,
+                }}
+              >
+                📝 System Prompt (optional)
+              </label>
+              <textarea
+                value={customSettings.systemPrompt}
+                onChange={(e) =>
+                  setCustomSettings((prev) => ({
+                    ...prev,
+                    systemPrompt: e.target.value,
+                  }))
+                }
+                placeholder="e.g., You are a helpful coding assistant..."
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: `1px solid ${currentTheme.border}`,
+                  background: currentTheme.messageBg,
+                  color: currentTheme.text,
+                  fontSize: '13px',
+                  minHeight: '60px',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+
+            {/* Temperature */}
+            <div style={{ marginBottom: '12px' }}>
+              <label
+                style={{
+                  display: 'block',
+                  marginBottom: '6px',
+                  fontSize: '12px',
+                  color: currentTheme.text,
+                }}
+              >
+                🌡️ Temperature: {customSettings.temperature.toFixed(1)}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value={customSettings.temperature}
+                onChange={(e) =>
+                  setCustomSettings((prev) => ({
+                    ...prev,
+                    temperature: parseFloat(e.target.value),
+                  }))
+                }
+                style={{ width: '100%' }}
+              />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: '10px',
+                  color: currentTheme.text,
+                  opacity: 0.6,
+                  marginTop: '4px',
+                }}
+              >
+                <span>Precise (0.0)</span>
+                <span>Balanced (1.0)</span>
+                <span>Creative (2.0)</span>
+              </div>
+            </div>
+
+            {/* Reasoning Effort */}
+            {models.find((m) => m.name === selectedModel)?.reasoning && (
+              <div style={{ marginBottom: '12px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '6px',
+                    fontSize: '12px',
+                    color: currentTheme.text,
+                  }}
+                >
+                  🧠 Reasoning Effort
+                </label>
+                <select
+                  value={customSettings.reasoningEffort}
+                  onChange={(e) =>
+                    setCustomSettings((prev) => ({
+                      ...prev,
+                      reasoningEffort: e.target.value as
+                        | 'low'
+                        | 'medium'
+                        | 'high',
+                    }))
+                  }
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${currentTheme.border}`,
+                    background: currentTheme.messageBg,
+                    color: currentTheme.text,
+                    fontSize: '13px',
+                  }}
+                >
+                  <option value="low">Low - Faster</option>
+                  <option value="medium">Medium - Balanced</option>
+                  <option value="high">High - More thorough</option>
+                </select>
+              </div>
+            )}
+
+            <div
+              style={{
+                fontSize: '11px',
+                color: currentTheme.text,
+                opacity: 0.7,
+              }}
+            >
+              💡 Settings are saved automatically
             </div>
           </div>
         )}
@@ -776,7 +1028,96 @@ export default function Chat() {
           borderTop: `1px solid ${currentTheme.border}`,
         }}
       >
+        {/* Image Preview */}
+        {uploadedImages.length > 0 && (
+          <div
+            style={{
+              marginBottom: '12px',
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap',
+            }}
+          >
+            {uploadedImages.map((img, index) => (
+              <div
+                key={index}
+                style={{
+                  position: 'relative',
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  border: `2px solid ${currentTheme.border}`,
+                }}
+              >
+                <img
+                  src={img}
+                  alt={`Upload ${index + 1}`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+                <button
+                  onClick={() => removeImage(index)}
+                  style={{
+                    position: 'absolute',
+                    top: '4px',
+                    right: '4px',
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: 'rgba(239, 68, 68, 0.9)',
+                    color: 'white',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+          {/* Image Upload Button */}
+          {models.find((m) => m.name === selectedModel)?.vision && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                style={{
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background:
+                    uploadedImages.length > 0
+                      ? 'rgba(16, 185, 129, 0.8)'
+                      : currentTheme.messageBg,
+                  color: currentTheme.text,
+                  fontSize: '20px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                title="Upload images"
+              >
+                🖼️
+              </button>
+            </>
+          )}
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
