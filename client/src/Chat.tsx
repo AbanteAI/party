@@ -9,16 +9,11 @@ import {
   RotateCcw,
   Send,
   Loader2,
-  Lightbulb,
   Brain,
-  Eye,
-  Mic,
   Zap,
   Circle,
   ChevronRight,
   ChevronDown,
-  Thermometer,
-  Sparkles,
 } from 'lucide-react';
 
 interface Message {
