@@ -200,6 +200,7 @@ export default function Chat() {
             model: selectedModel,
             messages: [...messages, userMessage],
             stream: true,
+            seed: Math.floor(Math.random() * 1000000), // Cache busting
           }),
         }
       );
