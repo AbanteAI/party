@@ -1149,24 +1149,68 @@ export default function Chat() {
       }));
     }
 
-    // If still thinking, show indicator
+    // If still thinking, show partial content
     if (isThinking) {
+      const thinkContent = content.split('<think>')[1] || '';
+      const thinkId = `${messageId}-think-partial`;
+      const isExpanded = expandedThinking[thinkId] || false; // Default to collapsed
+
       return (
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px',
-            background: 'rgba(0, 0, 0, 0.05)',
+            margin: '12px 0',
+            border: `1px solid ${currentTheme.border}`,
             borderRadius: '8px',
-            margin: '8px 0',
+            overflow: 'hidden',
           }}
         >
-          <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-          <span style={{ fontSize: '14px', fontStyle: 'italic' }}>
-            Thinking...
-          </span>
+          <button
+            onClick={() =>
+              setExpandedThinking((prev) => ({
+                ...prev,
+                [thinkId]: !prev[thinkId],
+              }))
+            }
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: 'rgba(0, 0, 0, 0.05)',
+              border: 'none',
+              textAlign: 'left',
+              cursor: 'pointer',
+              fontSize: '13px',
+              color: currentTheme.text,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <Loader2
+              size={14}
+              style={{ animation: 'spin 1s linear infinite' }}
+            />
+            {isExpanded ? (
+              <ChevronDown size={14} />
+            ) : (
+              <ChevronRight size={14} />
+            )}
+            <Brain size={14} />
+            <span style={{ fontWeight: 500 }}>Thinking...</span>
+          </button>
+          {isExpanded && (
+            <div
+              style={{
+                padding: '12px',
+                background: 'rgba(0, 0, 0, 0.02)',
+                fontSize: '13px',
+                whiteSpace: 'pre-wrap',
+                color: currentTheme.text,
+                opacity: 0.8,
+              }}
+            >
+              {thinkContent}
+            </div>
+          )}
         </div>
       );
     }
