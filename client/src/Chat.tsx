@@ -250,7 +250,14 @@ export default function Chat() {
         : formattedMessages;
 
       const currentModel = models.find((m) => m.name === selectedModel);
-      const requestBody: any = {
+      const requestBody: {
+        model: string;
+        messages: unknown[];
+        stream: boolean;
+        seed: number;
+        temperature: number;
+        reasoning_effort?: string;
+      } = {
         model: selectedModel,
         messages: messagesWithSystem,
         stream: true,
