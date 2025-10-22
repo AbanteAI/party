@@ -1220,8 +1220,13 @@ export default function Chat() {
                 <div
                   style={{
                     maxWidth: '70%',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
+                    padding: theme === 'openwebui' ? '16px 20px' : '12px 16px',
+                    borderRadius:
+                      theme === 'openwebui'
+                        ? message.role === 'user'
+                          ? '18px 18px 4px 18px'
+                          : '18px 18px 18px 4px'
+                        : '12px',
                     background:
                       message.role === 'user'
                         ? currentTheme.userBg
@@ -1233,13 +1238,17 @@ export default function Chat() {
                     backdropFilter: 'blur(10px)',
                     wordBreak: 'break-word',
                     border:
-                      message.role === 'user'
-                        ? '2px solid rgba(102, 126, 234, 0.5)'
-                        : 'none',
+                      theme === 'openwebui'
+                        ? `1px solid ${currentTheme.border}`
+                        : message.role === 'user'
+                          ? '2px solid rgba(102, 126, 234, 0.5)'
+                          : 'none',
                     boxShadow:
-                      message.role === 'user'
-                        ? '0 2px 8px rgba(0, 0, 0, 0.15)'
-                        : 'none',
+                      theme === 'openwebui'
+                        ? '0 1px 2px rgba(0, 0, 0, 0.05)'
+                        : message.role === 'user'
+                          ? '0 2px 8px rgba(0, 0, 0, 0.15)'
+                          : 'none',
                   }}
                 >
                   {formatMessage(message.content)}
