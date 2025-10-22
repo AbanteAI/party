@@ -1411,29 +1411,58 @@ export default function Chat() {
                           >
                             {segment.language}
                           </span>
-                          {isExecutable && (
+                          <div style={{ display: 'flex', gap: '6px' }}>
                             <button
-                              onClick={() =>
-                                executeCode(
-                                  segment.content || '',
-                                  segment.language || '',
-                                  codeId
-                                )
-                              }
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  segment.content || ''
+                                );
+                                showToast(
+                                  'Code copied to clipboard!',
+                                  'success'
+                                );
+                              }}
                               style={{
                                 padding: '4px 12px',
                                 borderRadius: '4px',
                                 border: 'none',
-                                background: '#10b981',
+                                background: 'rgba(107, 114, 128, 0.8)',
                                 color: 'white',
                                 fontSize: '11px',
                                 cursor: 'pointer',
                                 fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
                               }}
                             >
-                              ▶ Run Code
+                              <Copy size={12} />
+                              Copy
                             </button>
-                          )}
+                            {isExecutable && (
+                              <button
+                                onClick={() =>
+                                  executeCode(
+                                    segment.content || '',
+                                    segment.language || '',
+                                    codeId
+                                  )
+                                }
+                                style={{
+                                  padding: '4px 12px',
+                                  borderRadius: '4px',
+                                  border: 'none',
+                                  background: '#10b981',
+                                  color: 'white',
+                                  fontSize: '11px',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                }}
+                              >
+                                ▶ Run Code
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <pre
                           style={{
