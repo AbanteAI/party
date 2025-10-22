@@ -143,6 +143,7 @@ export default function Chat() {
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [followUpsCollapsed, setFollowUpsCollapsed] = useState(false);
   const [responseMode, setResponseMode] = useState<ResponseMode>('none');
   const [toasts, setToasts] = useState<
     Array<{ id: string; message: string; type: 'success' | 'error' | 'info' }>
@@ -1500,63 +1501,78 @@ export default function Chat() {
             borderTop: `1px solid ${currentTheme.border}`,
           }}
         >
-          <div
+          <button
+            onClick={() => setFollowUpsCollapsed(!followUpsCollapsed)}
             style={{
               fontSize: '12px',
               color: currentTheme.text,
-              marginBottom: '8px',
+              marginBottom: followUpsCollapsed ? '0' : '8px',
               opacity: 0.8,
-            }}
-          >
-            💡 Suggested follow-up questions:
-          </div>
-          <div
-            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
               display: 'flex',
-              gap: '8px',
-              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 0',
             }}
           >
-            {isGeneratingQuestions ? (
-              <div
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  background: 'rgba(102, 126, 234, 0.2)',
-                  color: currentTheme.text,
-                  fontSize: '13px',
-                }}
-              >
-                ⏳ Generating questions...
-              </div>
+            {followUpsCollapsed ? (
+              <ChevronRight size={14} />
             ) : (
-              followUpQuestions.map((question, index) => (
-                <button
-                  key={index}
-                  onClick={() => sendFollowUpQuestion(question)}
+              <ChevronDown size={14} />
+            )}
+            <span>Suggested follow-up questions</span>
+          </button>
+          {!followUpsCollapsed && (
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                flexWrap: 'wrap',
+              }}
+            >
+              {isGeneratingQuestions ? (
+                <div
                   style={{
                     padding: '8px 16px',
                     borderRadius: '8px',
-                    border: `1px solid ${currentTheme.border}`,
-                    background: currentTheme.messageBg,
+                    background: 'rgba(102, 126, 234, 0.2)',
                     color: currentTheme.text,
                     fontSize: '13px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background =
-                      'rgba(102, 126, 234, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = currentTheme.messageBg;
                   }}
                 >
-                  {question}
-                </button>
-              ))
-            )}
-          </div>
+                  ⏳ Generating questions...
+                </div>
+              ) : (
+                followUpQuestions.map((question, index) => (
+                  <button
+                    key={index}
+                    onClick={() => sendFollowUpQuestion(question)}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: `1px solid ${currentTheme.border}`,
+                      background: currentTheme.messageBg,
+                      color: currentTheme.text,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background =
+                        'rgba(102, 126, 234, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = currentTheme.messageBg;
+                    }}
+                  >
+                    {question}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
 
