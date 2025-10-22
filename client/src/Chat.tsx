@@ -6,9 +6,19 @@ interface Message {
   id: string;
 }
 
-type Theme = 'light' | 'dark' | 'purple' | 'ocean' | 'forest';
+interface Model {
+  name: string;
+  description: string;
+  tier: 'anonymous' | 'seed';
+  vision?: boolean;
+  audio?: boolean;
+  tools?: boolean;
+  reasoning?: boolean;
+  maxInputChars?: number;
+  aliases?: string[];
+}
 
-const AVAILABLE_MODELS = ['openai', 'mistral', 'claude', 'llama'];
+type Theme = 'light' | 'dark' | 'purple' | 'ocean' | 'forest';
 
 const THEMES = {
   light: {
@@ -76,12 +86,17 @@ export default function Chat() {
   const [theme, setTheme] = useState<Theme>('purple');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [models, setModels] = useState<Model[]>([]);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load saved conversations
+  // Load saved data
   useEffect(() => {
     const saved = localStorage.getItem('chat-messages');
     const savedTheme = localStorage.getItem('chat-theme');
+    const savedApiKey = localStorage.getItem('chat-api-key');
+
     if (saved) {
       try {
         setMessages(JSON.parse(saved));
@@ -92,6 +107,30 @@ export default function Chat() {
     if (savedTheme) {
       setTheme(savedTheme as Theme);
     }
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+    }
+  }, []);
+
+  // Fetch models from API
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const response = await fetch('https://text.pollinations.ai/models');
+        if (response.ok) {
+          const data = await response.json();
+          setModels(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch models:', error);
+        // Fallback to basic models if fetch fails
+        setModels([
+          { name: 'openai', description: 'OpenAI GPT', tier: 'anonymous' },
+          { name: 'mistral', description: 'Mistral', tier: 'anonymous' },
+        ]);
+      }
+    };
+    fetchModels();
   }, []);
 
   // Save conversations
@@ -106,7 +145,22 @@ export default function Chat() {
     localStorage.setItem('chat-theme', theme);
   }, [theme]);
 
+  // Save API key
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem('chat-api-key', apiKey);
+    } else {
+      localStorage.removeItem('chat-api-key');
+    }
+  }, [apiKey]);
+
   const currentTheme = THEMES[theme];
+
+  // Filter models based on API key
+  const availableModels = models.filter((model) => {
+    if (model.tier === 'anonymous') return true;
+    return apiKey.length > 0; // Only show seed-tier models if user has API key
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -129,13 +183,19 @@ export default function Chat() {
     setIsLoading(true);
 
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
       const response = await fetch(
         'https://text.pollinations.ai/openai/chat/completions',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify({
             model: selectedModel,
             messages: [...messages, userMessage],
@@ -373,14 +433,44 @@ export default function Chat() {
               color: currentTheme.text,
               fontSize: '14px',
               cursor: 'pointer',
+              maxWidth: '250px',
             }}
+            title={
+              availableModels.find((m) => m.name === selectedModel)
+                ?.description || ''
+            }
           >
-            {AVAILABLE_MODELS.map((model) => (
-              <option key={model} value={model} style={{ color: 'black' }}>
-                {model}
+            {availableModels.map((model) => (
+              <option
+                key={model.name}
+                value={model.name}
+                style={{ color: 'black' }}
+              >
+                {model.description}
+                {model.vision ? ' 👁️' : ''}
+                {model.audio ? ' 🎤' : ''}
+                {model.reasoning ? ' 🧠' : ''}
+                {model.tier === 'seed' ? ' 🔑' : ''}
               </option>
             ))}
           </select>
+          <button
+            onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: `1px solid ${currentTheme.border}`,
+              background: apiKey
+                ? 'rgba(16, 185, 129, 0.2)'
+                : currentTheme.messageBg,
+              color: currentTheme.text,
+              fontSize: '14px',
+              cursor: 'pointer',
+            }}
+            title={apiKey ? 'API Key Set' : 'Set API Key'}
+          >
+            🔑 {apiKey ? '✓' : 'API Key'}
+          </button>
           <select
             value={theme}
             onChange={(e) => setTheme(e.target.value as Theme)}
@@ -414,6 +504,67 @@ export default function Chat() {
             {messages.length} messages
           </span>
         </div>
+        {showApiKeyInput && (
+          <div
+            style={{
+              marginTop: '10px',
+              padding: '12px',
+              background: 'rgba(0, 0, 0, 0.1)',
+              borderRadius: '8px',
+            }}
+          >
+            <div
+              style={{
+                marginBottom: '8px',
+                fontSize: '12px',
+                color: currentTheme.text,
+              }}
+            >
+              🔑 API Key (optional - unlocks seed-tier models)
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your Pollinations API key..."
+                style={{
+                  flex: 1,
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: `1px solid ${currentTheme.border}`,
+                  background: currentTheme.messageBg,
+                  color: currentTheme.text,
+                  fontSize: '14px',
+                }}
+              />
+              <button
+                onClick={() => setApiKey('')}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'rgba(239, 68, 68, 0.8)',
+                  color: 'white',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                }}
+              >
+                Clear
+              </button>
+            </div>
+            <div
+              style={{
+                marginTop: '8px',
+                fontSize: '11px',
+                color: currentTheme.text,
+                opacity: 0.7,
+              }}
+            >
+              💡 Seed-tier models (marked with 🔑) require an API key
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Messages */}
