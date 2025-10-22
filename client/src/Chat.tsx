@@ -126,8 +126,23 @@ export default function Chat() {
   const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [responseMode, setResponseMode] = useState<ResponseMode>('none');
+  const [toasts, setToasts] = useState<
+    Array<{ id: string; message: string; type: 'success' | 'error' | 'info' }>
+  >([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Toast notification helper
+  const showToast = (
+    message: string,
+    type: 'success' | 'error' | 'info' = 'info'
+  ) => {
+    const id = Date.now().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  };
 
   // Load saved data
   useEffect(() => {
@@ -374,6 +389,7 @@ export default function Chat() {
       }
     } catch (error) {
       console.error('Error:', error);
+      showToast('Failed to send message. Please try again.', 'error');
       setMessages((prev) => [
         ...prev,
         {
@@ -466,16 +482,28 @@ export default function Chat() {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const base64 = event.target?.result as string;
-          setUploadedImages((prev) => [...prev, base64]);
-        };
-        reader.readAsDataURL(file);
-      }
+    const imageFiles = Array.from(files).filter((file) =>
+      file.type.startsWith('image/')
+    );
+
+    if (imageFiles.length === 0) {
+      showToast('Please select valid image files', 'error');
+      return;
+    }
+
+    imageFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setUploadedImages((prev) => [...prev, base64]);
+      };
+      reader.readAsDataURL(file);
     });
+
+    showToast(
+      `${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''} uploaded`,
+      'success'
+    );
   };
 
   const removeImage = (index: number) => {
@@ -484,6 +512,7 @@ export default function Chat() {
 
   const copyMessage = (content: string) => {
     navigator.clipboard.writeText(content);
+    showToast('Message copied to clipboard!', 'success');
   };
 
   const deleteMessage = (id: string) => {
@@ -899,7 +928,13 @@ export default function Chat() {
               <input
                 type="password"
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => {
+                  const newKey = e.target.value;
+                  setApiKey(newKey);
+                  if (newKey.length > 0 && apiKey.length === 0) {
+                    showToast('API key set successfully!', 'success');
+                  }
+                }}
                 placeholder="Enter your Pollinations API key..."
                 style={{
                   flex: 1,
@@ -912,7 +947,10 @@ export default function Chat() {
                 }}
               />
               <button
-                onClick={() => setApiKey('')}
+                onClick={() => {
+                  setApiKey('');
+                  showToast('API key cleared', 'info');
+                }}
                 style={{
                   padding: '8px 12px',
                   borderRadius: '6px',
@@ -1548,6 +1586,43 @@ export default function Chat() {
         >
           💡 Tip: Use ` for inline code, ``` for code blocks
         </div>
+      </div>
+
+      {/* Toast Notifications */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}
+      >
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            style={{
+              padding: '12px 16px',
+              borderRadius: '8px',
+              background:
+                toast.type === 'success'
+                  ? '#10b981'
+                  : toast.type === 'error'
+                    ? '#ef4444'
+                    : '#3b82f6',
+              color: 'white',
+              fontSize: '14px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              animation: 'slideIn 0.3s ease-out',
+              minWidth: '200px',
+              maxWidth: '400px',
+            }}
+          >
+            {toast.message}
+          </div>
+        ))}
       </div>
     </div>
   );
