@@ -471,11 +471,139 @@ export default function Chat() {
     if (!lastUserMessage) return;
 
     // Remove last assistant message
-    setMessages((prev) => prev.slice(0, -1));
+    const messagesWithoutLast = messages.slice(0, -1);
+    setMessages(messagesWithoutLast);
 
-    // Resend
-    setInput(lastUserMessage.content);
-    setTimeout(() => sendMessage(), 100);
+    // Resend the last user message
+    setIsLoading(true);
+    let assistantMessage = '';
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      // Format messages for API
+      const formattedMessages = messagesWithoutLast.map((msg) => {
+        if (msg.images && msg.images.length > 0) {
+          return {
+            role: msg.role,
+            content: [
+              { type: 'text', text: msg.content },
+              ...msg.images.map((img) => ({
+                type: 'image_url',
+                image_url: { url: img },
+              })),
+            ],
+          };
+        }
+        return { role: msg.role, content: msg.content };
+      });
+
+      const messagesWithSystem = customSettings.systemPrompt
+        ? [
+            { role: 'system', content: customSettings.systemPrompt },
+            ...formattedMessages,
+          ]
+        : formattedMessages;
+
+      const currentModel = models.find((m) => m.name === selectedModel);
+      const requestBody: {
+        model: string;
+        messages: unknown[];
+        stream: boolean;
+        seed: number;
+        temperature: number;
+        reasoning_effort?: string;
+      } = {
+        model: selectedModel,
+        messages: messagesWithSystem,
+        stream: true,
+        seed: Math.floor(Math.random() * 1000000),
+        temperature: customSettings.temperature,
+      };
+
+      if (currentModel?.reasoning) {
+        requestBody.reasoning_effort = customSettings.reasoningEffort;
+      }
+
+      const response = await fetch(
+        'https://text.pollinations.ai/openai/chat/completions',
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to get response');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        const assistantId = (Date.now() + 1).toString();
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: '', id: assistantId },
+        ]);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  assistantMessage += content;
+                  setMessages((prev) => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = {
+                      role: 'assistant',
+                      content: assistantMessage,
+                      id: assistantId,
+                    };
+                    return newMessages;
+                  });
+                }
+              } catch {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.',
+          id: Date.now().toString(),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+      if (assistantMessage) {
+        generateFollowUpQuestions(assistantMessage);
+      }
+    }
   };
 
   const clearChat = () => {
