@@ -163,6 +163,7 @@ export default function Chat() {
   }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Toast notification helper
   const showToast = (
@@ -362,12 +363,16 @@ export default function Chat() {
         requestBody.reasoning_effort = customSettings.reasoningEffort;
       }
 
+      // Create abort controller
+      abortControllerRef.current = new AbortController();
+
       const response = await fetch(
         'https://text.pollinations.ai/openai/chat/completions',
         {
           method: 'POST',
           headers,
           body: JSON.stringify(requestBody),
+          signal: abortControllerRef.current.signal,
         }
       );
 
@@ -420,22 +425,35 @@ export default function Chat() {
         }
       }
     } catch (error) {
-      console.error('Error:', error);
-      showToast('Failed to send message. Please try again.', 'error');
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
-          id: Date.now().toString(),
-        },
-      ]);
+      // Check if it was aborted
+      if (error instanceof Error && error.name === 'AbortError') {
+        showToast('Generation stopped', 'info');
+      } else {
+        console.error('Error:', error);
+        showToast('Failed to send message. Please try again.', 'error');
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: 'Sorry, I encountered an error. Please try again.',
+            id: Date.now().toString(),
+          },
+        ]);
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
       // Generate follow-up questions after assistant responds
       if (assistantMessage) {
         generateFollowUpQuestions(assistantMessage);
       }
+    }
+  };
+
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
   };
 
@@ -2367,38 +2385,53 @@ export default function Chat() {
               maxHeight: '150px',
             }}
           />
-          <button
-            onClick={sendMessage}
-            disabled={isLoading || !input.trim()}
-            style={{
-              padding: '12px 24px',
-              borderRadius: '12px',
-              border: 'none',
-              background: isLoading ? 'rgba(102, 126, 234, 0.5)' : '#667eea',
-              color: 'white',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-              minWidth: '80px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              justifyContent: 'center',
-            }}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Sending
-              </>
-            ) : (
-              <>
-                <Send size={16} />
-                Send
-              </>
-            )}
-          </button>
+          {isLoading ? (
+            <button
+              onClick={stopGeneration}
+              style={{
+                padding: '12px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                background: '#ef4444',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                minWidth: '80px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                justifyContent: 'center',
+              }}
+            >
+              ⏹ Stop
+            </button>
+          ) : (
+            <button
+              onClick={sendMessage}
+              disabled={!input.trim()}
+              style={{
+                padding: '12px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                background: '#667eea',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: input.trim() ? 'pointer' : 'not-allowed',
+                transition: 'all 0.2s',
+                minWidth: '80px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                justifyContent: 'center',
+              }}
+            >
+              <Send size={16} />
+              Send
+            </button>
+          )}
         </div>
         <div
           style={{
