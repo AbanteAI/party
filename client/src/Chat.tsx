@@ -217,6 +217,8 @@ export default function Chat() {
     setUploadedImages([]); // Clear uploaded images after sending
     setIsLoading(true);
 
+    let assistantMessage = '';
+
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -287,7 +289,6 @@ export default function Chat() {
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      let assistantMessage = '';
 
       if (reader) {
         const assistantId = (Date.now() + 1).toString();
