@@ -27,7 +27,7 @@ interface CustomSettings {
 
 type ResponseMode = 'none' | 'reason' | 'rush';
 
-type Theme = 'light' | 'dark' | 'purple' | 'ocean' | 'forest';
+type Theme = 'light' | 'dark' | 'purple' | 'ocean' | 'forest' | 'openwebui';
 
 const MODE_PROMPTS = {
   none: '',
@@ -91,6 +91,17 @@ const THEMES = {
     text: 'white',
     userText: '#1f2937',
     border: 'rgba(255, 255, 255, 0.1)',
+  },
+  openwebui: {
+    bg: '#f9f9f9',
+    headerBg: '#ffffff',
+    headerText: '#1f2937',
+    messageBg: '#ffffff',
+    userBg: '#ececec',
+    assistantBg: '#f9f9f9',
+    text: '#1f2937',
+    userText: '#1f2937',
+    border: '#e3e3e3',
   },
 };
 
@@ -857,6 +868,9 @@ export default function Chat() {
             </option>
             <option value="forest" style={{ color: 'black' }}>
               🌲 Forest
+            </option>
+            <option value="openwebui" style={{ color: 'black' }}>
+              🎨 OpenWebUI
             </option>
           </select>
           <span style={{ fontSize: '12px', color: currentTheme.text }}>
