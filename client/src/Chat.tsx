@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { marked } from 'marked';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github-dark.css';
 import {
   Settings,
   Key,
@@ -16,6 +18,8 @@ import {
   ChevronDown,
   Image as ImageIcon,
   Bot,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 
 interface Message {
@@ -895,6 +899,174 @@ export default function Chat() {
     }
   };
 
+  const handleThumbsUp = (messageId: string) => {
+    showToast('Generating follow-up questions...', 'info');
+    const message = messages.find((m) => m.id === messageId);
+    if (message && message.role === 'assistant') {
+      generateFollowUpQuestions(message.content);
+    }
+  };
+
+  const handleThumbsDown = async (messageId: string) => {
+    // Find the message index
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Remove the assistant message
+    const messagesWithoutLast = messages.slice(0, messageIndex);
+    setMessages(messagesWithoutLast);
+
+    // Find the last user message
+    const lastUserMessage = [...messagesWithoutLast]
+      .reverse()
+      .find((m) => m.role === 'user');
+    if (!lastUserMessage) return;
+
+    showToast('Regenerating response...', 'info');
+    setIsLoading(true);
+    let assistantMessage = '';
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      // Format messages for API
+      const formattedMessages = messagesWithoutLast.map((msg) => {
+        if (msg.images && msg.images.length > 0) {
+          return {
+            role: msg.role,
+            content: [
+              { type: 'text', text: msg.content },
+              ...msg.images.map((img) => ({
+                type: 'image_url',
+                image_url: { url: img },
+              })),
+            ],
+          };
+        }
+        return { role: msg.role, content: msg.content };
+      });
+
+      // Add system prompts
+      const systemPrompts = [];
+      if (MODE_PROMPTS[responseMode]) {
+        systemPrompts.push({
+          role: 'system',
+          content: MODE_PROMPTS[responseMode],
+        });
+      }
+      if (customSettings.systemPrompt) {
+        systemPrompts.push({
+          role: 'system',
+          content: customSettings.systemPrompt,
+        });
+      }
+      const messagesWithSystem =
+        systemPrompts.length > 0
+          ? [...systemPrompts, ...formattedMessages]
+          : formattedMessages;
+
+      const currentModel = models.find((m) => m.name === selectedModel);
+      const requestBody: {
+        model: string;
+        messages: unknown[];
+        stream: boolean;
+        seed: number;
+        temperature: number;
+        reasoning_effort?: string;
+      } = {
+        model: selectedModel,
+        messages: messagesWithSystem,
+        stream: true,
+        seed: Math.floor(Math.random() * 1000000),
+        temperature: customSettings.temperature,
+      };
+
+      if (currentModel?.reasoning) {
+        requestBody.reasoning_effort = customSettings.reasoningEffort;
+      }
+
+      const response = await fetch(
+        'https://text.pollinations.ai/openai/chat/completions',
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to get response');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        const assistantId = (Date.now() + 1).toString();
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: '', id: assistantId },
+        ]);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  assistantMessage += content;
+                  setMessages((prev) => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1] = {
+                      role: 'assistant',
+                      content: assistantMessage,
+                      id: assistantId,
+                    };
+                    return newMessages;
+                  });
+                }
+              } catch {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showToast('Failed to regenerate response. Please try again.', 'error');
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Sorry, I encountered an error. Please try again.',
+          id: Date.now().toString(),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+      if (assistantMessage) {
+        generateFollowUpQuestions(assistantMessage);
+      }
+    }
+  };
+
   const executeCode = (code: string, language: string, codeId: string) => {
     try {
       if (language === 'html') {
@@ -1204,20 +1376,27 @@ export default function Chat() {
                         <pre
                           style={{
                             margin: 0,
-                            background: 'rgba(0, 0, 0, 0.03)',
+                            background: '#0d1117',
                             padding: '12px',
                             borderRadius: '0 0 8px 8px',
                             overflow: 'auto',
                           }}
                         >
                           <code
+                            className={`language-${segment.language}`}
                             style={{
                               fontSize: '13px',
                               fontFamily: 'monospace',
                             }}
-                          >
-                            {segment.content}
-                          </code>
+                            dangerouslySetInnerHTML={{
+                              __html: segment.language
+                                ? hljs.highlight(segment.content || '', {
+                                    language: segment.language,
+                                    ignoreIllegals: true,
+                                  }).value
+                                : segment.content || '',
+                            }}
+                          />
                         </pre>
                         {output && (
                           <div
@@ -1860,6 +2039,40 @@ export default function Chat() {
                   >
                     <Trash2 size={14} />
                   </button>
+                  {message.role === 'assistant' && (
+                    <>
+                      <button
+                        onClick={() => handleThumbsUp(message.id)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: currentTheme.text,
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                        }}
+                        title="Good response - Generate follow-ups"
+                      >
+                        <ThumbsUp size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleThumbsDown(message.id)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: currentTheme.text,
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                        }}
+                        title="Bad response - Regenerate"
+                      >
+                        <ThumbsDown size={14} />
+                      </button>
+                    </>
+                  )}
                   {message.role === 'assistant' &&
                     messages[messages.length - 1].id === message.id && (
                       <button
