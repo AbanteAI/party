@@ -2649,7 +2649,15 @@ Example structure:
                     >
                       Enhanced Prompt:
                     </div>
-                    {enhancedPrompt}
+                    {(() => {
+                      // Extract final prompt without thinking tags
+                      const thinkMatch = enhancedPrompt.match(
+                        /<think>[\s\S]*?<\/think>\s*([\s\S]*)/
+                      );
+                      return thinkMatch && thinkMatch[1]
+                        ? thinkMatch[1].trim()
+                        : enhancedPrompt;
+                    })()}
                   </div>
                 )}
               </div>
