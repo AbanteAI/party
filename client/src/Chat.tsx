@@ -2937,7 +2937,7 @@ Final synthesis: [how to combine all elements]
                         } else {
                           throw new Error('Failed to share image');
                         }
-                      } catch (error) {
+                      } catch {
                         showToast('Failed to share image', 'error');
                       }
                     }}
