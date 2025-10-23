@@ -2909,7 +2909,21 @@ export default function Chat() {
             ))}
           </div>
         )}
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'flex-end',
+            ...(theme === 'openwebui'
+              ? {
+                  background: '#ffffff',
+                  padding: '16px',
+                  borderRadius: '24px',
+                  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                }
+              : {}),
+          }}
+        >
           {/* Image Upload Button */}
           {models.find((m) => m.name === selectedModel)?.vision && (
             <>
@@ -2926,12 +2940,14 @@ export default function Chat() {
                 disabled={isLoading}
                 style={{
                   padding: '12px',
-                  borderRadius: '12px',
+                  borderRadius: theme === 'openwebui' ? '16px' : '12px',
                   border: 'none',
                   background:
                     uploadedImages.length > 0
                       ? 'rgba(16, 185, 129, 0.8)'
-                      : currentTheme.messageBg,
+                      : theme === 'openwebui'
+                        ? '#f3f4f6'
+                        : currentTheme.messageBg,
                   color: currentTheme.text,
                   fontSize: '20px',
                   cursor: isLoading ? 'not-allowed' : 'pointer',
@@ -2955,9 +2971,13 @@ export default function Chat() {
             style={{
               flex: 1,
               padding: '12px 16px',
-              borderRadius: '12px',
-              border: `1px solid ${currentTheme.border}`,
-              background: currentTheme.messageBg,
+              borderRadius: theme === 'openwebui' ? '16px' : '12px',
+              border:
+                theme === 'openwebui'
+                  ? 'none'
+                  : `1px solid ${currentTheme.border}`,
+              background:
+                theme === 'openwebui' ? '#f3f4f6' : currentTheme.messageBg,
               color: currentTheme.text,
               fontSize: '14px',
               resize: 'none',
@@ -2970,7 +2990,7 @@ export default function Chat() {
               onClick={stopGeneration}
               style={{
                 padding: '12px 24px',
-                borderRadius: '12px',
+                borderRadius: theme === 'openwebui' ? '16px' : '12px',
                 border: 'none',
                 background: '#ef4444',
                 color: 'white',
@@ -2993,9 +3013,9 @@ export default function Chat() {
               disabled={!input.trim()}
               style={{
                 padding: '12px 24px',
-                borderRadius: '12px',
+                borderRadius: theme === 'openwebui' ? '16px' : '12px',
                 border: 'none',
-                background: '#667eea',
+                background: theme === 'openwebui' ? '#2563eb' : '#667eea',
                 color: 'white',
                 fontSize: '14px',
                 fontWeight: 600,
