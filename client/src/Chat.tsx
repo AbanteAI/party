@@ -1702,7 +1702,10 @@ export default function Chat() {
         flexDirection: 'column',
         height: '100vh',
         background: currentTheme.bg,
-        fontFamily: (currentTheme as any).fontFamily || 'inherit',
+        fontFamily:
+          'fontFamily' in currentTheme
+            ? (currentTheme as { fontFamily: string }).fontFamily
+            : 'inherit',
       }}
     >
       {/* Header */}
