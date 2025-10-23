@@ -243,6 +243,57 @@ const THEMES = {
   },
 };
 
+// Component to display live image animation
+function LiveImageDisplay({ imageUrls }: { imageUrls: string[] }) {
+  const [currentFrame, setCurrentFrame] = useState(0);
+  const [hasPlayed, setHasPlayed] = useState(false);
+
+  useEffect(() => {
+    if (hasPlayed) return;
+
+    const interval = setInterval(() => {
+      setCurrentFrame((prev) => {
+        if (prev >= imageUrls.length - 1) {
+          clearInterval(interval);
+          setHasPlayed(true);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 200); // 200ms per frame = 5 fps
+
+    return () => clearInterval(interval);
+  }, [imageUrls.length, hasPlayed]);
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <img
+        src={imageUrls[currentFrame]}
+        alt={`Frame ${currentFrame + 1}`}
+        style={{
+          width: '100%',
+          borderRadius: '8px',
+          display: 'block',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '8px',
+          right: '8px',
+          background: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          padding: '4px 8px',
+          borderRadius: '4px',
+          fontSize: '12px',
+        }}
+      >
+        Frame {currentFrame + 1}/{imageUrls.length}
+      </div>
+    </div>
+  );
+}
+
 interface ChatProps {
   currentUser: string | null;
 }
@@ -293,6 +344,12 @@ export default function Chat({ currentUser }: ChatProps) {
   const [showPrompt, setShowPrompt] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [liveImage, setLiveImage] = useState(false);
+  const [liveImageProgress, setLiveImageProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
+  const [generatedGifUrl, setGeneratedGifUrl] = useState<string | null>(null);
   const [communityModels, setCommunityModels] = useState<
     Array<{
       id: string;
@@ -1420,11 +1477,105 @@ export default function Chat({ currentUser }: ChatProps) {
     }
   };
 
+  const generateLiveImage = async () => {
+    try {
+      // Step 1: Enhance the prompt using GPT 4.1
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      showToast('Enhancing your prompt...', 'info');
+
+      const enhanceResponse = await fetch(
+        'https://text.pollinations.ai/openai/chat/completions',
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: 'openai-fast',
+            messages: [
+              {
+                role: 'system',
+                content: `You are an expert at writing image generation prompts. Take the user's idea and enhance it into a detailed, vivid prompt that will generate a beautiful image.
+
+Create a concise but descriptive prompt focusing on visual elements, style, and mood.`,
+              },
+              {
+                role: 'user',
+                content: imagePrompt,
+              },
+            ],
+            stream: false,
+            temperature: 0.8,
+          }),
+        }
+      );
+
+      if (!enhanceResponse.ok) {
+        throw new Error('Failed to enhance prompt');
+      }
+
+      const enhanceData = await enhanceResponse.json();
+      const finalPrompt =
+        enhanceData.choices?.[0]?.message?.content || imagePrompt;
+      setEnhancedPrompt(finalPrompt);
+
+      // Step 2: Generate 10 images sequentially with seeds 1-10
+      const imageUrls: string[] = [];
+      setLiveImageProgress({ current: 0, total: 10 });
+
+      for (let seed = 1; seed <= 10; seed++) {
+        setLiveImageProgress({ current: seed, total: 10 });
+        showToast(`Generating image ${seed}/10...`, 'info');
+
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?seed=${seed}&nologo=true`;
+
+        // Wait for image to load
+        await new Promise<void>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            imageUrls.push(imageUrl);
+            resolve();
+          };
+          img.onerror = () => reject(new Error(`Failed to load image ${seed}`));
+          img.src = imageUrl;
+        });
+      }
+
+      // Step 3: Create GIF from images
+      showToast('Creating GIF...', 'info');
+
+      // For now, we'll create a simple animated display
+      // In a production app, you'd use gif.js or a service to create an actual GIF
+      // For this implementation, we'll store the URLs and animate them
+      setGeneratedGifUrl(imageUrls.join('|')); // Store URLs separated by |
+      setLiveImageProgress(null);
+      setIsGeneratingImage(false);
+      showToast('Live image generated successfully!', 'success');
+    } catch (error) {
+      console.error('Error generating live image:', error);
+      setIsGeneratingImage(false);
+      setLiveImageProgress(null);
+      showToast('Failed to generate live image. Please try again.', 'error');
+    }
+  };
+
   const generateImage = async () => {
     if (!imagePrompt.trim()) return;
 
     setIsGeneratingImage(true);
     setGeneratedImageUrl(null);
+    setGeneratedGifUrl(null);
+
+    // If live image mode, generate 10 images sequentially
+    if (liveImage) {
+      await generateLiveImage();
+      return;
+    }
 
     try {
       // Step 1: Enhance the prompt using GPT 4.1 nano
@@ -2787,6 +2938,50 @@ Final synthesis: [how to combine all elements]
                 marginBottom: '12px',
               }}
             />
+            {/* Live Image Toggle */}
+            <div
+              style={{
+                marginBottom: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <input
+                type="checkbox"
+                id="live-image-toggle"
+                checked={liveImage}
+                onChange={(e) => setLiveImage(e.target.checked)}
+                disabled={isGeneratingImage}
+                style={{ cursor: 'pointer' }}
+              />
+              <label
+                htmlFor="live-image-toggle"
+                style={{
+                  fontSize: '13px',
+                  color: currentTheme.text,
+                  cursor: 'pointer',
+                }}
+              >
+                🎬 Live Image (generates 10 frames as GIF)
+              </label>
+            </div>
+            {/* Progress Indicator */}
+            {liveImageProgress && (
+              <div
+                style={{
+                  marginBottom: '12px',
+                  padding: '8px 12px',
+                  background: 'rgba(102, 126, 234, 0.1)',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  color: currentTheme.text,
+                }}
+              >
+                Generating frame {liveImageProgress.current}/
+                {liveImageProgress.total}...
+              </div>
+            )}
             <button
               onClick={generateImage}
               disabled={isGeneratingImage || !imagePrompt.trim()}
@@ -2838,7 +3033,7 @@ Final synthesis: [how to combine all elements]
                 </div>
               </div>
             )}
-            {generatedImageUrl && !isGeneratingImage && (
+            {(generatedImageUrl || generatedGifUrl) && !isGeneratingImage && (
               <div
                 style={{
                   marginTop: '16px',
@@ -2847,15 +3042,19 @@ Final synthesis: [how to combine all elements]
                   borderRadius: '8px',
                 }}
               >
-                <img
-                  src={generatedImageUrl}
-                  alt="Generated"
-                  style={{
-                    width: '100%',
-                    borderRadius: '8px',
-                    display: 'block',
-                  }}
-                />
+                {generatedGifUrl ? (
+                  <LiveImageDisplay imageUrls={generatedGifUrl.split('|')} />
+                ) : (
+                  <img
+                    src={generatedImageUrl!}
+                    alt="Generated"
+                    style={{
+                      width: '100%',
+                      borderRadius: '8px',
+                      display: 'block',
+                    }}
+                  />
+                )}
                 <div
                   style={{
                     marginTop: '12px',
