@@ -156,18 +156,22 @@ const THEMES = {
     iconAccent: '#f59e0b',
   },
   openwebui: {
-    bg: '#ffffff',
-    headerBg: '#f8f9fa',
-    headerText: '#2d3748',
-    messageBg: '#f8f9fa',
-    userBg: '#3b82f6',
+    bg: '#fafbfc',
+    headerBg: '#f0f2f5',
+    headerText: '#1a202c',
+    messageBg: '#f7f8fa',
+    userBg: '#2563eb',
     assistantBg: '#ffffff',
-    text: '#2d3748',
+    text: '#1a202c',
     userText: 'white',
-    border: '#e2e8f0',
-    iconPrimary: '#3b82f6',
-    iconSecondary: '#10b981',
-    iconAccent: '#f59e0b',
+    border: '#d1d5db',
+    iconPrimary: '#2563eb',
+    iconSecondary: '#059669',
+    iconAccent: '#dc2626',
+    fontFamily:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    buttonRadius: '6px',
+    buttonStyle: 'flat',
   },
 };
 
@@ -1698,6 +1702,7 @@ export default function Chat() {
         flexDirection: 'column',
         height: '100vh',
         background: currentTheme.bg,
+        fontFamily: (currentTheme as any).fontFamily || 'inherit',
       }}
     >
       {/* Header */}
