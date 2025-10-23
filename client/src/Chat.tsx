@@ -22,6 +22,29 @@ import {
   ThumbsDown,
 } from 'lucide-react';
 
+// Configure marked to handle citations properly
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
+
+// Helper function to escape citations in markdown
+const escapeCitations = (text: string): string => {
+  // Escape patterns like [Source: ...] or [Citation: ...] or [1], [2], etc.
+  return text.replace(/\[([^\]]+)\]/g, (match, content) => {
+    // Check if it looks like a citation (contains "Source:", "Citation:", or is just a number)
+    if (
+      content.match(/^(Source|Citation|Ref|Reference):/i) ||
+      content.match(/^\d+$/)
+    ) {
+      // Escape the brackets
+      return `\\[${content}\\]`;
+    }
+    // Otherwise, leave it as is (might be a valid markdown link)
+    return match;
+  });
+};
+
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -1316,7 +1339,7 @@ export default function Chat() {
                       opacity: 0.8,
                     }}
                     dangerouslySetInnerHTML={{
-                      __html: marked(part.content) as string,
+                      __html: marked(escapeCitations(part.content)) as string,
                     }}
                   />
                 )}
@@ -1324,7 +1347,7 @@ export default function Chat() {
             );
           } else {
             // Parse markdown for regular text
-            const htmlContent = marked(part.content) as string;
+            const htmlContent = marked(escapeCitations(part.content)) as string;
 
             // Extract code blocks and add run buttons
             const codeBlockRegex =
