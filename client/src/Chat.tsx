@@ -1332,7 +1332,26 @@ Final synthesis: [balanced prompt combining both]
 - NO narrative self-talk ("Let me analyze...")
 - Start reasoning immediately with substantive observations
 - Focus on visual elements, not the process`
-                  : "You are an expert at writing image generation prompts. Take the user's idea and enhance it into a detailed, vivid prompt that will generate a beautiful image. Be descriptive about style, lighting, composition, and mood. Return ONLY the enhanced prompt, nothing else.",
+                  : `You are an expert at writing image generation prompts. Take the user's idea and enhance it into a detailed, vivid prompt that will generate a beautiful image.
+
+Use <think></think> tags for your reasoning:
+
+<think>
+User's idea: [what they want]
+Key elements: [main subjects, objects, characters]
+Style considerations: [artistic style, medium, technique]
+Mood and atmosphere: [emotional tone, lighting, colors]
+Composition: [layout, perspective, framing]
+Final synthesis: [how to combine all elements]
+</think>
+
+[Your final enhanced prompt - detailed, vivid, and specific]
+
+**Critical:**
+- NO meta-commentary ("I see the user wants...")
+- NO narrative self-talk ("Let me think...")
+- Start reasoning immediately with substantive analysis
+- Be descriptive about style, lighting, composition, and mood`,
               },
               userMessage,
             ],
