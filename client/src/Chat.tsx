@@ -76,8 +76,46 @@ type Theme = 'light' | 'dark' | 'purple' | 'ocean' | 'forest' | 'openwebui';
 
 const MODE_PROMPTS = {
   none: '',
-  reason:
-    'You are in reasoning mode. Show your complete chain of thought by wrapping your internal reasoning process in <think></think> tags.\n\nInside <think> tags:\n- Break down the problem step-by-step\n- Consider multiple approaches\n- Evaluate trade-offs and alternatives\n- Show your logical progression\n- Question your assumptions\n- Verify your conclusions\n\nAfter the </think> tag, provide your final, polished answer.\n\nExample structure:\n<think>\n1. Understanding the problem: [analysis]\n2. Possible approaches: [options]\n3. Evaluating trade-offs: [comparison]\n4. Selected approach: [decision]\n5. Verification: [check]\n</think>\n\n[Your final, clear answer here]',
+  reason: `You are in reasoning mode. Show your complete chain of thought by wrapping your internal reasoning process in <think></think> tags.
+
+Your thinking should demonstrate ACTUAL reasoning, not fake reasoning. This means:
+
+**Good Reasoning (Do This):**
+- Build a logical model from first principles
+- Show the "why" behind each step with clear justification
+- Use logical connectors ("therefore," "because," "which leads to")
+- Verify your conclusions by checking against the original problem
+- Be capable of catching and correcting your own mistakes
+- Handle novel problems by applying fundamental logic, not pattern matching
+
+**Fake Reasoning (Avoid This):**
+- Pattern matching to similar problems from training data
+- Disconnected or unjustified steps
+- Using filler phrases without substance ("Let's see," "So")
+- Post-hoc justifications for guesses
+- Superficial checks that don't actually verify logic
+
+Inside <think> tags:
+1. Restate the problem in your own words to ensure understanding
+2. Define any variables or key concepts explicitly
+3. Break down the problem step-by-step with clear logical connections
+4. Consider multiple approaches and evaluate their merits
+5. Show your work with transparent reasoning at each step
+6. Question your assumptions and verify your logic
+7. Check your final answer against the original problem constraints
+
+After the </think> tag, provide your final, polished answer.
+
+Example structure:
+<think>
+1. Problem restatement: [clear understanding of what's being asked]
+2. Key information: [relevant facts and constraints]
+3. Approach: [logical method chosen and why]
+4. Step-by-step solution: [each step with clear justification]
+5. Verification: [check answer against original constraints]
+</think>
+
+[Your final, clear answer here]`,
   rush: 'Respond quickly and concisely. Get straight to the point. Prioritize speed and brevity over detailed explanations.',
 };
 
@@ -1241,7 +1279,28 @@ export default function Chat() {
               {
                 role: 'system',
                 content: referenceImage
-                  ? 'You are an expert at writing image generation prompts. The user has provided a reference image and a description. Analyze the image and enhance their idea into a detailed, vivid prompt that will generate a beautiful image inspired by the reference. Be descriptive about style, lighting, composition, and mood. Return ONLY the enhanced prompt, nothing else.'
+                  ? `You are an expert at writing image generation prompts. The user has provided a reference image and wants to generate a new image based on it.
+
+Your task is to analyze the reference image and create an enhanced prompt that preserves as many aspects of the original image as possible while incorporating the user's requested changes.
+
+Use <think></think> tags to show your reasoning process:
+1. Identify key visual elements in the reference image (colors, composition, style, lighting, mood, objects, etc.)
+2. Determine which aspects the user wants to change based on their description
+3. Decide which aspects should be preserved to maintain the essence of the reference
+4. Construct a detailed prompt that balances preservation and transformation
+
+After your thinking, provide the final enhanced prompt on a new line without any tags.
+
+Example structure:
+<think>
+1. Analyzing reference image: [detailed observations about colors, style, composition, lighting, objects, mood]
+2. User's request: [what they want to change]
+3. Elements to preserve: [list specific aspects that should stay the same]
+4. Elements to transform: [list what should change and how]
+5. Synthesis: [how to combine preservation and transformation]
+</think>
+
+[Your final enhanced prompt here - detailed, vivid, and specific]`
                   : "You are an expert at writing image generation prompts. Take the user's idea and enhance it into a detailed, vivid prompt that will generate a beautiful image. Be descriptive about style, lighting, composition, and mood. Return ONLY the enhanced prompt, nothing else.",
               },
               userMessage,
@@ -1257,23 +1316,32 @@ export default function Chat() {
       }
 
       const enhanceData = await enhanceResponse.json();
-      const enhancedPromptText =
+      const rawResponse =
         enhanceData.choices?.[0]?.message?.content || imagePrompt;
 
-      // Store the enhanced prompt
-      setEnhancedPrompt(enhancedPromptText);
+      // Extract the final prompt (remove thinking tags if present)
+      let finalPrompt = rawResponse;
+      const thinkMatch = rawResponse.match(
+        /<think>[\s\S]*?<\/think>\s*([\s\S]*)/
+      );
+      if (thinkMatch && thinkMatch[1]) {
+        finalPrompt = thinkMatch[1].trim();
+      }
+
+      // Store both the full response (with thinking) and the final prompt
+      setEnhancedPrompt(rawResponse);
       setShowPrompt(false);
 
       showToast('Generating image...', 'info');
 
-      // Step 2: Generate the image
+      // Step 2: Generate the image using only the final prompt
       let imageUrl: string;
 
       // Use Kontext model if user has API key and reference image
       if (apiKey && referenceImage) {
-        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPromptText)}?model=kontext&image=${encodeURIComponent(referenceImage)}&token=${encodeURIComponent(apiKey)}&nologo=true`;
+        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?model=kontext&image=${encodeURIComponent(referenceImage)}&token=${encodeURIComponent(apiKey)}&nologo=true`;
       } else {
-        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPromptText)}?nologo=true`;
+        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?nologo=true`;
       }
 
       // Preload the image to show loading state
