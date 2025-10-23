@@ -54,7 +54,8 @@ export default function Dashboard() {
       description: 'Real-time stock market data',
       icon: '📈',
       color: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-      comingSoon: true,
+      link: '/stock',
+      comingSoon: false,
     },
     {
       id: 'polls',
@@ -62,7 +63,8 @@ export default function Dashboard() {
       description: 'Create and vote on polls',
       icon: '📊',
       color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      comingSoon: true,
+      link: '/polls',
+      comingSoon: false,
     },
     {
       id: 'games',
