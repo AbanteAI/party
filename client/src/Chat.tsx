@@ -212,6 +212,8 @@ export default function Chat() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
     null
   );
+  const [enhancedPrompt, setEnhancedPrompt] = useState<string>('');
+  const [showPrompt, setShowPrompt] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -1230,13 +1232,17 @@ export default function Chat() {
       }
 
       const enhanceData = await enhanceResponse.json();
-      const enhancedPrompt =
+      const enhancedPromptText =
         enhanceData.choices?.[0]?.message?.content || imagePrompt;
+
+      // Store the enhanced prompt
+      setEnhancedPrompt(enhancedPromptText);
+      setShowPrompt(false);
 
       showToast('Generating image...', 'info');
 
       // Step 2: Generate the image
-      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?nologo=true`;
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPromptText)}?nologo=true`;
 
       // Preload the image to show loading state
       const img = new Image();
@@ -2332,6 +2338,21 @@ export default function Chat() {
                   }}
                 >
                   <button
+                    onClick={() => setShowPrompt(!showPrompt)}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: '#667eea',
+                      color: 'white',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📝 {showPrompt ? 'Hide' : 'Show'} Prompt
+                  </button>
+                  <button
                     onClick={() => {
                       const link = document.createElement('a');
                       link.href = generatedImageUrl;
@@ -2355,6 +2376,8 @@ export default function Chat() {
                     onClick={() => {
                       setGeneratedImageUrl(null);
                       setImagePrompt('');
+                      setEnhancedPrompt('');
+                      setShowPrompt(false);
                     }}
                     style={{
                       flex: 1,
@@ -2370,6 +2393,31 @@ export default function Chat() {
                     🔄 New Image
                   </button>
                 </div>
+                {showPrompt && enhancedPrompt && (
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      padding: '12px',
+                      background: 'rgba(0, 0, 0, 0.05)',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      color: currentTheme.text,
+                      lineHeight: '1.6',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        marginBottom: '8px',
+                        fontSize: '12px',
+                        opacity: 0.8,
+                      }}
+                    >
+                      Enhanced Prompt:
+                    </div>
+                    {enhancedPrompt}
+                  </div>
+                )}
               </div>
             )}
           </div>
