@@ -218,6 +218,7 @@ export default function Chat() {
   );
   const [enhancedPrompt, setEnhancedPrompt] = useState<string>('');
   const [showPrompt, setShowPrompt] = useState(false);
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -1207,6 +1208,28 @@ export default function Chat() {
 
       showToast('Enhancing your prompt...', 'info');
 
+      // Build the user message with optional image
+      const userMessage: { role: string; content: string | unknown[] } = {
+        role: 'user',
+        content: imagePrompt,
+      };
+
+      // If there's a reference image, format as vision message
+      if (referenceImage) {
+        userMessage.content = [
+          {
+            type: 'text',
+            text: imagePrompt,
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: referenceImage,
+            },
+          },
+        ];
+      }
+
       const enhanceResponse = await fetch(
         'https://text.pollinations.ai/openai/chat/completions',
         {
@@ -1217,13 +1240,11 @@ export default function Chat() {
             messages: [
               {
                 role: 'system',
-                content:
-                  "You are an expert at writing image generation prompts. Take the user's idea and enhance it into a detailed, vivid prompt that will generate a beautiful image. Be descriptive about style, lighting, composition, and mood. Return ONLY the enhanced prompt, nothing else.",
+                content: referenceImage
+                  ? 'You are an expert at writing image generation prompts. The user has provided a reference image and a description. Analyze the image and enhance their idea into a detailed, vivid prompt that will generate a beautiful image inspired by the reference. Be descriptive about style, lighting, composition, and mood. Return ONLY the enhanced prompt, nothing else.'
+                  : "You are an expert at writing image generation prompts. Take the user's idea and enhance it into a detailed, vivid prompt that will generate a beautiful image. Be descriptive about style, lighting, composition, and mood. Return ONLY the enhanced prompt, nothing else.",
               },
-              {
-                role: 'user',
-                content: imagePrompt,
-              },
+              userMessage,
             ],
             stream: false,
             temperature: 0.8,
@@ -1246,7 +1267,14 @@ export default function Chat() {
       showToast('Generating image...', 'info');
 
       // Step 2: Generate the image
-      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPromptText)}?nologo=true`;
+      let imageUrl: string;
+
+      // Use Kontext model if user has API key and reference image
+      if (apiKey && referenceImage) {
+        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPromptText)}?model=kontext&image=${encodeURIComponent(referenceImage)}&token=${encodeURIComponent(apiKey)}&nologo=true`;
+      } else {
+        imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPromptText)}?nologo=true`;
+      }
 
       // Preload the image to show loading state
       const img = new Image();
@@ -2249,7 +2277,85 @@ export default function Chat() {
               }}
             >
               Describe your image idea and AI will enhance it and generate a
-              beautiful image for you.
+              beautiful image for you. Optionally upload a reference image for
+              image-to-image generation.
+            </div>
+            {/* Reference Image Upload */}
+            <div style={{ marginBottom: '12px' }}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      setReferenceImage(event.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                style={{ display: 'none' }}
+                id="reference-image-upload"
+              />
+              <label
+                htmlFor="reference-image-upload"
+                style={{
+                  display: 'inline-block',
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: `1px solid ${currentTheme.border}`,
+                  background: currentTheme.messageBg,
+                  color: currentTheme.text,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  marginBottom: referenceImage ? '8px' : '0',
+                }}
+              >
+                📷 {referenceImage ? 'Change' : 'Upload'} Reference Image
+              </label>
+              {referenceImage && (
+                <div
+                  style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    marginLeft: '8px',
+                  }}
+                >
+                  <img
+                    src={referenceImage}
+                    alt="Reference"
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      objectFit: 'cover',
+                      borderRadius: '6px',
+                      border: `2px solid ${currentTheme.border}`,
+                    }}
+                  />
+                  <button
+                    onClick={() => setReferenceImage(null)}
+                    style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      right: '-6px',
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      border: 'none',
+                      background: '#ef4444',
+                      color: 'white',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
             </div>
             <textarea
               value={imagePrompt}
@@ -2386,6 +2492,7 @@ export default function Chat() {
                       setImagePrompt('');
                       setEnhancedPrompt('');
                       setShowPrompt(false);
+                      setReferenceImage(null);
                     }}
                     style={{
                       flex: 1,
