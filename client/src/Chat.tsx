@@ -306,7 +306,9 @@ export default function Chat() {
     null
   );
   const [enhancedPrompt, setEnhancedPrompt] = useState<string>('');
+  const [imageReasoning, setImageReasoning] = useState<string>('');
   const [showPrompt, setShowPrompt] = useState(false);
+  const [showReasoning, setShowReasoning] = useState(false);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1370,18 +1372,22 @@ Example structure:
       const rawResponse =
         enhanceData.choices?.[0]?.message?.content || imagePrompt;
 
-      // Extract the final prompt (remove thinking tags if present)
+      // Extract the final prompt and reasoning separately
       let finalPrompt = rawResponse;
+      let reasoning = '';
       const thinkMatch = rawResponse.match(
-        /<think>[\s\S]*?<\/think>\s*([\s\S]*)/
+        /<think>([\s\S]*?)<\/think>\s*([\s\S]*)/
       );
-      if (thinkMatch && thinkMatch[1]) {
-        finalPrompt = thinkMatch[1].trim();
+      if (thinkMatch) {
+        reasoning = thinkMatch[1].trim();
+        finalPrompt = thinkMatch[2].trim();
       }
 
-      // Store both the full response (with thinking) and the final prompt
-      setEnhancedPrompt(rawResponse);
+      // Store reasoning and final prompt separately
+      setImageReasoning(reasoning);
+      setEnhancedPrompt(finalPrompt);
       setShowPrompt(false);
+      setShowReasoning(false);
 
       showToast('Generating image...', 'info');
 
@@ -2570,6 +2576,23 @@ Example structure:
                     gap: '8px',
                   }}
                 >
+                  {imageReasoning && (
+                    <button
+                      onClick={() => setShowReasoning(!showReasoning)}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: '#8b5cf6',
+                        color: 'white',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      🧠 {showReasoning ? 'Hide' : 'Show'} Reasoning
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowPrompt(!showPrompt)}
                     style={{
@@ -2610,7 +2633,9 @@ Example structure:
                       setGeneratedImageUrl(null);
                       setImagePrompt('');
                       setEnhancedPrompt('');
+                      setImageReasoning('');
                       setShowPrompt(false);
+                      setShowReasoning(false);
                       setReferenceImage(null);
                     }}
                     style={{
@@ -2627,6 +2652,32 @@ Example structure:
                     🔄 New Image
                   </button>
                 </div>
+                {showReasoning && imageReasoning && (
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      padding: '12px',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      color: currentTheme.text,
+                      lineHeight: '1.6',
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        marginBottom: '8px',
+                        fontSize: '12px',
+                        opacity: 0.8,
+                      }}
+                    >
+                      🧠 AI Reasoning Process:
+                    </div>
+                    {imageReasoning}
+                  </div>
+                )}
                 {showPrompt && enhancedPrompt && (
                   <div
                     style={{
@@ -2647,17 +2698,9 @@ Example structure:
                         opacity: 0.8,
                       }}
                     >
-                      Enhanced Prompt:
+                      📝 Enhanced Prompt:
                     </div>
-                    {(() => {
-                      // Extract final prompt without thinking tags
-                      const thinkMatch = enhancedPrompt.match(
-                        /<think>[\s\S]*?<\/think>\s*([\s\S]*)/
-                      );
-                      return thinkMatch && thinkMatch[1]
-                        ? thinkMatch[1].trim()
-                        : enhancedPrompt;
-                    })()}
+                    {enhancedPrompt}
                   </div>
                 )}
               </div>
@@ -3001,92 +3044,96 @@ Example structure:
           borderTop: `1px solid ${currentTheme.border}`,
         }}
       >
-        {/* Response Mode Selector */}
-        <div
-          style={{
-            marginBottom: '12px',
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'center',
-          }}
-        >
-          <span
+        {/* Response Mode Selector - Hide for reasoning models */}
+        {!['deepseek', 'openai-reasoning', 'deepseek-reasoning'].includes(
+          selectedModel
+        ) && (
+          <div
             style={{
-              fontSize: '12px',
-              color: currentTheme.text,
-              opacity: 0.8,
+              marginBottom: '12px',
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center',
             }}
           >
-            Mode:
-          </span>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {(['none', 'reason', 'rush'] as ResponseMode[]).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setResponseMode(mode)}
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '6px',
-                  border: `1px solid ${currentTheme.border}`,
-                  background:
-                    responseMode === mode
-                      ? 'rgba(102, 126, 234, 0.3)'
-                      : currentTheme.messageBg,
-                  color: currentTheme.text,
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                {mode === 'none' && (
-                  <>
-                    <Circle
-                      size={12}
-                      style={{
-                        color:
-                          responseMode === 'none'
-                            ? currentTheme.iconPrimary
-                            : currentTheme.text,
-                      }}
-                    />
-                    None
-                  </>
-                )}
-                {mode === 'reason' && (
-                  <>
-                    <Brain
-                      size={12}
-                      style={{
-                        color:
-                          responseMode === 'reason'
-                            ? currentTheme.iconSecondary
-                            : currentTheme.text,
-                      }}
-                    />
-                    Reason
-                  </>
-                )}
-                {mode === 'rush' && (
-                  <>
-                    <Zap
-                      size={12}
-                      style={{
-                        color:
-                          responseMode === 'rush'
-                            ? currentTheme.iconAccent
-                            : currentTheme.text,
-                      }}
-                    />
-                    Rush
-                  </>
-                )}
-              </button>
-            ))}
+            <span
+              style={{
+                fontSize: '12px',
+                color: currentTheme.text,
+                opacity: 0.8,
+              }}
+            >
+              Mode:
+            </span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {(['none', 'reason', 'rush'] as ResponseMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setResponseMode(mode)}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${currentTheme.border}`,
+                    background:
+                      responseMode === mode
+                        ? 'rgba(102, 126, 234, 0.3)'
+                        : currentTheme.messageBg,
+                    color: currentTheme.text,
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  {mode === 'none' && (
+                    <>
+                      <Circle
+                        size={12}
+                        style={{
+                          color:
+                            responseMode === 'none'
+                              ? currentTheme.iconPrimary
+                              : currentTheme.text,
+                        }}
+                      />
+                      None
+                    </>
+                  )}
+                  {mode === 'reason' && (
+                    <>
+                      <Brain
+                        size={12}
+                        style={{
+                          color:
+                            responseMode === 'reason'
+                              ? currentTheme.iconSecondary
+                              : currentTheme.text,
+                        }}
+                      />
+                      Reason
+                    </>
+                  )}
+                  {mode === 'rush' && (
+                    <>
+                      <Zap
+                        size={12}
+                        style={{
+                          color:
+                            responseMode === 'rush'
+                              ? currentTheme.iconAccent
+                              : currentTheme.text,
+                        }}
+                      />
+                      Rush
+                    </>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         {/* Image Preview */}
         {uploadedImages.length > 0 && (
           <div
