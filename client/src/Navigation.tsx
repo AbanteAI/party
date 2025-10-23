@@ -1,6 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
 
-export default function Navigation() {
+interface NavigationProps {
+  currentUser: string | null;
+  onLogout: () => void;
+  onShowAuth: () => void;
+}
+
+export default function Navigation({
+  currentUser,
+  onLogout,
+  onShowAuth,
+}: NavigationProps) {
   const location = useLocation();
 
   const links = [
@@ -24,41 +34,101 @@ export default function Navigation() {
           gap: '20px',
           alignItems: 'center',
           flexWrap: 'wrap',
+          justifyContent: 'space-between',
         }}
       >
-        {links.map((link) => {
-          const isActive = location.pathname === link.path;
-          return (
-            <Link
-              key={link.path}
-              to={link.path}
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+          {links.map((link) => {
+            const isActive = location.pathname === link.path;
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                style={{
+                  color: 'white',
+                  textDecoration: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  background: isActive
+                    ? 'rgba(255, 255, 255, 0.2)'
+                    : 'transparent',
+                  transition: 'all 0.2s',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                }}
+                onMouseOver={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background =
+                      'rgba(255, 255, 255, 0.1)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* User info and auth */}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {currentUser ? (
+            <>
+              <span style={{ color: 'white', fontSize: '14px' }}>
+                👤 {currentUser}
+              </span>
+              <button
+                onClick={onLogout}
+                style={{
+                  color: 'white',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  transition: 'all 0.2s',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                }}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onShowAuth}
               style={{
                 color: 'white',
-                textDecoration: 'none',
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: 'none',
                 padding: '8px 16px',
                 borderRadius: '8px',
-                background: isActive
-                  ? 'rgba(255, 255, 255, 0.2)'
-                  : 'transparent',
-                transition: 'all 0.2s',
+                cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: '500',
+                transition: 'all 0.2s',
               }}
               onMouseOver={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                }
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
               }}
               onMouseOut={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'transparent';
-                }
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
               }}
             >
-              {link.label}
-            </Link>
-          );
-        })}
+              Login
+            </button>
+          )}
+        </div>
       </div>
     </nav>
   );

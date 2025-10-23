@@ -243,7 +243,11 @@ const THEMES = {
   },
 };
 
-export default function Chat() {
+interface ChatProps {
+  currentUser: string | null;
+}
+
+export default function Chat({ currentUser }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -295,6 +299,7 @@ export default function Chat() {
       name: string;
       endpoint: string;
       apiKey: string;
+      creator: string;
       allowSystemPrompts: {
         reasoning: boolean;
         rush: boolean;
@@ -2911,6 +2916,45 @@ Final synthesis: [how to combine all elements]
                     💾 Download
                   </button>
                   <button
+                    onClick={async () => {
+                      if (!currentUser) {
+                        alert('Please log in to share images');
+                        return;
+                      }
+
+                      try {
+                        const response = await fetch('/api/images', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            prompt: enhancedPrompt || imagePrompt,
+                            creator: currentUser,
+                          }),
+                        });
+
+                        if (response.ok) {
+                          showToast('Image shared to feed!', 'success');
+                        } else {
+                          throw new Error('Failed to share image');
+                        }
+                      } catch (error) {
+                        showToast('Failed to share image', 'error');
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: '#f59e0b',
+                      color: 'white',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📤 Share
+                  </button>
+                  <button
                     onClick={() => {
                       setGeneratedImageUrl(null);
                       setImagePrompt('');
@@ -3209,6 +3253,11 @@ Final synthesis: [how to combine all elements]
                       return;
                     }
 
+                    if (!currentUser) {
+                      alert('Please log in to create community models');
+                      return;
+                    }
+
                     if (editingModelId) {
                       // Update existing model
                       setCommunityModels(
@@ -3219,6 +3268,7 @@ Final synthesis: [how to combine all elements]
                                 name: newModelName,
                                 endpoint: newModelEndpoint,
                                 apiKey: newModelApiKey,
+                                creator: m.creator, // Keep original creator
                                 allowSystemPrompts: newModelAllowSystemPrompts,
                               }
                             : m
@@ -3234,6 +3284,7 @@ Final synthesis: [how to combine all elements]
                           name: newModelName,
                           endpoint: newModelEndpoint,
                           apiKey: newModelApiKey,
+                          creator: currentUser,
                           allowSystemPrompts: newModelAllowSystemPrompts,
                         },
                       ]);

@@ -67,6 +67,15 @@ export default function Dashboard() {
       comingSoon: false,
     },
     {
+      id: 'feed',
+      title: 'Image Feed',
+      description: 'Community shared AI images',
+      icon: '🖼️',
+      color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      link: '/feed',
+      comingSoon: false,
+    },
+    {
       id: 'games',
       title: 'More Games',
       description: 'Additional games coming soon',
