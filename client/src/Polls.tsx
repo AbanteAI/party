@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { User } from 'lucide-react';
 
 interface PollOption {
   id: string;
@@ -349,15 +350,38 @@ export default function Polls({ currentUser }: PollsProps) {
                           color: '#6b7280',
                         }}
                       >
-                        Voted by:{' '}
-                        {option.votes
-                          .slice(0, 5)
-                          .map((voter) =>
-                            voter === 'anonymous' ? '👤 Anonymous' : `@${voter}`
-                          )
-                          .join(', ')}
-                        {option.votes.length > 5 &&
-                          ` and ${option.votes.length - 5} more`}
+                        <span
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          Voted by:{' '}
+                          {option.votes.slice(0, 5).map((voter, idx) => (
+                            <span
+                              key={idx}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '2px',
+                              }}
+                            >
+                              {voter === 'anonymous' ? (
+                                <>
+                                  <User size={12} /> Anonymous
+                                </>
+                              ) : (
+                                `@${voter}`
+                              )}
+                              {idx < Math.min(option.votes.length, 5) - 1 &&
+                                ', '}
+                            </span>
+                          ))}
+                          {option.votes.length > 5 &&
+                            ` and ${option.votes.length - 5} more`}
+                        </span>
                       </div>
                     )}
                   </div>

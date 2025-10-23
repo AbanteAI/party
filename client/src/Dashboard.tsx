@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Bot } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface AppCard {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: string | LucideIcon;
   color: string;
   link?: string;
   comingSoon?: boolean;
@@ -34,7 +36,7 @@ export default function Dashboard() {
       id: 'chat',
       title: 'AI Chat',
       description: 'Chat with AI powered by Pollinations',
-      icon: '🤖',
+      icon: Bot,
       color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
       link: '/ai',
       comingSoon: false,
@@ -233,9 +235,16 @@ export default function Dashboard() {
                 fontSize: '64px',
                 marginBottom: '20px',
                 textAlign: 'center',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
-              {app.icon}
+              {typeof app.icon === 'string' ? (
+                app.icon
+              ) : (
+                <app.icon size={64} strokeWidth={1.5} />
+              )}
             </div>
 
             {/* Title */}

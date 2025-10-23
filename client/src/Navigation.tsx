@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { Home, Bot, User } from 'lucide-react';
 
 interface NavigationProps {
   currentUser: string | null;
@@ -14,8 +15,8 @@ export default function Navigation({
   const location = useLocation();
 
   const links = [
-    { path: '/', label: '🏠 Dashboard' },
-    { path: '/ai', label: '🤖 AI Chat' },
+    { path: '/', label: 'Dashboard', icon: Home },
+    { path: '/ai', label: 'AI Chat', icon: Bot },
   ];
 
   return (
@@ -40,6 +41,7 @@ export default function Navigation({
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           {links.map((link) => {
             const isActive = location.pathname === link.path;
+            const Icon = link.icon;
             return (
               <Link
                 key={link.path}
@@ -55,6 +57,9 @@ export default function Navigation({
                   transition: 'all 0.2s',
                   fontSize: '14px',
                   fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                 }}
                 onMouseOver={(e) => {
                   if (!isActive) {
@@ -68,6 +73,7 @@ export default function Navigation({
                   }
                 }}
               >
+                <Icon size={16} />
                 {link.label}
               </Link>
             );
@@ -78,8 +84,17 @@ export default function Navigation({
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {currentUser ? (
             <>
-              <span style={{ color: 'white', fontSize: '14px' }}>
-                👤 {currentUser}
+              <span
+                style={{
+                  color: 'white',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <User size={16} />
+                {currentUser}
               </span>
               <button
                 onClick={onLogout}
