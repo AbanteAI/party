@@ -3096,6 +3096,7 @@ Final synthesis: [how to combine all elements]
                   </button>
                   <button
                     onClick={() => {
+                      if (!generatedImageUrl) return;
                       const link = document.createElement('a');
                       link.href = generatedImageUrl;
                       link.download = 'generated-image.png';
