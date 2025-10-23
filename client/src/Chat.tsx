@@ -560,8 +560,6 @@ export default function Chat({ currentUser }: ChatProps) {
       );
 
       // Helper function to perform web search
-      // @ts-expect-error - Function will be integrated into streaming soon
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const performWebSearch = async (query: string): Promise<string> => {
         try {
           const response = await fetch(
@@ -601,6 +599,56 @@ export default function Chat({ currentUser }: ChatProps) {
           return `\n\n[SEARCH ERROR: Unable to perform search for "${query}"]\n\n`;
         }
       };
+
+      // If web search is enabled, check if we need to search
+      if (webSearchEnabled) {
+        try {
+          showToast('Checking if search is needed...', 'info');
+
+          const searchCheckResponse = await fetch(
+            'https://text.pollinations.ai/openai/chat/completions',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(apiKey && { Authorization: `Bearer ${apiKey}` }),
+              },
+              body: JSON.stringify({
+                model: 'openai-fast',
+                messages: [
+                  {
+                    role: 'system',
+                    content:
+                      'You determine if a web search is needed to answer the user\'s question. If search is needed, respond with ONLY the search query (no explanation). If no search is needed, respond with "NO_SEARCH".',
+                  },
+                  ...formattedMessages,
+                ],
+                stream: false,
+              }),
+            }
+          );
+
+          if (searchCheckResponse.ok) {
+            const searchCheckData = await searchCheckResponse.json();
+            const searchQuery =
+              searchCheckData.choices?.[0]?.message?.content?.trim();
+
+            if (searchQuery && searchQuery !== 'NO_SEARCH') {
+              showToast(`Searching for: ${searchQuery}`, 'info');
+              const searchResults = await performWebSearch(searchQuery);
+
+              // Add search results as a system message
+              formattedMessages.push({
+                role: 'system',
+                content: searchResults,
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Search check error:', error);
+          // Continue without search if there's an error
+        }
+      }
 
       // Add system prompts (mode prompt + custom prompt + web search)
       // Filter based on community model settings if applicable
