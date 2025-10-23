@@ -95,6 +95,9 @@ const THEMES = {
     text: '#1f2937',
     userText: 'white',
     border: 'rgba(0, 0, 0, 0.1)',
+    iconPrimary: '#667eea',
+    iconSecondary: '#10b981',
+    iconAccent: '#f59e0b',
   },
   dark: {
     bg: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
@@ -106,6 +109,9 @@ const THEMES = {
     text: 'white',
     userText: 'white',
     border: 'rgba(255, 255, 255, 0.1)',
+    iconPrimary: '#818cf8',
+    iconSecondary: '#34d399',
+    iconAccent: '#fbbf24',
   },
   purple: {
     bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -117,6 +123,9 @@ const THEMES = {
     text: 'white',
     userText: '#1f2937',
     border: 'rgba(255, 255, 255, 0.2)',
+    iconPrimary: '#c084fc',
+    iconSecondary: '#60efff',
+    iconAccent: '#fcd34d',
   },
   ocean: {
     bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
@@ -128,6 +137,9 @@ const THEMES = {
     text: 'white',
     userText: '#1f2937',
     border: 'rgba(255, 255, 255, 0.1)',
+    iconPrimary: '#06b6d4',
+    iconSecondary: '#10b981',
+    iconAccent: '#f59e0b',
   },
   forest: {
     bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
@@ -139,6 +151,9 @@ const THEMES = {
     text: 'white',
     userText: '#1f2937',
     border: 'rgba(255, 255, 255, 0.1)',
+    iconPrimary: '#10b981',
+    iconSecondary: '#06b6d4',
+    iconAccent: '#f59e0b',
   },
   openwebui: {
     bg: '#f9f9f9',
@@ -150,6 +165,9 @@ const THEMES = {
     text: '#1f2937',
     userText: '#1f2937',
     border: '#e3e3e3',
+    iconPrimary: '#667eea',
+    iconSecondary: '#10b981',
+    iconAccent: '#f59e0b',
   },
 };
 
@@ -1642,7 +1660,10 @@ export default function Chat() {
                 cursor: 'pointer',
               }}
             >
-              <Settings size={14} style={{ marginRight: '4px' }} />
+              <Settings
+                size={14}
+                style={{ marginRight: '4px', color: currentTheme.iconPrimary }}
+              />
               Settings
             </button>
             <button
@@ -1659,7 +1680,10 @@ export default function Chat() {
                 alignItems: 'center',
               }}
             >
-              <Trash2 size={14} style={{ marginRight: '4px' }} />
+              <Trash2
+                size={14}
+                style={{ marginRight: '4px', color: 'white' }}
+              />
               Clear
             </button>
           </div>
@@ -2456,19 +2480,43 @@ export default function Chat() {
               >
                 {mode === 'none' && (
                   <>
-                    <Circle size={12} />
+                    <Circle
+                      size={12}
+                      style={{
+                        color:
+                          responseMode === 'none'
+                            ? currentTheme.iconPrimary
+                            : currentTheme.text,
+                      }}
+                    />
                     None
                   </>
                 )}
                 {mode === 'reason' && (
                   <>
-                    <Brain size={12} />
+                    <Brain
+                      size={12}
+                      style={{
+                        color:
+                          responseMode === 'reason'
+                            ? currentTheme.iconSecondary
+                            : currentTheme.text,
+                      }}
+                    />
                     Reason
                   </>
                 )}
                 {mode === 'rush' && (
                   <>
-                    <Zap size={12} />
+                    <Zap
+                      size={12}
+                      style={{
+                        color:
+                          responseMode === 'rush'
+                            ? currentTheme.iconAccent
+                            : currentTheme.text,
+                      }}
+                    />
                     Rush
                   </>
                 )}
