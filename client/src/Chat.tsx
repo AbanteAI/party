@@ -559,6 +559,47 @@ export default function Chat({ currentUser }: ChatProps) {
         (m) => m.id === selectedModel
       );
 
+      // Helper function to perform web search
+      const performWebSearch = async (query: string): Promise<string> => {
+        try {
+          const response = await fetch(
+            `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json`
+          );
+          const data = await response.json();
+
+          // Format results
+          let results = `\n\n[SEARCH RESULTS for "${query}"]\n\n`;
+
+          if (data.AbstractText) {
+            results += `**Summary:** ${data.AbstractText}\n`;
+            if (data.AbstractURL) {
+              results += `Source: ${data.AbstractURL}\n`;
+            }
+            results += '\n';
+          }
+
+          if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+            results += '**Related Information:**\n';
+            data.RelatedTopics.slice(0, 5).forEach(
+              (topic: { Text?: string; FirstURL?: string }, idx: number) => {
+                if (topic.Text) {
+                  results += `${idx + 1}. ${topic.Text}\n`;
+                  if (topic.FirstURL) {
+                    results += `   ${topic.FirstURL}\n`;
+                  }
+                }
+              }
+            );
+          }
+
+          results += '\n[END SEARCH RESULTS]\n\n';
+          return results;
+        } catch (error) {
+          console.error('Search error:', error);
+          return `\n\n[SEARCH ERROR: Unable to perform search for "${query}"]\n\n`;
+        }
+      };
+
       // Add system prompts (mode prompt + custom prompt + web search)
       // Filter based on community model settings if applicable
       const systemPrompts = [];
