@@ -290,13 +290,31 @@ export default function Chat() {
   const [showReasoning, setShowReasoning] = useState(false);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [communityModels, setCommunityModels] = useState<
-    Array<{ id: string; name: string; endpoint: string; apiKey: string }>
+    Array<{
+      id: string;
+      name: string;
+      endpoint: string;
+      apiKey: string;
+      allowSystemPrompts: {
+        reasoning: boolean;
+        rush: boolean;
+        personality: boolean;
+        custom: boolean;
+      };
+    }>
   >([]);
   const [showAddModel, setShowAddModel] = useState(false);
+  const [editingModelId, setEditingModelId] = useState<string | null>(null);
   const [newModelId, setNewModelId] = useState('');
   const [newModelName, setNewModelName] = useState('');
   const [newModelEndpoint, setNewModelEndpoint] = useState('');
   const [newModelApiKey, setNewModelApiKey] = useState('');
+  const [newModelAllowSystemPrompts, setNewModelAllowSystemPrompts] = useState({
+    reasoning: true,
+    rush: true,
+    personality: true,
+    custom: true,
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -474,26 +492,58 @@ export default function Chat() {
         return { role: msg.role, content: msg.content };
       });
 
+      // Check if this is a community model and get its settings
+      const communityModel = communityModels.find(
+        (m) => m.id === selectedModel
+      );
+
       // Add system prompts (mode prompt + custom prompt + web search)
+      // Filter based on community model settings if applicable
       const systemPrompts = [];
-      if (MODE_PROMPTS[responseMode]) {
+
+      // Reasoning mode prompt
+      if (
+        responseMode === 'reason' &&
+        MODE_PROMPTS[responseMode] &&
+        (!communityModel || communityModel.allowSystemPrompts.reasoning)
+      ) {
         systemPrompts.push({
           role: 'system',
           content: MODE_PROMPTS[responseMode],
         });
       }
-      if (customSettings.systemPrompt) {
+
+      // Rush mode prompt
+      if (
+        responseMode === 'rush' &&
+        MODE_PROMPTS[responseMode] &&
+        (!communityModel || communityModel.allowSystemPrompts.rush)
+      ) {
+        systemPrompts.push({
+          role: 'system',
+          content: MODE_PROMPTS[responseMode],
+        });
+      }
+
+      // Custom system prompt
+      if (
+        customSettings.systemPrompt &&
+        (!communityModel || communityModel.allowSystemPrompts.custom)
+      ) {
         systemPrompts.push({
           role: 'system',
           content: customSettings.systemPrompt,
         });
       }
+
+      // Web search prompt (always allowed for now)
       if (webSearchEnabled && selectedModel !== 'gemini-search') {
         systemPrompts.push({
           role: 'system',
           content: WEB_SEARCH_PROMPT,
         });
       }
+
       const messagesWithSystem =
         systemPrompts.length > 0
           ? [...systemPrompts, ...formattedMessages]
@@ -520,10 +570,7 @@ export default function Chat() {
         requestBody.reasoning_effort = customSettings.reasoningEffort;
       }
 
-      // Check if this is a community model
-      const communityModel = communityModels.find(
-        (m) => m.id === selectedModel
-      );
+      // Get endpoint and API key (communityModel already declared above for system prompts)
       const endpoint = communityModel
         ? communityModel.endpoint
         : 'https://text.pollinations.ai/openai/chat/completions';
@@ -795,20 +842,49 @@ export default function Chat() {
           return { role: msg.role, content: msg.content };
         });
 
-        // Add system prompts
+        // Check if this is a community model and get its settings
+        const communityModel = communityModels.find(
+          (m) => m.id === selectedModel
+        );
+
+        // Add system prompts (filter based on community model settings)
         const systemPrompts = [];
-        if (MODE_PROMPTS[responseMode]) {
+
+        // Reasoning mode prompt
+        if (
+          responseMode === 'reason' &&
+          MODE_PROMPTS[responseMode] &&
+          (!communityModel || communityModel.allowSystemPrompts.reasoning)
+        ) {
           systemPrompts.push({
             role: 'system',
             content: MODE_PROMPTS[responseMode],
           });
         }
-        if (customSettings.systemPrompt) {
+
+        // Rush mode prompt
+        if (
+          responseMode === 'rush' &&
+          MODE_PROMPTS[responseMode] &&
+          (!communityModel || communityModel.allowSystemPrompts.rush)
+        ) {
+          systemPrompts.push({
+            role: 'system',
+            content: MODE_PROMPTS[responseMode],
+          });
+        }
+
+        // Custom system prompt
+        if (
+          customSettings.systemPrompt &&
+          (!communityModel || communityModel.allowSystemPrompts.custom)
+        ) {
           systemPrompts.push({
             role: 'system',
             content: customSettings.systemPrompt,
           });
         }
+
         const messagesWithSystem =
           systemPrompts.length > 0
             ? [...systemPrompts, ...formattedMessages]
@@ -834,10 +910,7 @@ export default function Chat() {
           requestBody.reasoning_effort = customSettings.reasoningEffort;
         }
 
-        // Check if this is a community model
-        const communityModel = communityModels.find(
-          (m) => m.id === selectedModel
-        );
+        // Get endpoint and API key (communityModel already declared above for system prompts)
         const endpoint = communityModel
           ? communityModel.endpoint
           : 'https://text.pollinations.ai/openai/chat/completions';
@@ -968,20 +1041,49 @@ export default function Chat() {
         return { role: msg.role, content: msg.content };
       });
 
-      // Add system prompts (mode prompt + custom prompt)
+      // Check if this is a community model and get its settings
+      const communityModel = communityModels.find(
+        (m) => m.id === selectedModel
+      );
+
+      // Add system prompts (filter based on community model settings)
       const systemPrompts = [];
-      if (MODE_PROMPTS[responseMode]) {
+
+      // Reasoning mode prompt
+      if (
+        responseMode === 'reason' &&
+        MODE_PROMPTS[responseMode] &&
+        (!communityModel || communityModel.allowSystemPrompts.reasoning)
+      ) {
         systemPrompts.push({
           role: 'system',
           content: MODE_PROMPTS[responseMode],
         });
       }
-      if (customSettings.systemPrompt) {
+
+      // Rush mode prompt
+      if (
+        responseMode === 'rush' &&
+        MODE_PROMPTS[responseMode] &&
+        (!communityModel || communityModel.allowSystemPrompts.rush)
+      ) {
+        systemPrompts.push({
+          role: 'system',
+          content: MODE_PROMPTS[responseMode],
+        });
+      }
+
+      // Custom system prompt
+      if (
+        customSettings.systemPrompt &&
+        (!communityModel || communityModel.allowSystemPrompts.custom)
+      ) {
         systemPrompts.push({
           role: 'system',
           content: customSettings.systemPrompt,
         });
       }
+
       const messagesWithSystem =
         systemPrompts.length > 0
           ? [...systemPrompts, ...formattedMessages]
@@ -1007,10 +1109,7 @@ export default function Chat() {
         requestBody.reasoning_effort = customSettings.reasoningEffort;
       }
 
-      // Check if this is a community model
-      const communityModel = communityModels.find(
-        (m) => m.id === selectedModel
-      );
+      // Get endpoint and API key (communityModel already declared above for system prompts)
       const endpoint = communityModel
         ? communityModel.endpoint
         : 'https://text.pollinations.ai/openai/chat/completions';
@@ -2083,7 +2182,10 @@ Final synthesis: [how to combine all elements]
             {apiKey ? '✓' : 'API Key'}
           </button>
           <button
-            onClick={() => setShowAddModel(true)}
+            onClick={() => {
+              setShowAddModel(true);
+              setEditingModelId(null);
+            }}
             title="Add Community Model"
             style={{
               padding: '8px 12px',
@@ -2100,6 +2202,97 @@ Final synthesis: [how to combine all elements]
           >
             ➕ Model
           </button>
+          {communityModels.length > 0 && (
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => {
+                  const selectedCommunity = communityModels.find(
+                    (m) => m.id === selectedModel
+                  );
+                  if (selectedCommunity) {
+                    setNewModelId(selectedCommunity.id);
+                    setNewModelName(selectedCommunity.name);
+                    setNewModelEndpoint(selectedCommunity.endpoint);
+                    setNewModelApiKey(selectedCommunity.apiKey);
+                    setNewModelAllowSystemPrompts(
+                      selectedCommunity.allowSystemPrompts
+                    );
+                    setEditingModelId(selectedCommunity.id);
+                    setShowAddModel(true);
+                  }
+                }}
+                disabled={!communityModels.find((m) => m.id === selectedModel)}
+                title="Edit Selected Community Model"
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  border: `1px solid ${currentTheme.border}`,
+                  background: communityModels.find(
+                    (m) => m.id === selectedModel
+                  )
+                    ? currentTheme.messageBg
+                    : 'rgba(128, 128, 128, 0.2)',
+                  color: currentTheme.text,
+                  fontSize: '14px',
+                  cursor: communityModels.find((m) => m.id === selectedModel)
+                    ? 'pointer'
+                    : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  opacity: communityModels.find((m) => m.id === selectedModel)
+                    ? 1
+                    : 0.5,
+                }}
+              >
+                ✏️ Edit
+              </button>
+            </div>
+          )}
+          {communityModels.length > 0 && (
+            <button
+              onClick={() => {
+                const selectedCommunity = communityModels.find(
+                  (m) => m.id === selectedModel
+                );
+                if (
+                  selectedCommunity &&
+                  confirm(`Delete community model "${selectedCommunity.name}"?`)
+                ) {
+                  setCommunityModels(
+                    communityModels.filter((m) => m.id !== selectedModel)
+                  );
+                  setSelectedModel('openai');
+                  showToast('Community model deleted', 'info');
+                }
+              }}
+              disabled={!communityModels.find((m) => m.id === selectedModel)}
+              title="Delete Selected Community Model"
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: `1px solid ${currentTheme.border}`,
+                background: communityModels.find((m) => m.id === selectedModel)
+                  ? 'rgba(239, 68, 68, 0.2)'
+                  : 'rgba(128, 128, 128, 0.2)',
+                color: communityModels.find((m) => m.id === selectedModel)
+                  ? '#ef4444'
+                  : currentTheme.text,
+                fontSize: '14px',
+                cursor: communityModels.find((m) => m.id === selectedModel)
+                  ? 'pointer'
+                  : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                opacity: communityModels.find((m) => m.id === selectedModel)
+                  ? 1
+                  : 0.5,
+              }}
+            >
+              🗑️ Delete
+            </button>
+          )}
           <select
             value={theme}
             onChange={(e) => setTheme(e.target.value as Theme)}
@@ -2945,6 +3138,64 @@ Final synthesis: [how to combine all elements]
                 />
               </div>
 
+              {/* System Prompt Settings */}
+              <div style={{ marginBottom: '20px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: '#1f2937',
+                    marginBottom: '8px',
+                  }}
+                >
+                  Allow System Prompts
+                </label>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}
+                >
+                  {[
+                    { key: 'reasoning', label: 'Reasoning Mode' },
+                    { key: 'rush', label: 'Rush Mode' },
+                    { key: 'personality', label: 'Personality Templates' },
+                    { key: 'custom', label: 'Custom System Prompt' },
+                  ].map(({ key, label }) => (
+                    <label
+                      key={key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={
+                          newModelAllowSystemPrompts[
+                            key as keyof typeof newModelAllowSystemPrompts
+                          ]
+                        }
+                        onChange={(e) =>
+                          setNewModelAllowSystemPrompts({
+                            ...newModelAllowSystemPrompts,
+                            [key]: e.target.checked,
+                          })
+                        }
+                        style={{ cursor: 'pointer' }}
+                      />
+                      <span style={{ fontSize: '14px', color: '#1f2937' }}>
+                        {label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button
                   onClick={() => {
@@ -2957,21 +3208,50 @@ Final synthesis: [how to combine all elements]
                       alert('Please fill in all fields');
                       return;
                     }
-                    setCommunityModels([
-                      ...communityModels,
-                      {
-                        id: newModelId,
-                        name: newModelName,
-                        endpoint: newModelEndpoint,
-                        apiKey: newModelApiKey,
-                      },
-                    ]);
+
+                    if (editingModelId) {
+                      // Update existing model
+                      setCommunityModels(
+                        communityModels.map((m) =>
+                          m.id === editingModelId
+                            ? {
+                                id: newModelId,
+                                name: newModelName,
+                                endpoint: newModelEndpoint,
+                                apiKey: newModelApiKey,
+                                allowSystemPrompts: newModelAllowSystemPrompts,
+                              }
+                            : m
+                        )
+                      );
+                      showToast('Community model updated!', 'success');
+                    } else {
+                      // Add new model
+                      setCommunityModels([
+                        ...communityModels,
+                        {
+                          id: newModelId,
+                          name: newModelName,
+                          endpoint: newModelEndpoint,
+                          apiKey: newModelApiKey,
+                          allowSystemPrompts: newModelAllowSystemPrompts,
+                        },
+                      ]);
+                      showToast('Community model added!', 'success');
+                    }
+
                     setNewModelId('');
                     setNewModelName('');
                     setNewModelEndpoint('');
                     setNewModelApiKey('');
+                    setNewModelAllowSystemPrompts({
+                      reasoning: true,
+                      rush: true,
+                      personality: true,
+                      custom: true,
+                    });
+                    setEditingModelId(null);
                     setShowAddModel(false);
-                    showToast('Community model added!', 'success');
                   }}
                   style={{
                     flex: 1,
@@ -2986,10 +3266,23 @@ Final synthesis: [how to combine all elements]
                     cursor: 'pointer',
                   }}
                 >
-                  Add Model
+                  {editingModelId ? 'Update Model' : 'Add Model'}
                 </button>
                 <button
-                  onClick={() => setShowAddModel(false)}
+                  onClick={() => {
+                    setShowAddModel(false);
+                    setEditingModelId(null);
+                    setNewModelId('');
+                    setNewModelName('');
+                    setNewModelEndpoint('');
+                    setNewModelApiKey('');
+                    setNewModelAllowSystemPrompts({
+                      reasoning: true,
+                      rush: true,
+                      personality: true,
+                      custom: true,
+                    });
+                  }}
                   style={{
                     flex: 1,
                     padding: '15px',
