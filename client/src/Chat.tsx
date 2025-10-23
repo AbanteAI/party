@@ -560,7 +560,7 @@ export default function Chat({ currentUser }: ChatProps) {
       );
 
       // Helper function to perform web search
-      // @ts-ignore - Function will be integrated into streaming soon
+      // @ts-expect-error - Function will be integrated into streaming soon
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const performWebSearch = async (query: string): Promise<string> => {
         try {
