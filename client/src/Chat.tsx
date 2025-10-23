@@ -1207,7 +1207,7 @@ export default function Chat() {
           method: 'POST',
           headers,
           body: JSON.stringify({
-            model: 'openai',
+            model: 'openai-fast',
             messages: [
               {
                 role: 'system',
