@@ -26,8 +26,23 @@ interface SharedImage {
   likes: string[]; // usernames who liked
 }
 
+interface PollOption {
+  id: string;
+  text: string;
+  votes: string[]; // usernames who voted (or 'anonymous')
+}
+
+interface Poll {
+  id: string;
+  question: string;
+  options: PollOption[];
+  createdBy: string;
+  createdAt: number;
+}
+
 const users: User[] = [];
 const sharedImages: SharedImage[] = [];
+const polls: Poll[] = [];
 
 // Basic route
 app.get('/api', (req: Request, res: Response) => {
@@ -107,6 +122,66 @@ app.post('/api/images/:id/like', (req: Request, res: Response) => {
   }
 
   res.json({ success: true, likes: image.likes.length });
+});
+
+// Poll routes
+app.get('/api/polls', (req: Request, res: Response) => {
+  res.json(polls.sort((a, b) => b.createdAt - a.createdAt));
+});
+
+app.post('/api/polls', (req: Request, res: Response) => {
+  const { question, options, creator } = req.body;
+
+  if (!question || !options || !creator) {
+    return res
+      .status(400)
+      .json({ error: 'Question, options, and creator required' });
+  }
+
+  const poll: Poll = {
+    id: Date.now().toString(),
+    question,
+    options: options.map((text: string, index: number) => ({
+      id: `${Date.now()}-${index}`,
+      text,
+      votes: [],
+    })),
+    createdBy: creator,
+    createdAt: Date.now(),
+  };
+
+  polls.push(poll);
+  res.json({ success: true, poll });
+});
+
+app.post('/api/polls/:id/vote', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { optionId, username, anonymous } = req.body;
+
+  const poll = polls.find((p) => p.id === id);
+
+  if (!poll) {
+    return res.status(404).json({ error: 'Poll not found' });
+  }
+
+  const option = poll.options.find((o) => o.id === optionId);
+
+  if (!option) {
+    return res.status(404).json({ error: 'Option not found' });
+  }
+
+  // Remove previous vote from this user
+  poll.options.forEach((opt) => {
+    opt.votes = opt.votes.filter(
+      (v) => v !== username && v !== `anonymous-${username}`
+    );
+  });
+
+  // Add new vote
+  const voter = anonymous ? 'anonymous' : username;
+  option.votes.push(voter);
+
+  res.json({ success: true, poll });
 });
 
 // Serve React app or fallback page

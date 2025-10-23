@@ -44,7 +44,7 @@ function Router() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/ai" element={<Chat currentUser={currentUser} />} />
         <Route path="/stock" element={<StockTicker />} />
-        <Route path="/polls" element={<Polls />} />
+        <Route path="/polls" element={<Polls currentUser={currentUser} />} />
         <Route path="/feed" element={<ImageFeed currentUser={currentUser} />} />
       </Routes>
     </>

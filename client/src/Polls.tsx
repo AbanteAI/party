@@ -1,123 +1,105 @@
 import { useState, useEffect } from 'react';
 
+interface PollOption {
+  id: string;
+  text: string;
+  votes: string[]; // usernames or 'anonymous'
+}
+
 interface Poll {
   id: string;
   question: string;
-  options: { id: string; text: string; votes: number }[];
-  totalVotes: number;
+  options: PollOption[];
   createdBy: string;
-  createdAt: Date;
+  createdAt: number;
 }
 
-export default function Polls() {
+interface PollsProps {
+  currentUser: string | null;
+}
+
+export default function Polls({ currentUser }: PollsProps) {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newQuestion, setNewQuestion] = useState('');
   const [newOptions, setNewOptions] = useState(['', '']);
-  const [votedPolls, setVotedPolls] = useState<Set<string>>(new Set());
+  const [voteAnonymous, setVoteAnonymous] = useState(false);
 
-  // Load polls from localStorage
+  // Load polls from backend
   useEffect(() => {
-    const savedPolls = localStorage.getItem('mentat-polls');
-    const savedVotes = localStorage.getItem('mentat-poll-votes');
-
-    if (savedPolls) {
-      const parsedPolls = JSON.parse(savedPolls);
-      setPolls(
-        parsedPolls.map((p: Poll) => ({
-          ...p,
-          createdAt: new Date(p.createdAt),
-        }))
-      );
-    } else {
-      // Default polls
-      const defaultPolls: Poll[] = [
-        {
-          id: '1',
-          question: 'What feature should we add next?',
-          options: [
-            { id: '1a', text: 'More Games', votes: 12 },
-            { id: '1b', text: 'Social Features', votes: 8 },
-            { id: '1c', text: 'Customization', votes: 15 },
-            { id: '1d', text: 'Mobile App', votes: 20 },
-          ],
-          totalVotes: 55,
-          createdBy: 'Mentat Team',
-          createdAt: new Date(),
-        },
-      ];
-      setPolls(defaultPolls);
-    }
-
-    if (savedVotes) {
-      setVotedPolls(new Set(JSON.parse(savedVotes)));
-    }
+    fetchPolls();
   }, []);
 
-  // Save polls to localStorage
-  useEffect(() => {
-    if (polls.length > 0) {
-      localStorage.setItem('mentat-polls', JSON.stringify(polls));
+  const fetchPolls = async () => {
+    try {
+      const response = await fetch('/api/polls');
+      const data = await response.json();
+      setPolls(data);
+    } catch (error) {
+      console.error('Failed to fetch polls:', error);
     }
-  }, [polls]);
+  };
 
-  // Save voted polls to localStorage
-  useEffect(() => {
-    localStorage.setItem(
-      'mentat-poll-votes',
-      JSON.stringify(Array.from(votedPolls))
-    );
-  }, [votedPolls]);
+  const createPoll = async () => {
+    if (!currentUser) {
+      alert('Please log in to create polls');
+      return;
+    }
 
-  const createPoll = () => {
     if (!newQuestion.trim() || newOptions.filter((o) => o.trim()).length < 2) {
       alert('Please enter a question and at least 2 options');
       return;
     }
 
-    const poll: Poll = {
-      id: Date.now().toString(),
-      question: newQuestion,
-      options: newOptions
-        .filter((o) => o.trim())
-        .map((text, i) => ({
-          id: `${Date.now()}-${i}`,
-          text,
-          votes: 0,
-        })),
-      totalVotes: 0,
-      createdBy: 'You',
-      createdAt: new Date(),
-    };
+    try {
+      const response = await fetch('/api/polls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: newQuestion,
+          options: newOptions.filter((o) => o.trim()),
+          creator: currentUser,
+        }),
+      });
 
-    setPolls([poll, ...polls]);
-    setNewQuestion('');
-    setNewOptions(['', '']);
-    setShowCreateModal(false);
+      if (response.ok) {
+        const data = await response.json();
+        setPolls([data.poll, ...polls]);
+        setNewQuestion('');
+        setNewOptions(['', '']);
+        setShowCreateModal(false);
+      }
+    } catch (error) {
+      console.error('Failed to create poll:', error);
+      alert('Failed to create poll. Please try again.');
+    }
   };
 
-  const vote = (pollId: string, optionId: string) => {
-    if (votedPolls.has(pollId)) {
-      alert('You have already voted on this poll!');
+  const vote = async (pollId: string, optionId: string) => {
+    if (!currentUser) {
+      alert('Please log in to vote');
       return;
     }
 
-    setPolls(
-      polls.map((poll) => {
-        if (poll.id === pollId) {
-          return {
-            ...poll,
-            options: poll.options.map((opt) =>
-              opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
-            ),
-            totalVotes: poll.totalVotes + 1,
-          };
-        }
-        return poll;
-      })
-    );
+    try {
+      const response = await fetch(`/api/polls/${pollId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          optionId,
+          username: currentUser,
+          anonymous: voteAnonymous,
+        }),
+      });
 
-    setVotedPolls(new Set([...votedPolls, pollId]));
+      if (response.ok) {
+        const data = await response.json();
+        setPolls(polls.map((p) => (p.id === pollId ? data.poll : p)));
+      }
+    } catch (error) {
+      console.error('Failed to vote:', error);
+      alert('Failed to vote. Please try again.');
+    }
   };
 
   const addOption = () => {
@@ -237,19 +219,55 @@ export default function Polls() {
                 marginBottom: '20px',
               }}
             >
-              Created by {poll.createdBy} • {poll.totalVotes} votes
+              Created by {poll.createdBy} •{' '}
+              {poll.options.reduce((sum, opt) => sum + opt.votes.length, 0)}{' '}
+              votes
             </div>
+
+            {/* Anonymous Toggle */}
+            {currentUser && (
+              <div
+                style={{
+                  marginBottom: '15px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  id={`anonymous-${poll.id}`}
+                  checked={voteAnonymous}
+                  onChange={(e) => setVoteAnonymous(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                <label
+                  htmlFor={`anonymous-${poll.id}`}
+                  style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Vote anonymously
+                </label>
+              </div>
+            )}
 
             {/* Options */}
             <div
               style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
             >
               {poll.options.map((option) => {
+                const totalVotes = poll.options.reduce(
+                  (sum, opt) => sum + opt.votes.length,
+                  0
+                );
                 const percentage =
-                  poll.totalVotes > 0
-                    ? (option.votes / poll.totalVotes) * 100
-                    : 0;
-                const hasVoted = votedPolls.has(poll.id);
+                  totalVotes > 0 ? (option.votes.length / totalVotes) * 100 : 0;
+                const hasVoted =
+                  currentUser &&
+                  poll.options.some((opt) => opt.votes.includes(currentUser));
 
                 return (
                   <div
@@ -316,10 +334,32 @@ export default function Polls() {
                             color: '#667eea',
                           }}
                         >
-                          {option.votes} ({percentage.toFixed(1)}%)
+                          {option.votes.length} ({percentage.toFixed(1)}%)
                         </span>
                       )}
                     </div>
+
+                    {/* Show voters */}
+                    {hasVoted && option.votes.length > 0 && (
+                      <div
+                        style={{
+                          position: 'relative',
+                          marginTop: '8px',
+                          fontSize: '12px',
+                          color: '#6b7280',
+                        }}
+                      >
+                        Voted by:{' '}
+                        {option.votes
+                          .slice(0, 5)
+                          .map((voter) =>
+                            voter === 'anonymous' ? '👤 Anonymous' : `@${voter}`
+                          )
+                          .join(', ')}
+                        {option.votes.length > 5 &&
+                          ` and ${option.votes.length - 5} more`}
+                      </div>
+                    )}
                   </div>
                 );
               })}
