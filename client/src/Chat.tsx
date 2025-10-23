@@ -206,6 +206,12 @@ export default function Chat() {
     [key: string]: { output: string; error?: string };
   }>({});
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
+    null
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -527,7 +533,7 @@ export default function Chat() {
           method: 'POST',
           headers,
           body: JSON.stringify({
-            model: 'mistral', // Use Mistral for follow-up questions
+            model: 'openai', // Use GPT 4.1 nano for follow-up questions
             messages: [
               {
                 role: 'system',
@@ -1177,6 +1183,80 @@ export default function Chat() {
     }
   };
 
+  const generateImage = async () => {
+    if (!imagePrompt.trim()) return;
+
+    setIsGeneratingImage(true);
+    setGeneratedImageUrl(null);
+
+    try {
+      // Step 1: Enhance the prompt using GPT 4.1 nano
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      showToast('Enhancing your prompt...', 'info');
+
+      const enhanceResponse = await fetch(
+        'https://text.pollinations.ai/openai/chat/completions',
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: 'openai',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  "You are an expert at writing image generation prompts. Take the user's idea and enhance it into a detailed, vivid prompt that will generate a beautiful image. Be descriptive about style, lighting, composition, and mood. Return ONLY the enhanced prompt, nothing else.",
+              },
+              {
+                role: 'user',
+                content: imagePrompt,
+              },
+            ],
+            stream: false,
+            temperature: 0.8,
+          }),
+        }
+      );
+
+      if (!enhanceResponse.ok) {
+        throw new Error('Failed to enhance prompt');
+      }
+
+      const enhanceData = await enhanceResponse.json();
+      const enhancedPrompt =
+        enhanceData.choices?.[0]?.message?.content || imagePrompt;
+
+      showToast('Generating image...', 'info');
+
+      // Step 2: Generate the image
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?nologo=true`;
+
+      // Preload the image to show loading state
+      const img = new Image();
+      img.onload = () => {
+        setGeneratedImageUrl(imageUrl);
+        setIsGeneratingImage(false);
+        showToast('Image generated successfully!', 'success');
+      };
+      img.onerror = () => {
+        setIsGeneratingImage(false);
+        showToast('Failed to generate image', 'error');
+      };
+      img.src = imageUrl;
+    } catch (error) {
+      console.error('Error generating image:', error);
+      setIsGeneratingImage(false);
+      showToast('Failed to generate image. Please try again.', 'error');
+    }
+  };
+
   const formatMessage = (content: string, messageId: string) => {
     // Check for incomplete <think> tag (streaming in progress)
     const hasOpenThink = content.includes('<think>');
@@ -1647,6 +1727,28 @@ export default function Chat() {
           </h1>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
+              onClick={() => setShowImageGenerator(!showImageGenerator)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: showImageGenerator
+                  ? 'rgba(102, 126, 234, 0.8)'
+                  : 'rgba(107, 114, 128, 0.8)',
+                color: 'white',
+                fontSize: '12px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <ImageIcon
+                size={14}
+                style={{ marginRight: '4px', color: currentTheme.iconAccent }}
+              />
+              Generate Image
+            </button>
+            <button
               onClick={() => setShowSettings(!showSettings)}
               style={{
                 padding: '6px 12px',
@@ -1658,6 +1760,8 @@ export default function Chat() {
                 color: 'white',
                 fontSize: '12px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
               }}
             >
               <Settings
@@ -2099,6 +2203,175 @@ export default function Chat() {
             >
               💡 Settings are saved automatically
             </div>
+          </div>
+        )}
+
+        {/* Image Generator Modal */}
+        {showImageGenerator && (
+          <div
+            style={{
+              marginTop: '10px',
+              padding: '20px',
+              background: 'rgba(0, 0, 0, 0.1)',
+              borderRadius: '8px',
+            }}
+          >
+            <div
+              style={{
+                marginBottom: '12px',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: currentTheme.text,
+              }}
+            >
+              🎨 AI Image Generator
+            </div>
+            <div
+              style={{
+                marginBottom: '12px',
+                fontSize: '12px',
+                color: currentTheme.text,
+                opacity: 0.8,
+              }}
+            >
+              Describe your image idea and AI will enhance it and generate a
+              beautiful image for you.
+            </div>
+            <textarea
+              value={imagePrompt}
+              onChange={(e) => setImagePrompt(e.target.value)}
+              placeholder="e.g., A serene mountain landscape at sunset..."
+              disabled={isGeneratingImage}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '6px',
+                border: `1px solid ${currentTheme.border}`,
+                background: currentTheme.messageBg,
+                color: currentTheme.text,
+                fontSize: '13px',
+                minHeight: '80px',
+                resize: 'vertical',
+                marginBottom: '12px',
+              }}
+            />
+            <button
+              onClick={generateImage}
+              disabled={isGeneratingImage || !imagePrompt.trim()}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '6px',
+                border: 'none',
+                background:
+                  isGeneratingImage || !imagePrompt.trim()
+                    ? 'rgba(107, 114, 128, 0.5)'
+                    : '#667eea',
+                color: 'white',
+                fontSize: '13px',
+                cursor:
+                  isGeneratingImage || !imagePrompt.trim()
+                    ? 'not-allowed'
+                    : 'pointer',
+                fontWeight: 600,
+                width: '100%',
+              }}
+            >
+              {isGeneratingImage ? '🎨 Generating...' : '✨ Generate Image'}
+            </button>
+            {isGeneratingImage && (
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '20px',
+                  background: currentTheme.messageBg,
+                  borderRadius: '8px',
+                  textAlign: 'center',
+                }}
+              >
+                <Loader2
+                  size={32}
+                  style={{
+                    animation: 'spin 1s linear infinite',
+                    color: currentTheme.iconPrimary,
+                  }}
+                />
+                <div
+                  style={{
+                    marginTop: '12px',
+                    fontSize: '13px',
+                    color: currentTheme.text,
+                  }}
+                >
+                  Creating your masterpiece...
+                </div>
+              </div>
+            )}
+            {generatedImageUrl && !isGeneratingImage && (
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '12px',
+                  background: currentTheme.messageBg,
+                  borderRadius: '8px',
+                }}
+              >
+                <img
+                  src={generatedImageUrl}
+                  alt="Generated"
+                  style={{
+                    width: '100%',
+                    borderRadius: '8px',
+                    display: 'block',
+                  }}
+                />
+                <div
+                  style={{
+                    marginTop: '12px',
+                    display: 'flex',
+                    gap: '8px',
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = generatedImageUrl;
+                      link.download = 'generated-image.png';
+                      link.click();
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: '#10b981',
+                      color: 'white',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    💾 Download
+                  </button>
+                  <button
+                    onClick={() => {
+                      setGeneratedImageUrl(null);
+                      setImagePrompt('');
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: 'rgba(107, 114, 128, 0.8)',
+                      color: 'white',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🔄 New Image
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
