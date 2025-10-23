@@ -520,18 +520,29 @@ export default function Chat() {
         requestBody.reasoning_effort = customSettings.reasoningEffort;
       }
 
+      // Check if this is a community model
+      const communityModel = communityModels.find(
+        (m) => m.id === selectedModel
+      );
+      const endpoint = communityModel
+        ? communityModel.endpoint
+        : 'https://text.pollinations.ai/openai/chat/completions';
+
+      // Use community model's API key if available
+      if (communityModel) {
+        headers['Authorization'] = `Bearer ${communityModel.apiKey}`;
+        requestBody.model = communityModel.id;
+      }
+
       // Create abort controller
       abortControllerRef.current = new AbortController();
 
-      const response = await fetch(
-        'https://text.pollinations.ai/openai/chat/completions',
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(requestBody),
-          signal: abortControllerRef.current.signal,
-        }
-      );
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        signal: abortControllerRef.current.signal,
+      });
 
       if (!response.ok) {
         throw new Error('Failed to get response');
@@ -996,14 +1007,25 @@ export default function Chat() {
         requestBody.reasoning_effort = customSettings.reasoningEffort;
       }
 
-      const response = await fetch(
-        'https://text.pollinations.ai/openai/chat/completions',
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(requestBody),
-        }
+      // Check if this is a community model
+      const communityModel = communityModels.find(
+        (m) => m.id === selectedModel
       );
+      const endpoint = communityModel
+        ? communityModel.endpoint
+        : 'https://text.pollinations.ai/openai/chat/completions';
+
+      // Use community model's API key if available
+      if (communityModel) {
+        headers['Authorization'] = `Bearer ${communityModel.apiKey}`;
+        requestBody.model = communityModel.id;
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+      });
 
       if (!response.ok) {
         throw new Error('Failed to get response');
