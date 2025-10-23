@@ -2393,13 +2393,22 @@ Final synthesis: [balanced prompt combining both]
                   if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                      setReferenceImage(event.target?.result as string);
+                      const result = event.target?.result;
+                      if (result && typeof result === 'string') {
+                        setReferenceImage(result);
+                      }
+                    };
+                    reader.onerror = () => {
+                      showToast('Failed to read image file', 'error');
                     };
                     reader.readAsDataURL(file);
                   }
+                  // Reset the input so the same file can be selected again
+                  e.target.value = '';
                 }}
                 style={{ display: 'none' }}
                 id="reference-image-upload"
+                key={referenceImage || 'no-image'}
               />
               <label
                 htmlFor="reference-image-upload"
