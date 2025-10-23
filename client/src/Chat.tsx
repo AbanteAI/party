@@ -289,6 +289,14 @@ export default function Chat() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [showReasoning, setShowReasoning] = useState(false);
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [communityModels, setCommunityModels] = useState<
+    Array<{ id: string; name: string; endpoint: string; apiKey: string }>
+  >([]);
+  const [showAddModel, setShowAddModel] = useState(false);
+  const [newModelId, setNewModelId] = useState('');
+  const [newModelName, setNewModelName] = useState('');
+  const [newModelEndpoint, setNewModelEndpoint] = useState('');
+  const [newModelApiKey, setNewModelApiKey] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -336,7 +344,22 @@ export default function Chat() {
     if (savedMode) {
       setResponseMode(savedMode as ResponseMode);
     }
+
+    // Load community models
+    const savedCommunityModels = localStorage.getItem('community-models');
+    if (savedCommunityModels) {
+      try {
+        setCommunityModels(JSON.parse(savedCommunityModels));
+      } catch (e) {
+        console.error('Failed to load community models:', e);
+      }
+    }
   }, []);
+
+  // Save community models to localStorage
+  useEffect(() => {
+    localStorage.setItem('community-models', JSON.stringify(communityModels));
+  }, [communityModels]);
 
   // Fetch models from API
   useEffect(() => {
@@ -800,14 +823,25 @@ export default function Chat() {
           requestBody.reasoning_effort = customSettings.reasoningEffort;
         }
 
-        const response = await fetch(
-          'https://text.pollinations.ai/openai/chat/completions',
-          {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(requestBody),
-          }
+        // Check if this is a community model
+        const communityModel = communityModels.find(
+          (m) => m.id === selectedModel
         );
+        const endpoint = communityModel
+          ? communityModel.endpoint
+          : 'https://text.pollinations.ai/openai/chat/completions';
+
+        // Use community model's API key if available
+        if (communityModel) {
+          headers['Authorization'] = `Bearer ${communityModel.apiKey}`;
+          requestBody.model = communityModel.id;
+        }
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody),
+        });
 
         if (!response.ok) {
           throw new Error('Failed to get response');
@@ -1995,6 +2029,15 @@ Final synthesis: [how to combine all elements]
                 {model.tier === 'seed' ? ' [API Key Required]' : ''}
               </option>
             ))}
+            {communityModels.map((model) => (
+              <option
+                key={model.id}
+                value={model.id}
+                style={{ color: 'black' }}
+              >
+                {model.name} (Community)
+              </option>
+            ))}
           </select>
           <button
             onClick={() => setShowApiKeyInput(!showApiKeyInput)}
@@ -2016,6 +2059,24 @@ Final synthesis: [how to combine all elements]
           >
             <Key size={14} />
             {apiKey ? '✓' : 'API Key'}
+          </button>
+          <button
+            onClick={() => setShowAddModel(true)}
+            title="Add Community Model"
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: `1px solid ${currentTheme.border}`,
+              background: currentTheme.messageBg,
+              color: currentTheme.text,
+              fontSize: '14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            ➕ Model
           </button>
           <select
             value={theme}
@@ -2711,6 +2772,218 @@ Final synthesis: [how to combine all elements]
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Add Community Model Modal */}
+        {showAddModel && (
+          <div
+            onClick={() => setShowAddModel(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+              zIndex: 1000,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: 'white',
+                borderRadius: '20px',
+                padding: '40px',
+                maxWidth: '600px',
+                width: '100%',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: '28px',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '20px',
+                }}
+              >
+                ➕ Add Community Model
+              </h2>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: '#1f2937',
+                    marginBottom: '8px',
+                  }}
+                >
+                  Model ID
+                </label>
+                <input
+                  type="text"
+                  value={newModelId}
+                  onChange={(e) => setNewModelId(e.target.value)}
+                  placeholder="e.g., gpt-4"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '16px',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: '#1f2937',
+                    marginBottom: '8px',
+                  }}
+                >
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  value={newModelName}
+                  onChange={(e) => setNewModelName(e.target.value)}
+                  placeholder="e.g., GPT-4"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '16px',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: '#1f2937',
+                    marginBottom: '8px',
+                  }}
+                >
+                  API Endpoint
+                </label>
+                <input
+                  type="text"
+                  value={newModelEndpoint}
+                  onChange={(e) => setNewModelEndpoint(e.target.value)}
+                  placeholder="https://api.example.com/v1/chat/completions"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '16px',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: '#1f2937',
+                    marginBottom: '8px',
+                  }}
+                >
+                  API Key
+                </label>
+                <input
+                  type="password"
+                  value={newModelApiKey}
+                  onChange={(e) => setNewModelApiKey(e.target.value)}
+                  placeholder="Your API key"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '16px',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => {
+                    if (
+                      !newModelId ||
+                      !newModelName ||
+                      !newModelEndpoint ||
+                      !newModelApiKey
+                    ) {
+                      alert('Please fill in all fields');
+                      return;
+                    }
+                    setCommunityModels([
+                      ...communityModels,
+                      {
+                        id: newModelId,
+                        name: newModelName,
+                        endpoint: newModelEndpoint,
+                        apiKey: newModelApiKey,
+                      },
+                    ]);
+                    setNewModelId('');
+                    setNewModelName('');
+                    setNewModelEndpoint('');
+                    setNewModelApiKey('');
+                    setShowAddModel(false);
+                    showToast('Community model added!', 'success');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '15px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background:
+                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '16px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Add Model
+                </button>
+                <button
+                  onClick={() => setShowAddModel(false)}
+                  style={{
+                    flex: 1,
+                    padding: '15px',
+                    borderRadius: '10px',
+                    border: '2px solid #e5e7eb',
+                    background: 'white',
+                    color: '#6b7280',
+                    fontWeight: 'bold',
+                    fontSize: '16px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
