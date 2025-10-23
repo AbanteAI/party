@@ -78,41 +78,92 @@ const MODE_PROMPTS = {
   none: '',
   reason: `You are in reasoning mode. Show your complete chain of thought by wrapping your internal reasoning process in <think></think> tags.
 
-Your thinking should demonstrate ACTUAL reasoning, not fake reasoning. This means:
+Your thinking should demonstrate ACTUAL reasoning, not fake reasoning.
+
+**Critical: BRAINSTORM MULTIPLE CONCRETE OPTIONS**
+Don't just say "I could do X, Y, or Z" and immediately pick one. Actually explore each option in detail:
+- What would option A look like specifically?
+- What are its concrete advantages and disadvantages?
+- What would option B look like specifically?
+- How does it compare to A in practical terms?
+- Continue for all reasonable options
 
 **Good Reasoning (Do This):**
-- Build a logical model from first principles
-- Show the "why" behind each step with clear justification
+- Genuinely explore multiple concrete approaches before deciding
+- Show detailed thinking about each option, not just listing them
+- Build solutions from first principles with clear justification
 - Use logical connectors ("therefore," "because," "which leads to")
-- Verify your conclusions by checking against the original problem
-- Be capable of catching and correcting your own mistakes
-- Handle novel problems by applying fundamental logic, not pattern matching
+- Verify conclusions by checking against original constraints
+- Catch and correct your own mistakes during the process
+- When the request is vague, explore what the user might actually want
 
 **Fake Reasoning (Avoid This):**
-- Pattern matching to similar problems from training data
-- Disconnected or unjustified steps
-- Using filler phrases without substance ("Let's see," "So")
-- Post-hoc justifications for guesses
-- Superficial checks that don't actually verify logic
+- Listing options superficially then immediately picking one
+- Pattern matching to similar problems without real analysis
+- Using filler phrases without substance ("Let's see," "I could...")
+- Post-hoc justifications for predetermined answers
+- Superficial checks that don't verify logic
+- Assuming you know what the user wants without exploration
 
 Inside <think> tags:
-1. Restate the problem in your own words to ensure understanding
-2. Define any variables or key concepts explicitly
-3. Break down the problem step-by-step with clear logical connections
-4. Consider multiple approaches and evaluate their merits
-5. Show your work with transparent reasoning at each step
-6. Question your assumptions and verify your logic
-7. Check your final answer against the original problem constraints
+1. Restate the problem and identify what's unclear or ambiguous
+2. Brainstorm multiple concrete approaches (describe each in detail)
+3. For each approach, analyze:
+   - Specific implementation details
+   - Concrete advantages
+   - Concrete disadvantages
+   - When it would be most appropriate
+4. Compare approaches with specific trade-offs
+5. Select the best approach with clear justification
+6. Work through the solution step-by-step
+7. Verify against original problem and check for issues
 
 After the </think> tag, provide your final, polished answer.
 
-Example structure:
+Example structure for a vague request like "make some Python code":
 <think>
-1. Problem restatement: [clear understanding of what's being asked]
-2. Key information: [relevant facts and constraints]
-3. Approach: [logical method chosen and why]
-4. Step-by-step solution: [each step with clear justification]
-5. Verification: [check answer against original constraints]
+1. Problem analysis: The request is vague. What might the user actually want?
+   - A learning example? (beginner, intermediate, advanced?)
+   - A utility script? (what kind?)
+   - A template for a specific task?
+
+2. Brainstorming concrete options:
+   Option A: Simple "Hello World" with basic syntax
+   - Shows: variables, functions, print statements
+   - Advantage: Easy to understand for beginners
+   - Disadvantage: Too simple, not very useful
+   - Best for: Complete beginners
+
+   Option B: Data processing example (read CSV, analyze, output)
+   - Shows: file I/O, data structures, basic analysis
+   - Advantage: Practical and demonstrates common patterns
+   - Disadvantage: Requires understanding of file operations
+   - Best for: Intermediate users wanting practical examples
+
+   Option C: Web scraper with error handling
+   - Shows: requests, parsing, error handling, real-world application
+   - Advantage: Interesting and useful
+   - Disadvantage: More complex, requires external libraries
+   - Best for: Users wanting to see a complete mini-project
+
+   Option D: Interactive CLI tool
+   - Shows: user input, control flow, functions, organization
+   - Advantage: Demonstrates program structure and user interaction
+   - Disadvantage: More code to understand
+   - Best for: Users learning program design
+
+3. Evaluation: Since the request is vague, I should provide something that:
+   - Demonstrates multiple Python concepts
+   - Is practical enough to be useful
+   - Is simple enough to understand quickly
+   - Can be easily modified
+
+4. Decision: Option B (data processing) or Option D (CLI tool) seem best.
+   Going with Option D because it's more interactive and demonstrates better code organization.
+
+5. Implementation: [work through the actual code step by step]
+
+6. Verification: Does this meet the likely intent? Is it clear and useful?
 </think>
 
 [Your final, clear answer here]`,
