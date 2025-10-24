@@ -57,44 +57,6 @@
         background: #2c3e50;
       }
 
-      .speech-bubble {
-        position: absolute;
-        background: rgba(255, 255, 255, 0.95);
-        color: #333;
-        padding: 8px 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        max-width: 150px;
-        pointer-events: none;
-        z-index: 100;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        animation: fadeIn 0.3s ease-in;
-      }
-
-      .speech-bubble::after {
-        content: '';
-        position: absolute;
-        bottom: -8px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 8px solid transparent;
-        border-right: 8px solid transparent;
-        border-top: 8px solid rgba(255, 255, 255, 0.95);
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
       #sidebar {
         width: 300px;
         background: rgba(255, 255, 255, 0.1);
@@ -146,10 +108,6 @@
       button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
-      }
-
-      button.danger {
-        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
       }
 
       #countryList {
@@ -237,20 +195,6 @@
         border-radius: 50%;
         margin-left: 5px;
       }
-
-      #eventLog {
-        max-height: 150px;
-        overflow-y: auto;
-        font-size: 12px;
-        background: rgba(0, 0, 0, 0.2);
-        padding: 10px;
-        border-radius: 4px;
-      }
-
-      .event-item {
-        padding: 4px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
     </style>
   </head>
   <body>
@@ -316,10 +260,6 @@
               <span>✈️ Planes:</span>
               <span id="planes">0</span>
             </div>
-            <div class="stat" id="nukesDisplay" style="display: none">
-              <span>☢️ Nukes:</span>
-              <span id="nukes">0</span>
-            </div>
           </div>
 
           <div class="panel">
@@ -329,28 +269,12 @@
               Upgrade Military (300💰)
             </button>
             <button onclick="improveEconomy()">Improve Economy (200💰)</button>
-            <button
-              id="nukeButton"
-              onclick="launchNuke()"
-              style="display: none"
-              class="danger"
-            >
-              ☢️ Launch Nuke (1 nuke)
-            </button>
           </div>
 
           <div class="panel" id="alliancePanel" style="display: none">
             <h3>Alliances</h3>
             <div id="allianceInfo">No alliance</div>
             <button onclick="requestAlliance()">Request Alliance</button>
-            <button onclick="requestMilitaryHelp()">
-              Request Military Help
-            </button>
-          </div>
-
-          <div class="panel" id="eventPanel" style="display: none">
-            <h3>Recent Events</h3>
-            <div id="eventLog"></div>
           </div>
 
           <div class="panel">
@@ -375,156 +299,21 @@
     </div>
 
     <script>
-      // Country personalities and speech
-      const countryPersonalities = {
-        usa: [
-          "Freedom isn't free!",
-          "We're #1!",
-          "Don't mess with America!",
-          'Democracy incoming!',
-          'Time for some freedom!',
-        ],
-        russia: [
-          'In Soviet Russia, country conquers you!',
-          'Winter is coming...',
-          'You cannot defeat Mother Russia!',
-          'Vodka and victory!',
-          'The bear awakens!',
-        ],
-        china: [
-          'The dragon rises!',
-          'Ancient wisdom prevails!',
-          'We have the numbers!',
-          "The Great Wall wasn't enough?",
-          'Patience is a virtue... but not today!',
-        ],
-        uk: [
-          'Keep calm and carry on!',
-          'The sun never sets on our empire!',
-          'Tea time is over!',
-          'Jolly good show!',
-          'God save the Queen!',
-        ],
-        france: [
-          'Vive la France!',
-          'We invented revolution!',
-          'Sacré bleu!',
-          'Not today, Napoleon!',
-          'Ooh la la!',
-        ],
-        germany: [
-          'Efficiency is key!',
-          'Precision engineering!',
-          "We're very organized!",
-          "Third time's the charm?",
-          'Guten Tag!',
-        ],
-        japan: [
-          'Honor above all!',
-          'The rising sun!',
-          'Kawaii but deadly!',
-          'Samurai spirit!',
-          'Banzai!',
-        ],
-        canada: [
-          'Sorry, eh?',
-          "We're nice, but not that nice!",
-          'Maple syrup and missiles!',
-          'Hockey time!',
-          'Eh, buddy?',
-        ],
-        brazil: [
-          'Samba to victory!',
-          'Carnival of conquest!',
-          'The Amazon awakens!',
-          'Futebol and freedom!',
-          'Vai Brasil!',
-        ],
-        india: [
-          'Namaste... and goodbye!',
-          'Curry favor with us!',
-          'Bollywood ending!',
-          'The elephant never forgets!',
-          'Jai Hind!',
-        ],
-        mexico: [
-          '¡Viva México!',
-          "Taco 'bout a fight!",
-          'Mariachi and mayhem!',
-          'Spicy victory!',
-          '¡Ándale!',
-        ],
-        australia: [
-          "G'day mate!",
-          'Crikey!',
-          'Down under, up top!',
-          'Kangaroo kick!',
-          'No worries!',
-        ],
-        spain: [
-          '¡Olé!',
-          "Siesta's over!",
-          'Flamenco fury!',
-          'Conquistador spirit!',
-          '¡Vamos!',
-        ],
-        italy: [
-          'Mamma mia!',
-          'Pizza and power!',
-          'Roman glory returns!',
-          'Pasta la vista!',
-          'Ciao bella!',
-        ],
-        egypt: [
-          "Pharaoh's revenge!",
-          'Pyramid power!',
-          'Walk like an Egyptian!',
-          'Nile of conquest!',
-          'Ancient and angry!',
-        ],
-        poland: [
-          'Never again!',
-          'Pierogi power!',
-          'Solidarity!',
-          'Hussar charge!',
-          'Polska!',
-        ],
-        argentina: [
-          'Tango time!',
-          'Messi with us!',
-          'Pampas pride!',
-          'Gaucho glory!',
-          '¡Dale!',
-        ],
-        southafrica: [
-          'Rainbow nation rises!',
-          'Ubuntu!',
-          "Lion's roar!",
-          "Mandela's legacy!",
-          'Howzit!',
-        ],
-      };
-
       // Game state
       const gameState = {
-        mode: 'sandbox',
+        mode: 'sandbox', // 'sandbox' or 'turnbyturn'
         playerCountry: null,
         countries: {},
-        alliances: [],
+        alliances: [], // Array of alliance objects
         turn: 1,
         gold: 1000,
         army: 100,
         economyLevel: 1,
         militaryLevel: 1,
         planes: 0,
-        nukes: 0,
         turnTimeLeft: 30,
         turnTimerInterval: null,
-        attackedCountries: [],
-        eventLog: [],
-        speechBubbles: [],
-        mergedCountries: {}, // Track merged countries
-        nukeTarget: null, // For nuke targeting
+        attackedCountries: [], // Track which countries player attacked
       };
 
       // Alliance colors
@@ -635,7 +424,6 @@
           army: Math.floor(Math.random() * 50) + 50,
           color: '#888',
           alliance: null,
-          fearLevel: 0, // Track fear of player
         };
       });
 
@@ -661,7 +449,6 @@
         if (selectedMode === 'turnbyturn') {
           document.getElementById('turnTimerContainer').style.display = 'block';
           document.getElementById('alliancePanel').style.display = 'block';
-          document.getElementById('eventPanel').style.display = 'block';
           initializeAlliances();
           startTurnTimer();
         }
@@ -772,39 +559,6 @@
         drawMap();
       }
 
-      function showSpeechBubble(countryId, duration = 3000) {
-        const country = gameState.countries[countryId];
-        const messages = countryPersonalities[countryId] || ['...'];
-        const message = messages[Math.floor(Math.random() * messages.length)];
-
-        const bubble = document.createElement('div');
-        bubble.className = 'speech-bubble';
-        bubble.textContent = message;
-        bubble.style.left = `${country.x + 40}px`;
-        bubble.style.top = `${country.y - 40}px`;
-
-        document.getElementById('mapContainer').appendChild(bubble);
-
-        setTimeout(() => {
-          bubble.remove();
-        }, duration);
-      }
-
-      function addEvent(message) {
-        gameState.eventLog.unshift(message);
-        if (gameState.eventLog.length > 10) {
-          gameState.eventLog.pop();
-        }
-        updateEventLog();
-      }
-
-      function updateEventLog() {
-        const logEl = document.getElementById('eventLog');
-        logEl.innerHTML = gameState.eventLog
-          .map((event) => `<div class="event-item">${event}</div>`)
-          .join('');
-      }
-
       function drawMap() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -874,13 +628,6 @@
           document.getElementById('planes').textContent = gameState.planes;
         }
 
-        // Update nukes display
-        if (gameState.militaryLevel >= 10) {
-          document.getElementById('nukesDisplay').style.display = 'flex';
-          document.getElementById('nukes').textContent = gameState.nukes;
-          document.getElementById('nukeButton').style.display = 'block';
-        }
-
         // Update alliance info
         if (gameState.mode === 'turnbyturn' && gameState.playerCountry) {
           const playerCountryData =
@@ -916,21 +663,11 @@
           gameState.militaryLevel++;
 
           // Unlock planes at level 5
-          if (gameState.militaryLevel === 5) {
+          if (gameState.militaryLevel >= 5) {
             gameState.planes += 10;
             alert(
               'Military upgraded! Planes unlocked - you can now attack overseas!'
             );
-          }
-          // Unlock nukes at level 10
-          else if (gameState.militaryLevel === 10) {
-            gameState.nukes += 3;
-            alert(
-              '☢️ NUKES UNLOCKED! You now have weapons of mass destruction!'
-            );
-          } else if (gameState.militaryLevel >= 5) {
-            gameState.planes += 5;
-            alert('Military upgraded! +5 planes');
           } else {
             alert('Military upgraded! Army is now stronger.');
           }
@@ -950,16 +687,6 @@
         } else {
           alert('Not enough gold!');
         }
-      }
-
-      function launchNuke() {
-        if (gameState.nukes <= 0) {
-          alert('No nukes available!');
-          return;
-        }
-
-        alert('Click on a country to nuke it!');
-        gameState.nukeTarget = true;
       }
 
       function requestAlliance() {
@@ -994,7 +721,6 @@
         alliance.members.push(gameState.playerCountry);
         playerCountryData.alliance = alliance.id;
 
-        addEvent(`You joined an alliance!`);
         alert(
           `Joined alliance with: ${alliance.members
             .map((id) => gameState.countries[id].name)
@@ -1005,102 +731,20 @@
         drawMap();
       }
 
-      function requestMilitaryHelp() {
-        if (!gameState.playerCountry) {
-          alert('Select a country first!');
-          return;
-        }
-
-        const playerCountryData = gameState.countries[gameState.playerCountry];
-
-        if (!playerCountryData.alliance) {
-          alert('You need to be in an alliance first!');
-          return;
-        }
-
-        const alliance = gameState.alliances.find(
-          (a) => a.id === playerCountryData.alliance
-        );
-
-        // Get help from alliance members
-        let totalHelp = 0;
-        alliance.members.forEach((memberId) => {
-          if (memberId !== gameState.playerCountry) {
-            const member = gameState.countries[memberId];
-            const help = Math.floor(member.army * 0.2);
-            totalHelp += help;
-            member.army -= help;
-          }
-        });
-
-        gameState.army += totalHelp;
-        addEvent(`Alliance sent ${totalHelp} troops to help!`);
-        alert(`Your alliance sent ${totalHelp} troops to help!`);
-        updateUI();
-        drawMap();
-      }
-
-      function checkCountryMergers() {
-        if (gameState.mode !== 'turnbyturn') return;
-
-        const playerTerritories = Object.values(gameState.countries).filter(
-          (c) => c.owner === 'player'
-        ).length;
-
-        // If player is too powerful, weak neighbors might merge
-        if (playerTerritories >= 5) {
-          Object.values(gameState.countries).forEach((country) => {
-            if (country.owner !== 'player' && country.army < 100) {
-              // Check if has a neighbor also weak
-              const weakNeighbor = country.neighbors.find((nId) => {
-                const neighbor = gameState.countries[nId];
-                return (
-                  neighbor.owner !== 'player' &&
-                  neighbor.army < 100 &&
-                  Math.random() < 0.1
-                );
-              });
-
-              if (weakNeighbor) {
-                const neighbor = gameState.countries[weakNeighbor];
-                // Merge!
-                const newName = `${country.name}-${neighbor.name}`;
-                country.name = newName;
-                country.army += neighbor.army;
-                country.fearLevel = 0;
-
-                // Transfer ownership
-                neighbor.owner = country.owner;
-                neighbor.color = country.color;
-                neighbor.army = 0;
-
-                addEvent(
-                  `${country.name} and ${neighbor.name} merged out of fear!`
-                );
-                showSpeechBubble(country.id);
-
-                gameState.mergedCountries[country.id] = true;
-              }
-            }
-          });
-        }
-      }
-
       function performAIActions() {
         if (gameState.mode !== 'turnbyturn') return;
 
         // AI countries occasionally attack each other
         const aiCountries = Object.values(gameState.countries).filter(
-          (c) => c.owner !== 'player' && c.owner !== null && c.army > 0
+          (c) => c.owner !== 'player' && c.owner !== null
         );
 
-        // AI attacks other AI
         if (Math.random() < 0.3 && aiCountries.length > 1) {
           const attacker =
             aiCountries[Math.floor(Math.random() * aiCountries.length)];
           const possibleTargets = attacker.neighbors
             .map((id) => gameState.countries[id])
-            .filter((c) => c.owner !== attacker.owner && c.army > 0);
+            .filter((c) => c.owner !== attacker.owner);
 
           if (possibleTargets.length > 0) {
             const target =
@@ -1116,68 +760,10 @@
             if (attacker.army > target.army) {
               target.owner = attacker.owner;
               target.color = attacker.color;
-              addEvent(`${attacker.name} conquered ${target.name}!`);
-              showSpeechBubble(attacker.id);
+              console.log(`${attacker.name} conquered ${target.name}!`);
             }
           }
         }
-
-        // AI attacks player!
-        if (Math.random() < 0.2 && gameState.playerCountry) {
-          const playerCountry = gameState.countries[gameState.playerCountry];
-          const playerTerritories = Object.values(gameState.countries).filter(
-            (c) => c.owner === 'player'
-          );
-
-          // Find AI countries neighboring player
-          const threats = [];
-          playerTerritories.forEach((territory) => {
-            territory.neighbors.forEach((nId) => {
-              const neighbor = gameState.countries[nId];
-              if (neighbor.owner !== 'player' && neighbor.army > 50) {
-                threats.push({ attacker: neighbor, target: territory });
-              }
-            });
-          });
-
-          if (threats.length > 0) {
-            const attack = threats[Math.floor(Math.random() * threats.length)];
-            const attacker = attack.attacker;
-            const target = attack.target;
-
-            if (attacker.army > target.army * 1.5) {
-              // AI wins
-              target.owner = attacker.owner;
-              target.color = attacker.color;
-              target.army = Math.floor(attacker.army * 0.5);
-              attacker.army = Math.floor(attacker.army * 0.7);
-
-              addEvent(
-                `⚠️ ${attacker.name} attacked and conquered ${target.name}!`
-              );
-              showSpeechBubble(attacker.id);
-              alert(
-                `⚠️ ${attacker.name} attacked and conquered ${target.name}!`
-              );
-            } else {
-              // Player defends
-              const casualties = Math.floor(target.army * 0.3);
-              target.army -= casualties;
-              attacker.army -= Math.floor(attacker.army * 0.4);
-
-              addEvent(
-                `${attacker.name} attacked ${target.name} but was repelled!`
-              );
-              showSpeechBubble(attacker.id);
-            }
-
-            updateUI();
-            drawMap();
-          }
-        }
-
-        // Check for country mergers
-        checkCountryMergers();
       }
 
       function nextTurn() {
@@ -1192,11 +778,7 @@
 
         // AI moves
         Object.values(gameState.countries).forEach((country) => {
-          if (
-            country.owner !== 'player' &&
-            country.owner !== null &&
-            country.army > 0
-          ) {
+          if (country.owner !== 'player' && country.owner !== null) {
             country.army += Math.floor(Math.random() * 10);
           }
         });
@@ -1209,7 +791,7 @@
 
         updateUI();
         drawMap();
-        addEvent(`Turn ${gameState.turn}: +${income}💰`);
+        alert(`Turn ${gameState.turn}\nIncome: +${income}💰`);
       }
 
       // Canvas click handler for conquering
@@ -1229,46 +811,10 @@
             (x - country.x) ** 2 + (y - country.y) ** 2
           );
           if (distance < 20) {
-            if (gameState.nukeTarget) {
-              executeNuke(country.id);
-            } else {
-              attemptConquest(country.id);
-            }
+            attemptConquest(country.id);
           }
         });
       });
-
-      function executeNuke(targetId) {
-        const target = gameState.countries[targetId];
-
-        if (target.owner === 'player') {
-          alert("You can't nuke your own territory!");
-          gameState.nukeTarget = false;
-          return;
-        }
-
-        gameState.nukes--;
-        gameState.nukeTarget = false;
-
-        // Nuke destroys most of the army
-        target.army = Math.floor(target.army * 0.1);
-        target.owner = 'player';
-        target.color = '#4CAF50';
-
-        addEvent(`☢️ NUCLEAR STRIKE on ${target.name}!`);
-        alert(`☢️ Nuclear strike successful! ${target.name} is devastated!`);
-
-        // Increase fear in neighboring countries
-        target.neighbors.forEach((nId) => {
-          const neighbor = gameState.countries[nId];
-          if (neighbor.owner !== 'player') {
-            neighbor.fearLevel += 50;
-          }
-        });
-
-        updateUI();
-        drawMap();
-      }
 
       function attemptConquest(targetId) {
         const target = gameState.countries[targetId];
@@ -1297,117 +843,42 @@
           return;
         }
 
-        let allianceHelped = false;
         if (!isNeighbor && canAttackOverseas) {
-          gameState.planes -= 1;
-
-          // Check if alliance can help with overseas attack
-          const playerCountryData =
-            gameState.countries[gameState.playerCountry];
-          if (playerCountryData.alliance && Math.random() < 0.5) {
-            const alliance = gameState.alliances.find(
-              (a) => a.id === playerCountryData.alliance
-            );
-            const helper = alliance.members.find(
-              (mId) =>
-                mId !== gameState.playerCountry &&
-                gameState.countries[mId].owner !== 'player'
-            );
-
-            if (helper) {
-              const helperCountry = gameState.countries[helper];
-              const helpAmount = Math.floor(helperCountry.army * 0.15);
-              gameState.army += helpAmount;
-              allianceHelped = true;
-              addEvent(
-                `${helperCountry.name} sent ${helpAmount} troops to help!`
-              );
-            }
-          }
-
-          alert(
-            allianceHelped
-              ? 'Using plane for overseas attack! Alliance is helping!'
-              : 'Using plane for overseas attack!'
-          );
+          gameState.planes -= 1; // Use a plane for overseas attack
+          alert('Using plane for overseas attack!');
         }
 
-        // Check alliance - attacking own alliance member
-        if (gameState.mode === 'turnbyturn') {
+        // Check alliance
+        if (gameState.mode === 'turnbyturn' && target.alliance) {
           const playerCountryData =
             gameState.countries[gameState.playerCountry];
 
-          if (
-            target.alliance &&
-            target.alliance === playerCountryData.alliance
-          ) {
-            // Kicked from alliance!
-            const alliance = gameState.alliances.find(
-              (a) => a.id === playerCountryData.alliance
-            );
-            alliance.members = alliance.members.filter(
-              (mId) => mId !== gameState.playerCountry
-            );
-            playerCountryData.alliance = null;
-
-            addEvent(
-              `You were kicked from your alliance for attacking a member!`
-            );
-            alert(
-              'You attacked your own alliance member! You have been kicked from the alliance!'
-            );
+          if (target.alliance === playerCountryData.alliance) {
+            alert('You cannot attack your alliance members!');
+            return;
           }
 
-          // Attacking another alliance
-          if (
-            target.alliance &&
-            target.alliance !== playerCountryData.alliance
-          ) {
-            // Track attacked country
-            if (!gameState.attackedCountries.includes(targetId)) {
-              gameState.attackedCountries.push(targetId);
-            }
+          // Track attacked country
+          if (!gameState.attackedCountries.includes(targetId)) {
+            gameState.attackedCountries.push(targetId);
+          }
 
-            // Alliance ACTUALLY retaliates
-            const alliance = gameState.alliances.find(
-              (a) => a.id === target.alliance
+          // Alliance retaliation
+          const alliance = gameState.alliances.find(
+            (a) => a.id === target.alliance
+          );
+          if (alliance) {
+            alert(
+              `Warning: You attacked ${target.name}, part of an alliance! They may retaliate.`
             );
-            if (alliance) {
-              addEvent(`${target.name}'s alliance is retaliating!`);
 
-              // Alliance members actually attack player territories
-              alliance.members.forEach((memberId) => {
-                const member = gameState.countries[memberId];
-                if (member.owner !== 'player' && Math.random() < 0.6) {
-                  // Find player territory to attack
-                  const playerTargets = member.neighbors
-                    .map((nId) => gameState.countries[nId])
-                    .filter((c) => c.owner === 'player');
-
-                  if (playerTargets.length > 0) {
-                    const playerTarget = playerTargets[0];
-                    const damage = Math.floor(member.army * 0.3);
-                    playerTarget.army -= damage;
-
-                    if (playerTarget.army <= 0) {
-                      playerTarget.owner = member.owner;
-                      playerTarget.color = member.color;
-                      playerTarget.army = Math.floor(member.army * 0.2);
-                      addEvent(
-                        `⚠️ ${member.name} conquered ${playerTarget.name} in retaliation!`
-                      );
-                    } else {
-                      addEvent(`${member.name} attacked ${playerTarget.name}!`);
-                    }
-
-                    showSpeechBubble(memberId);
-                  } else {
-                    // Boost army for future attacks
-                    member.army += 30;
-                  }
-                }
-              });
-            }
+            // Alliance members attack back
+            alliance.members.forEach((memberId) => {
+              const member = gameState.countries[memberId];
+              if (member.owner !== 'player' && Math.random() < 0.5) {
+                member.army += 20; // Boost their army
+              }
+            });
           }
         }
 
@@ -1420,18 +891,12 @@
           target.owner = 'player';
           target.color = '#4CAF50';
           target.army = Math.floor(gameState.army * 0.5);
-
-          addEvent(`Victory! Conquered ${target.name}!`);
-          showSpeechBubble(targetId);
           alert(
             `Victory! You conquered ${target.name}!\nCasualties: ${casualties}`
           );
         } else {
           const casualties = Math.floor(gameState.army * 0.3);
           gameState.army -= casualties;
-
-          addEvent(`Defeat at ${target.name}!`);
-          showSpeechBubble(targetId);
           alert(
             `Defeat! ${target.name} has a stronger army.\nCasualties: ${casualties}`
           );
