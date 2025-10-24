@@ -303,6 +303,7 @@ export default function Chat({ currentUser }: ChatProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState('openai');
+  const [defaultModel, setDefaultModel] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>('purple');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -434,6 +435,13 @@ export default function Chat({ currentUser }: ChatProps) {
     }
     if (savedMode) {
       setResponseMode(savedMode as ResponseMode);
+    }
+
+    // Load default model
+    const savedDefaultModel = localStorage.getItem('chat-default-model');
+    if (savedDefaultModel) {
+      setDefaultModel(savedDefaultModel);
+      setSelectedModel(savedDefaultModel);
     }
 
     // Load community models
@@ -1469,6 +1477,12 @@ export default function Chat({ currentUser }: ChatProps) {
     setCurrentChatId(null);
     localStorage.removeItem('chat-messages');
     showToast('Started new chat', 'success');
+  };
+
+  const setAsDefaultModel = () => {
+    setDefaultModel(selectedModel);
+    localStorage.setItem('chat-default-model', selectedModel);
+    showToast('Default model set', 'success');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -2541,6 +2555,31 @@ Final synthesis: [how to combine all elements]
               </option>
             ))}
           </select>
+          <button
+            onClick={setAsDefaultModel}
+            title={
+              defaultModel === selectedModel
+                ? 'This is your default model'
+                : 'Set as default model'
+            }
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: `1px solid ${currentTheme.border}`,
+              background:
+                defaultModel === selectedModel
+                  ? 'rgba(16, 185, 129, 0.2)'
+                  : currentTheme.messageBg,
+              color: currentTheme.text,
+              fontSize: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            {defaultModel === selectedModel ? '✓ Default' : 'Set as Default'}
+          </button>
           <button
             onClick={() => setShowApiKeyInput(!showApiKeyInput)}
             title={apiKey ? 'API Key Set' : 'Set API Key'}
