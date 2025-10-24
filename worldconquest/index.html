@@ -1370,10 +1370,11 @@
         const income = playerTerritories * 50 * gameState.economyLevel;
         gameState.gold += income;
 
-        // Nuke factory production
+        // Nuke factory production (scales with territory count)
         if (gameState.nukeFactory) {
-          gameState.nukes += 2;
-          addEvent('🏭 Nuke Factory: +2 nukes');
+          const nukeProduction = Math.max(2, Math.floor(playerTerritories / 3));
+          gameState.nukes += nukeProduction;
+          addEvent(`🏭 Nuke Factory: +${nukeProduction} nukes`);
         }
 
         // AI moves
@@ -1533,6 +1534,37 @@
                 neighbor.fearLevel += 50;
               }
             });
+
+            // Offer merge/rename options
+            setTimeout(() => {
+              const choice = prompt(
+                `You nuked ${target.name}!\n\n` +
+                  `Choose an option:\n` +
+                  `1. Keep as ${target.name}\n` +
+                  `2. Rename country\n` +
+                  `3. Merge with ${gameState.countries[gameState.playerCountry].name}\n\n` +
+                  `Enter 1-3:`
+              );
+
+              const option = parseInt(choice);
+              if (option === 2) {
+                const newName = prompt(`Enter new name for ${target.name}:`);
+                if (newName && newName.trim()) {
+                  target.name = newName.trim();
+                  addEvent(`${target.name} renamed!`);
+                  showToast(`Country renamed to ${newName}`, 'info');
+                }
+              } else if (option === 3) {
+                const playerCountry =
+                  gameState.countries[gameState.playerCountry];
+                const oldName = target.name;
+                target.name = `${playerCountry.name}-${oldName}`;
+                addEvent(`Merged into ${target.name}!`);
+                showToast(`Merged into ${target.name}!`, 'info');
+              }
+
+              drawMap();
+            }, 500);
             break;
 
           case 'ice':
