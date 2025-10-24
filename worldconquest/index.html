@@ -1,0 +1,1821 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Conquest - Mentat Party</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Arial', sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        overflow: hidden;
+      }
+
+      #gameContainer {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 20px;
+      }
+
+      #header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        font-size: 36px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      #gameArea {
+        display: flex;
+        gap: 20px;
+        flex: 1;
+      }
+
+      #mapContainer {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 20px;
+        position: relative;
+      }
+
+      #worldMap {
+        width: 100%;
+        height: 100%;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        background: #2c3e50;
+      }
+
+      .speech-bubble {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.95);
+        color: #333;
+        padding: 8px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        max-width: 150px;
+        pointer-events: none;
+        z-index: 100;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      .speech-bubble::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 8px solid rgba(255, 255, 255, 0.95);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      #sidebar {
+        width: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        overflow-y: auto;
+      }
+
+      .panel {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+      }
+
+      .panel h3 {
+        margin-bottom: 10px;
+        color: #ffd700;
+      }
+
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        margin: 5px 0;
+        padding: 5px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+      }
+
+      button {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 5px;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        width: 100%;
+        margin: 5px 0;
+      }
+
+      button:hover {
+        transform: scale(1.05);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      button.danger {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+      }
+
+      #countryList {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .country-item {
+        padding: 8px;
+        margin: 5px 0;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .country-item:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .country-item.selected {
+        background: rgba(102, 126, 234, 0.5);
+        border: 2px solid #667eea;
+      }
+
+      #startScreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      #startScreen h2 {
+        font-size: 48px;
+        margin-bottom: 30px;
+      }
+
+      #startScreen p {
+        font-size: 18px;
+        margin-bottom: 40px;
+        text-align: center;
+        max-width: 600px;
+      }
+
+      .mode-selection {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .mode-button {
+        padding: 20px 40px;
+        font-size: 18px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .mode-button.selected {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+      }
+
+      #turnTimer {
+        font-size: 24px;
+        font-weight: bold;
+        color: #ffd700;
+        text-align: center;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+
+      .alliance-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-left: 5px;
+      }
+
+      #eventLog {
+        max-height: 150px;
+        overflow-y: auto;
+        font-size: 12px;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 10px;
+        border-radius: 4px;
+      }
+
+      .event-item {
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .toast {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 2000;
+        animation: slideIn 0.3s ease-out;
+        max-width: 300px;
+      }
+
+      .toast.success {
+        border-left: 4px solid #10b981;
+      }
+
+      .toast.error {
+        border-left: 4px solid #ef4444;
+      }
+
+      .toast.warning {
+        border-left: 4px solid #f59e0b;
+      }
+
+      .toast.info {
+        border-left: 4px solid #3b82f6;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="startScreen">
+      <h2>🌍 World Conquest 🌍</h2>
+      <p>
+        Choose your country and conquer the world through strategy, economy, and
+        diplomacy!
+      </p>
+
+      <div class="mode-selection">
+        <button class="mode-button selected" onclick="selectMode('sandbox')">
+          🎮 Sandbox Mode<br />
+          <small>Free play, switch countries anytime</small>
+        </button>
+        <button class="mode-button" onclick="selectMode('turnbyturn')">
+          ⚔️ Turn-By-Turn<br />
+          <small>Strategic mode with AI & alliances</small>
+        </button>
+      </div>
+
+      <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="gameContainer" style="display: none">
+      <div id="header">
+        <h1>🌍 World Conquest</h1>
+      </div>
+
+      <div id="gameArea">
+        <div id="mapContainer">
+          <canvas id="worldMap"></canvas>
+        </div>
+
+        <div id="sidebar">
+          <div id="turnTimerContainer" style="display: none">
+            <div id="turnTimer">Time: 30s</div>
+          </div>
+
+          <div class="panel">
+            <h3>Your Empire</h3>
+            <div class="stat">
+              <span>Country:</span>
+              <span id="playerCountry">None</span>
+            </div>
+            <div class="stat">
+              <span>Territories:</span>
+              <span id="territoryCount">0</span>
+            </div>
+            <div class="stat">
+              <span>💰 Gold:</span>
+              <span id="gold">1000</span>
+            </div>
+            <div class="stat">
+              <span>⚔️ Army:</span>
+              <span id="army">100</span>
+            </div>
+            <div class="stat">
+              <span>🎖️ Military Level:</span>
+              <span id="militaryLevel">1</span>
+            </div>
+            <div class="stat" id="planesDisplay" style="display: none">
+              <span>✈️ Planes:</span>
+              <span id="planes">0</span>
+            </div>
+            <div class="stat" id="nukesDisplay" style="display: none">
+              <span>☢️ Nukes:</span>
+              <span id="nukes">0</span>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h3>Actions</h3>
+            <button onclick="recruitArmy()">Recruit Army (100💰)</button>
+            <button onclick="improveMilitary()">
+              Upgrade Military (300💰)
+            </button>
+            <button onclick="improveEconomy()">Improve Economy (200💰)</button>
+            <button
+              id="nukeButton"
+              onclick="launchNuke()"
+              style="display: none"
+              class="danger"
+            >
+              ☢️ Launch Nuke (1 nuke)
+            </button>
+          </div>
+
+          <div class="panel" id="alliancePanel" style="display: none">
+            <h3>Alliances</h3>
+            <div id="allianceInfo">No alliance</div>
+            <button onclick="requestAlliance()">Request Alliance</button>
+            <button onclick="requestMilitaryHelp()">
+              Request Military Help
+            </button>
+          </div>
+
+          <div class="panel" id="eventPanel" style="display: none">
+            <h3>Recent Events</h3>
+            <div id="eventLog"></div>
+          </div>
+
+          <div class="panel">
+            <h3>Select Country</h3>
+            <div id="countryList"></div>
+          </div>
+
+          <div class="panel">
+            <h3>Game Info</h3>
+            <div class="stat">
+              <span>Mode:</span>
+              <span id="gameMode">Sandbox</span>
+            </div>
+            <div class="stat">
+              <span>Turn:</span>
+              <span id="turn">1</span>
+            </div>
+            <button onclick="nextTurn()">Next Turn</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Country personalities and speech
+      const countryPersonalities = {
+        usa: [
+          "Freedom isn't free!",
+          "We're #1!",
+          "Don't mess with America!",
+          'Democracy incoming!',
+          'Time for some freedom!',
+        ],
+        russia: [
+          'In Soviet Russia, country conquers you!',
+          'Winter is coming...',
+          'You cannot defeat Mother Russia!',
+          'Vodka and victory!',
+          'The bear awakens!',
+        ],
+        china: [
+          'The dragon rises!',
+          'Ancient wisdom prevails!',
+          'We have the numbers!',
+          "The Great Wall wasn't enough?",
+          'Patience is a virtue... but not today!',
+        ],
+        uk: [
+          'Keep calm and carry on!',
+          'The sun never sets on our empire!',
+          'Tea time is over!',
+          'Jolly good show!',
+          'God save the Queen!',
+        ],
+        france: [
+          'Vive la France!',
+          'We invented revolution!',
+          'Sacré bleu!',
+          'Not today, Napoleon!',
+          'Ooh la la!',
+        ],
+        germany: [
+          'Efficiency is key!',
+          'Precision engineering!',
+          "We're very organized!",
+          "Third time's the charm?",
+          'Guten Tag!',
+        ],
+        japan: [
+          'Honor above all!',
+          'The rising sun!',
+          'Kawaii but deadly!',
+          'Samurai spirit!',
+          'Banzai!',
+        ],
+        canada: [
+          'Sorry, eh?',
+          "We're nice, but not that nice!",
+          'Maple syrup and missiles!',
+          'Hockey time!',
+          'Eh, buddy?',
+        ],
+        brazil: [
+          'Samba to victory!',
+          'Carnival of conquest!',
+          'The Amazon awakens!',
+          'Futebol and freedom!',
+          'Vai Brasil!',
+        ],
+        india: [
+          'Namaste... and goodbye!',
+          'Curry favor with us!',
+          'Bollywood ending!',
+          'The elephant never forgets!',
+          'Jai Hind!',
+        ],
+        mexico: [
+          '¡Viva México!',
+          "Taco 'bout a fight!",
+          'Mariachi and mayhem!',
+          'Spicy victory!',
+          '¡Ándale!',
+        ],
+        australia: [
+          "G'day mate!",
+          'Crikey!',
+          'Down under, up top!',
+          'Kangaroo kick!',
+          'No worries!',
+        ],
+        spain: [
+          '¡Olé!',
+          "Siesta's over!",
+          'Flamenco fury!',
+          'Conquistador spirit!',
+          '¡Vamos!',
+        ],
+        italy: [
+          'Mamma mia!',
+          'Pizza and power!',
+          'Roman glory returns!',
+          'Pasta la vista!',
+          'Ciao bella!',
+        ],
+        egypt: [
+          "Pharaoh's revenge!",
+          'Pyramid power!',
+          'Walk like an Egyptian!',
+          'Nile of conquest!',
+          'Ancient and angry!',
+        ],
+        poland: [
+          'Never again!',
+          'Pierogi power!',
+          'Solidarity!',
+          'Hussar charge!',
+          'Polska!',
+        ],
+        argentina: [
+          'Tango time!',
+          'Messi with us!',
+          'Pampas pride!',
+          'Gaucho glory!',
+          '¡Dale!',
+        ],
+        southafrica: [
+          'Rainbow nation rises!',
+          'Ubuntu!',
+          "Lion's roar!",
+          "Mandela's legacy!",
+          'Howzit!',
+        ],
+      };
+
+      // Game state
+      const gameState = {
+        mode: 'sandbox',
+        playerCountry: null,
+        countries: {},
+        alliances: [],
+        turn: 1,
+        gold: 1000,
+        army: 100,
+        economyLevel: 1,
+        militaryLevel: 1,
+        planes: 0,
+        nukes: 0,
+        turnTimeLeft: 30,
+        turnTimerInterval: null,
+        attackedCountries: [],
+        eventLog: [],
+        speechBubbles: [],
+        mergedCountries: {}, // Track merged countries
+        nukeTarget: null, // For nuke targeting
+        nukeType: null, // Type of nuke selected
+        nukeFactory: false, // Nuke factory unlocked at Lv15
+      };
+
+      // Alliance colors
+      const allianceColors = [
+        '#FF6B6B',
+        '#4ECDC4',
+        '#45B7D1',
+        '#FFA07A',
+        '#98D8C8',
+        '#F7DC6F',
+        '#BB8FCE',
+        '#85C1E2',
+      ];
+
+      // Simplified world map data
+      const worldCountries = [
+        {
+          id: 'usa',
+          name: 'United States',
+          x: 150,
+          y: 200,
+          neighbors: ['canada', 'mexico'],
+        },
+        { id: 'canada', name: 'Canada', x: 150, y: 100, neighbors: ['usa'] },
+        { id: 'mexico', name: 'Mexico', x: 150, y: 300, neighbors: ['usa'] },
+        {
+          id: 'brazil',
+          name: 'Brazil',
+          x: 300,
+          y: 450,
+          neighbors: ['argentina'],
+        },
+        {
+          id: 'argentina',
+          name: 'Argentina',
+          x: 280,
+          y: 550,
+          neighbors: ['brazil'],
+        },
+        {
+          id: 'uk',
+          name: 'United Kingdom',
+          x: 500,
+          y: 150,
+          neighbors: ['france', 'germany'],
+        },
+        {
+          id: 'france',
+          name: 'France',
+          x: 520,
+          y: 200,
+          neighbors: ['uk', 'germany', 'spain', 'italy'],
+        },
+        {
+          id: 'germany',
+          name: 'Germany',
+          x: 550,
+          y: 180,
+          neighbors: ['uk', 'france', 'poland', 'russia'],
+        },
+        { id: 'spain', name: 'Spain', x: 480, y: 240, neighbors: ['france'] },
+        { id: 'italy', name: 'Italy', x: 560, y: 240, neighbors: ['france'] },
+        {
+          id: 'poland',
+          name: 'Poland',
+          x: 600,
+          y: 170,
+          neighbors: ['germany', 'russia'],
+        },
+        {
+          id: 'russia',
+          name: 'Russia',
+          x: 700,
+          y: 150,
+          neighbors: ['germany', 'poland', 'china'],
+        },
+        {
+          id: 'china',
+          name: 'China',
+          x: 800,
+          y: 250,
+          neighbors: ['russia', 'india', 'japan'],
+        },
+        { id: 'india', name: 'India', x: 750, y: 300, neighbors: ['china'] },
+        { id: 'japan', name: 'Japan', x: 900, y: 230, neighbors: ['china'] },
+        { id: 'australia', name: 'Australia', x: 850, y: 500, neighbors: [] },
+        {
+          id: 'egypt',
+          name: 'Egypt',
+          x: 580,
+          y: 300,
+          neighbors: ['southafrica'],
+        },
+        {
+          id: 'southafrica',
+          name: 'South Africa',
+          x: 600,
+          y: 500,
+          neighbors: ['egypt'],
+        },
+      ];
+
+      // Initialize countries
+      worldCountries.forEach((country) => {
+        gameState.countries[country.id] = {
+          ...country,
+          owner: null,
+          army: Math.floor(Math.random() * 50) + 50,
+          color: '#888',
+          alliance: null,
+          fearLevel: 0, // Track fear of player
+        };
+      });
+
+      let canvas, ctx;
+      let selectedMode = 'sandbox';
+
+      function selectMode(mode) {
+        selectedMode = mode;
+        document.querySelectorAll('.mode-button').forEach((btn) => {
+          btn.classList.remove('selected');
+        });
+        event.target.closest('.mode-button').classList.add('selected');
+      }
+
+      function startGame() {
+        gameState.mode = selectedMode;
+        document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('gameContainer').style.display = 'flex';
+        document.getElementById('gameMode').textContent =
+          selectedMode === 'sandbox' ? 'Sandbox' : 'Turn-By-Turn';
+
+        // Show/hide mode-specific UI
+        if (selectedMode === 'turnbyturn') {
+          document.getElementById('turnTimerContainer').style.display = 'block';
+          document.getElementById('alliancePanel').style.display = 'block';
+          document.getElementById('eventPanel').style.display = 'block';
+          initializeAlliances();
+          startTurnTimer();
+        }
+
+        canvas = document.getElementById('worldMap');
+        ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+        // Populate country list
+        const countryList = document.getElementById('countryList');
+        worldCountries.forEach((country) => {
+          const div = document.createElement('div');
+          div.className = 'country-item';
+          div.textContent = country.name;
+          div.onclick = () => selectCountry(country.id);
+          div.id = `country-${country.id}`;
+          countryList.appendChild(div);
+        });
+
+        drawMap();
+      }
+
+      function initializeAlliances() {
+        // Create initial alliances between some countries
+        const allianceGroups = [
+          ['usa', 'canada', 'uk'],
+          ['russia', 'china'],
+          ['france', 'germany', 'italy'],
+          ['brazil', 'argentina'],
+        ];
+
+        allianceGroups.forEach((group, index) => {
+          const alliance = {
+            id: `alliance-${index}`,
+            members: group,
+            color: allianceColors[index],
+          };
+          gameState.alliances.push(alliance);
+
+          group.forEach((countryId) => {
+            if (gameState.countries[countryId]) {
+              gameState.countries[countryId].alliance = alliance.id;
+            }
+          });
+        });
+      }
+
+      function startTurnTimer() {
+        if (gameState.turnTimerInterval) {
+          clearInterval(gameState.turnTimerInterval);
+        }
+
+        gameState.turnTimeLeft = 30;
+        updateTimerDisplay();
+
+        gameState.turnTimerInterval = setInterval(() => {
+          gameState.turnTimeLeft--;
+          updateTimerDisplay();
+
+          if (gameState.turnTimeLeft <= 0) {
+            nextTurn();
+          }
+        }, 1000);
+      }
+
+      function updateTimerDisplay() {
+        const timerEl = document.getElementById('turnTimer');
+        timerEl.textContent = `Time: ${gameState.turnTimeLeft}s`;
+
+        if (gameState.turnTimeLeft <= 10) {
+          timerEl.style.color = '#ff4444';
+        } else {
+          timerEl.style.color = '#ffd700';
+        }
+      }
+
+      function selectCountry(countryId) {
+        if (gameState.mode === 'turnbyturn' && gameState.playerCountry) {
+          showToast('Cannot switch countries in Turn-By-Turn mode!', 'error');
+          addEvent('❌ Cannot switch countries');
+          return;
+        }
+
+        if (gameState.playerCountry && gameState.mode === 'sandbox') {
+          // Allow switching in sandbox mode
+          gameState.countries[gameState.playerCountry].owner = null;
+          gameState.countries[gameState.playerCountry].color = '#888';
+        }
+
+        gameState.playerCountry = countryId;
+        gameState.countries[countryId].owner = 'player';
+        gameState.countries[countryId].color = '#4CAF50';
+
+        document.getElementById('playerCountry').textContent =
+          gameState.countries[countryId].name;
+
+        // Update country list
+        document.querySelectorAll('.country-item').forEach((item) => {
+          item.classList.remove('selected');
+        });
+        document
+          .getElementById(`country-${countryId}`)
+          .classList.add('selected');
+
+        updateUI();
+        drawMap();
+      }
+
+      function showSpeechBubble(countryId, duration = 3000) {
+        const country = gameState.countries[countryId];
+        const messages = countryPersonalities[countryId] || ['...'];
+        const message = messages[Math.floor(Math.random() * messages.length)];
+
+        const bubble = document.createElement('div');
+        bubble.className = 'speech-bubble';
+        bubble.textContent = message;
+        bubble.style.left = `${country.x + 40}px`;
+        bubble.style.top = `${country.y - 40}px`;
+
+        document.getElementById('mapContainer').appendChild(bubble);
+
+        setTimeout(() => {
+          bubble.remove();
+        }, duration);
+      }
+
+      function addEvent(message) {
+        gameState.eventLog.unshift(message);
+        if (gameState.eventLog.length > 10) {
+          gameState.eventLog.pop();
+        }
+        updateEventLog();
+      }
+
+      function updateEventLog() {
+        const logEl = document.getElementById('eventLog');
+        logEl.innerHTML = gameState.eventLog
+          .map((event) => `<div class="event-item">${event}</div>`)
+          .join('');
+      }
+
+      function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      function drawMap() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw connections
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 1;
+        Object.values(gameState.countries).forEach((country) => {
+          country.neighbors.forEach((neighborId) => {
+            const neighbor = gameState.countries[neighborId];
+            ctx.beginPath();
+            ctx.moveTo(country.x, country.y);
+            ctx.lineTo(neighbor.x, neighbor.y);
+            ctx.stroke();
+          });
+        });
+
+        // Draw countries
+        Object.values(gameState.countries).forEach((country) => {
+          // Draw circle for country
+          ctx.fillStyle = country.color;
+          ctx.beginPath();
+          ctx.arc(country.x, country.y, 20, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Draw border (alliance or player)
+          if (country.alliance && gameState.mode === 'turnbyturn') {
+            const alliance = gameState.alliances.find(
+              (a) => a.id === country.alliance
+            );
+            ctx.strokeStyle = alliance
+              ? alliance.color
+              : 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 4;
+          } else {
+            ctx.strokeStyle =
+              country.owner === 'player' ? '#FFD700' : 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = country.owner === 'player' ? 3 : 1;
+          }
+          ctx.stroke();
+
+          // Draw name
+          ctx.fillStyle = 'white';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(country.name, country.x, country.y + 35);
+
+          // Draw army count
+          ctx.fillText(`⚔️${country.army}`, country.x, country.y);
+        });
+      }
+
+      function updateUI() {
+        const playerTerritories = Object.values(gameState.countries).filter(
+          (c) => c.owner === 'player'
+        ).length;
+        document.getElementById('territoryCount').textContent =
+          playerTerritories;
+        document.getElementById('gold').textContent = gameState.gold;
+        document.getElementById('army').textContent = gameState.army;
+        document.getElementById('turn').textContent = gameState.turn;
+        document.getElementById('militaryLevel').textContent =
+          gameState.militaryLevel;
+
+        // Update planes display
+        if (gameState.militaryLevel >= 5) {
+          document.getElementById('planesDisplay').style.display = 'flex';
+          document.getElementById('planes').textContent = gameState.planes;
+        }
+
+        // Update nukes display
+        if (gameState.militaryLevel >= 10) {
+          document.getElementById('nukesDisplay').style.display = 'flex';
+          document.getElementById('nukes').textContent = gameState.nukes;
+          document.getElementById('nukeButton').style.display = 'block';
+        }
+
+        // Update alliance info
+        if (gameState.mode === 'turnbyturn' && gameState.playerCountry) {
+          const playerCountryData =
+            gameState.countries[gameState.playerCountry];
+          const allianceInfo = document.getElementById('allianceInfo');
+
+          if (playerCountryData.alliance) {
+            const alliance = gameState.alliances.find(
+              (a) => a.id === playerCountryData.alliance
+            );
+            allianceInfo.innerHTML = `Alliance: ${alliance.members
+              .map((id) => gameState.countries[id].name)
+              .join(', ')}`;
+          } else {
+            allianceInfo.textContent = 'No alliance';
+          }
+        }
+      }
+
+      function recruitArmy() {
+        if (gameState.gold >= 100) {
+          gameState.gold -= 100;
+          gameState.army += 50;
+          showToast('Recruited 50 troops!', 'success');
+          addEvent('⚔️ Recruited 50 troops');
+          updateUI();
+        } else {
+          showToast('Not enough gold!', 'error');
+          addEvent('❌ Need 100💰 to recruit');
+        }
+      }
+
+      function improveMilitary() {
+        if (gameState.gold >= 300) {
+          gameState.gold -= 300;
+          gameState.militaryLevel++;
+
+          // Unlock planes at level 5
+          if (gameState.militaryLevel === 5) {
+            gameState.planes += 10;
+            showToast(
+              '✈️ Planes unlocked! Overseas attacks enabled!',
+              'success'
+            );
+            addEvent('✈️ Planes unlocked at Military Lv5');
+          }
+          // Unlock nukes at level 10
+          else if (gameState.militaryLevel === 10) {
+            gameState.nukes += 3;
+            showToast('☢️ NUKES UNLOCKED!', 'warning');
+            addEvent('☢️ Nuclear weapons unlocked at Lv10');
+          }
+          // Unlock nuke factory at level 15
+          else if (gameState.militaryLevel === 15) {
+            gameState.nukeFactory = true;
+            gameState.nukes += 5;
+            showToast('🏭 NUKE FACTORY UNLOCKED!', 'success');
+            addEvent('🏭 Nuke Factory built! +2 nukes/turn');
+          } else if (gameState.militaryLevel >= 5) {
+            gameState.planes += 5;
+            showToast('Military upgraded! +5 planes', 'success');
+            addEvent(`🎖️ Military Lv${gameState.militaryLevel}: +5 planes`);
+          } else {
+            showToast('Military upgraded!', 'success');
+            addEvent(`🎖️ Military upgraded to Lv${gameState.militaryLevel}`);
+          }
+
+          updateUI();
+        } else {
+          showToast('Not enough gold!', 'error');
+          addEvent('❌ Need 300💰 for military upgrade');
+        }
+      }
+
+      function improveEconomy() {
+        if (gameState.gold >= 200) {
+          gameState.gold -= 200;
+          gameState.economyLevel++;
+          showToast('Economy improved!', 'success');
+          addEvent(`💰 Economy upgraded to Lv${gameState.economyLevel}`);
+          updateUI();
+        } else {
+          showToast('Not enough gold!', 'error');
+          addEvent('❌ Need 200💰 for economy upgrade');
+        }
+      }
+
+      function launchNuke() {
+        if (gameState.nukes <= 0) {
+          showToast('No nukes available!', 'error');
+          addEvent('❌ No nukes available');
+          return;
+        }
+
+        // Show nuke type selection
+        const nukeTypes = [
+          {
+            id: 'fart',
+            name: '💨 Fart Nuke',
+            desc: 'Stinky! Makes them attack you',
+          },
+          { id: 'heat', name: '🔥 Heat Nuke', desc: 'Melts their gold supply' },
+          {
+            id: 'love',
+            name: '💗 Love Nuke',
+            desc: 'Pink and harmless but annoying',
+          },
+          { id: 'real', name: '☢️ Real Nuke', desc: 'Classic destruction' },
+        ];
+
+        // Add factory nukes if unlocked
+        if (gameState.nukeFactory) {
+          nukeTypes.push(
+            {
+              id: 'ice',
+              name: '❄️ Ice Nuke',
+              desc: 'Freezes army for 3 turns',
+            },
+            {
+              id: 'emp',
+              name: '⚡ EMP Nuke',
+              desc: 'Disables all tech, -50% army',
+            },
+            {
+              id: 'bio',
+              name: '🦠 Bio Nuke',
+              desc: 'Plague spreads to neighbors',
+            }
+          );
+        }
+
+        const selection = prompt(
+          'Choose your nuke type:\n\n' +
+            nukeTypes
+              .map((t, i) => `${i + 1}. ${t.name}\n   ${t.desc}`)
+              .join('\n\n') +
+            '\n\nEnter 1-4:'
+        );
+
+        const choice = parseInt(selection);
+        if (choice >= 1 && choice <= 4) {
+          gameState.nukeType = nukeTypes[choice - 1].id;
+          gameState.nukeTarget = true;
+          showToast(
+            `${nukeTypes[choice - 1].name} selected! Click target.`,
+            'warning'
+          );
+          addEvent(`☢️ ${nukeTypes[choice - 1].name} armed`);
+        } else {
+          showToast('Nuke launch cancelled', 'info');
+        }
+      }
+
+      function requestAlliance() {
+        if (!gameState.playerCountry) {
+          showToast('Select a country first!', 'error');
+          addEvent('❌ Select country first');
+          return;
+        }
+
+        const playerCountryData = gameState.countries[gameState.playerCountry];
+
+        if (playerCountryData.alliance) {
+          showToast('Already in an alliance!', 'warning');
+          addEvent('❌ Already in alliance');
+          return;
+        }
+
+        // Find alliances that player hasn't attacked
+        const availableAlliances = gameState.alliances.filter((alliance) => {
+          return !alliance.members.some((memberId) =>
+            gameState.attackedCountries.includes(memberId)
+          );
+        });
+
+        if (availableAlliances.length === 0) {
+          showToast('No alliances available!', 'error');
+          addEvent('❌ Attacked all alliance members');
+          return;
+        }
+
+        // Join first available alliance
+        const alliance = availableAlliances[0];
+        alliance.members.push(gameState.playerCountry);
+        playerCountryData.alliance = alliance.id;
+
+        const allianceNames = alliance.members
+          .map((id) => gameState.countries[id].name)
+          .join(', ');
+
+        addEvent(`🤝 Joined alliance!`);
+        showToast(`Joined alliance with ${allianceNames}`, 'success');
+
+        updateUI();
+        drawMap();
+      }
+
+      function requestMilitaryHelp() {
+        if (!gameState.playerCountry) {
+          showToast('Select a country first!', 'error');
+          addEvent('❌ Select country first');
+          return;
+        }
+
+        const playerCountryData = gameState.countries[gameState.playerCountry];
+
+        if (!playerCountryData.alliance) {
+          showToast('Need to be in an alliance first!', 'error');
+          addEvent('❌ Not in alliance');
+          return;
+        }
+
+        const alliance = gameState.alliances.find(
+          (a) => a.id === playerCountryData.alliance
+        );
+
+        // Get help from alliance members
+        let totalHelp = 0;
+        alliance.members.forEach((memberId) => {
+          if (memberId !== gameState.playerCountry) {
+            const member = gameState.countries[memberId];
+            const help = Math.floor(member.army * 0.2);
+            totalHelp += help;
+            member.army -= help;
+          }
+        });
+
+        gameState.army += totalHelp;
+        addEvent(`🤝 Alliance sent ${totalHelp} troops!`);
+        showToast(`Alliance sent ${totalHelp} troops to help!`, 'success');
+        updateUI();
+        drawMap();
+      }
+
+      function checkCountryMergers() {
+        if (gameState.mode !== 'turnbyturn') return;
+
+        const playerTerritories = Object.values(gameState.countries).filter(
+          (c) => c.owner === 'player'
+        ).length;
+
+        // If player is too powerful, weak neighbors might merge
+        if (playerTerritories >= 5) {
+          Object.values(gameState.countries).forEach((country) => {
+            if (country.owner !== 'player' && country.army < 100) {
+              // Check if has a neighbor also weak
+              const weakNeighbor = country.neighbors.find((nId) => {
+                const neighbor = gameState.countries[nId];
+                return (
+                  neighbor.owner !== 'player' &&
+                  neighbor.army < 100 &&
+                  Math.random() < 0.1
+                );
+              });
+
+              if (weakNeighbor) {
+                const neighbor = gameState.countries[weakNeighbor];
+                const oldName1 = country.name;
+                const oldName2 = neighbor.name;
+
+                // Properly merge countries
+                const newName = `${oldName1}-${oldName2}`;
+                country.name = newName;
+                country.army += neighbor.army;
+                country.fearLevel = 0;
+
+                // Combine neighbors
+                neighbor.neighbors.forEach((nId) => {
+                  if (nId !== country.id && !country.neighbors.includes(nId)) {
+                    country.neighbors.push(nId);
+                  }
+                });
+
+                // Update all references to neighbor to point to country
+                Object.values(gameState.countries).forEach((c) => {
+                  if (c.neighbors.includes(weakNeighbor)) {
+                    c.neighbors = c.neighbors.filter((n) => n !== weakNeighbor);
+                    if (
+                      !c.neighbors.includes(country.id) &&
+                      c.id !== country.id
+                    ) {
+                      c.neighbors.push(country.id);
+                    }
+                  }
+                });
+
+                // Remove the neighbor country
+                delete gameState.countries[weakNeighbor];
+
+                addEvent(`${oldName1} and ${oldName2} merged out of fear!`);
+                showSpeechBubble(country.id);
+                showToast(`${newName} formed!`, 'info');
+
+                gameState.mergedCountries[country.id] = true;
+              }
+            }
+          });
+        }
+      }
+
+      function performAIActions() {
+        if (gameState.mode !== 'turnbyturn') return;
+
+        // AI countries occasionally attack each other
+        const aiCountries = Object.values(gameState.countries).filter(
+          (c) => c.owner !== 'player' && c.owner !== null && c.army > 0
+        );
+
+        // AI attacks other AI
+        if (Math.random() < 0.3 && aiCountries.length > 1) {
+          const attacker =
+            aiCountries[Math.floor(Math.random() * aiCountries.length)];
+          const possibleTargets = attacker.neighbors
+            .map((id) => gameState.countries[id])
+            .filter((c) => c.owner !== attacker.owner && c.army > 0);
+
+          if (possibleTargets.length > 0) {
+            const target =
+              possibleTargets[
+                Math.floor(Math.random() * possibleTargets.length)
+              ];
+
+            // Check alliance
+            if (attacker.alliance && attacker.alliance === target.alliance) {
+              return; // Don't attack alliance members
+            }
+
+            if (attacker.army > target.army) {
+              target.owner = attacker.owner;
+              target.color = attacker.color;
+              addEvent(`${attacker.name} conquered ${target.name}!`);
+              showSpeechBubble(attacker.id);
+            }
+          }
+        }
+
+        // AI attacks player!
+        if (Math.random() < 0.2 && gameState.playerCountry) {
+          const playerCountry = gameState.countries[gameState.playerCountry];
+          const playerTerritories = Object.values(gameState.countries).filter(
+            (c) => c.owner === 'player'
+          );
+
+          // Find AI countries neighboring player
+          const threats = [];
+          playerTerritories.forEach((territory) => {
+            territory.neighbors.forEach((nId) => {
+              const neighbor = gameState.countries[nId];
+              if (neighbor.owner !== 'player' && neighbor.army > 50) {
+                threats.push({ attacker: neighbor, target: territory });
+              }
+            });
+          });
+
+          if (threats.length > 0) {
+            const attack = threats[Math.floor(Math.random() * threats.length)];
+            const attacker = attack.attacker;
+            const target = attack.target;
+
+            if (attacker.army > target.army * 1.5) {
+              // AI wins
+              target.owner = attacker.owner;
+              target.color = attacker.color;
+              target.army = Math.floor(attacker.army * 0.5);
+              attacker.army = Math.floor(attacker.army * 0.7);
+
+              addEvent(
+                `⚠️ ${attacker.name} attacked and conquered ${target.name}!`
+              );
+              showSpeechBubble(attacker.id);
+              showToast(
+                `⚠️ ${attacker.name} conquered ${target.name}!`,
+                'error'
+              );
+            } else {
+              // Player defends
+              const casualties = Math.floor(target.army * 0.3);
+              target.army -= casualties;
+              attacker.army -= Math.floor(attacker.army * 0.4);
+
+              addEvent(
+                `${attacker.name} attacked ${target.name} but was repelled!`
+              );
+              showSpeechBubble(attacker.id);
+            }
+
+            updateUI();
+            drawMap();
+          }
+        }
+
+        // Check for country mergers
+        checkCountryMergers();
+
+        // Check for game over
+        checkGameOver();
+      }
+
+      function checkGameOver() {
+        if (gameState.mode !== 'turnbyturn' || !gameState.playerCountry) return;
+
+        const playerTerritories = Object.values(gameState.countries).filter(
+          (c) => c.owner === 'player'
+        );
+
+        if (playerTerritories.length === 0) {
+          // Game Over!
+          clearInterval(gameState.turnTimerInterval);
+          showToast('GAME OVER! All territories lost!', 'error');
+          addEvent('💀 GAME OVER - Defeated!');
+
+          setTimeout(() => {
+            if (
+              confirm(
+                'Game Over! All your territories were conquered.\n\nPlay again?'
+              )
+            ) {
+              location.reload();
+            }
+          }, 1000);
+        }
+      }
+
+      function nextTurn() {
+        gameState.turn++;
+
+        // Generate income
+        const playerTerritories = Object.values(gameState.countries).filter(
+          (c) => c.owner === 'player'
+        ).length;
+        const income = playerTerritories * 50 * gameState.economyLevel;
+        gameState.gold += income;
+
+        // Nuke factory production (scales with territory count)
+        if (gameState.nukeFactory) {
+          const nukeProduction = Math.max(2, Math.floor(playerTerritories / 3));
+          gameState.nukes += nukeProduction;
+          addEvent(`🏭 Nuke Factory: +${nukeProduction} nukes`);
+        }
+
+        // AI moves
+        Object.values(gameState.countries).forEach((country) => {
+          if (
+            country.owner !== 'player' &&
+            country.owner !== null &&
+            country.army > 0
+          ) {
+            country.army += Math.floor(Math.random() * 10);
+          }
+        });
+
+        // Perform AI actions in turn-by-turn mode
+        if (gameState.mode === 'turnbyturn') {
+          performAIActions();
+          startTurnTimer();
+        }
+
+        updateUI();
+        drawMap();
+        addEvent(`Turn ${gameState.turn}: +${income}💰`);
+      }
+
+      // Canvas click handler for conquering
+      document.getElementById('worldMap').addEventListener('click', (e) => {
+        if (!gameState.playerCountry) {
+          showToast('Select your starting country first!', 'warning');
+          return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Find clicked country
+        Object.values(gameState.countries).forEach((country) => {
+          const distance = Math.sqrt(
+            (x - country.x) ** 2 + (y - country.y) ** 2
+          );
+          if (distance < 20) {
+            if (gameState.nukeTarget) {
+              executeNuke(country.id);
+            } else {
+              attemptConquest(country.id);
+            }
+          }
+        });
+      });
+
+      function executeNuke(targetId) {
+        const target = gameState.countries[targetId];
+
+        if (target.owner === 'player') {
+          showToast("Can't nuke your own territory!", 'error');
+          addEvent("❌ Can't nuke own territory");
+          gameState.nukeTarget = false;
+          return;
+        }
+
+        gameState.nukes--;
+        const nukeType = gameState.nukeType || 'real';
+        gameState.nukeTarget = false;
+        gameState.nukeType = null;
+
+        switch (nukeType) {
+          case 'fart':
+            // Fart Nuke - makes them mad and attack
+            addEvent(`💨 FART NUKE on ${target.name}! *PFFFFT*`);
+            showToast(
+              `💨 ${target.name} is FURIOUS about the smell!`,
+              'warning'
+            );
+            showSpeechBubble(targetId);
+
+            // They get mad and attack back
+            target.army += 50;
+            target.fearLevel = -100; // Very angry!
+
+            // Immediate retaliation
+            setTimeout(() => {
+              const playerTerritories = Object.values(
+                gameState.countries
+              ).filter(
+                (c) => c.owner === 'player' && target.neighbors.includes(c.id)
+              );
+              if (playerTerritories.length > 0) {
+                const playerTarget = playerTerritories[0];
+                const damage = Math.floor(target.army * 0.4);
+                playerTarget.army -= damage;
+                addEvent(`⚠️ ${target.name} retaliates! -${damage} army`);
+                showToast(`${target.name} attacks in revenge!`, 'error');
+                updateUI();
+                drawMap();
+              }
+            }, 1000);
+            break;
+
+          case 'heat':
+            // Heat Nuke - melts gold
+            addEvent(`🔥 HEAT NUKE on ${target.name}! Gold melted!`);
+            showToast(`🔥 ${target.name}'s economy destroyed!`, 'warning');
+            showSpeechBubble(targetId);
+
+            // They lose army due to economic collapse
+            target.army = Math.floor(target.army * 0.3);
+
+            // Player gets some of the melted gold
+            const stolenGold = 200;
+            gameState.gold += stolenGold;
+            addEvent(`💰 Recovered ${stolenGold} gold from ruins`);
+            break;
+
+          case 'love':
+            // Love Nuke - pink and annoying
+            addEvent(`💗 LOVE NUKE on ${target.name}! So much love!`);
+            showToast(`💗 ${target.name} is confused by all the love!`, 'info');
+            showSpeechBubble(targetId);
+
+            // Similar to fart but less angry
+            target.army += 30;
+            target.fearLevel = -50;
+
+            // Mild retaliation
+            setTimeout(() => {
+              const playerTerritories = Object.values(
+                gameState.countries
+              ).filter(
+                (c) => c.owner === 'player' && target.neighbors.includes(c.id)
+              );
+              if (playerTerritories.length > 0) {
+                const playerTarget = playerTerritories[0];
+                const damage = Math.floor(target.army * 0.2);
+                playerTarget.army -= damage;
+                addEvent(`${target.name} attacks (annoyed by love)`);
+                updateUI();
+                drawMap();
+              }
+            }, 1000);
+            break;
+
+          case 'real':
+          default:
+            // Real Nuke - classic destruction
+            target.army = Math.floor(target.army * 0.1);
+            target.owner = 'player';
+            target.color = '#4CAF50';
+
+            addEvent(`☢️ NUCLEAR STRIKE on ${target.name}!`);
+            showToast(`☢️ ${target.name} devastated!`, 'warning');
+            showSpeechBubble(targetId);
+
+            // Increase fear in neighboring countries
+            target.neighbors.forEach((nId) => {
+              const neighbor = gameState.countries[nId];
+              if (neighbor.owner !== 'player') {
+                neighbor.fearLevel += 50;
+              }
+            });
+
+            // Offer merge/rename options
+            setTimeout(() => {
+              const choice = prompt(
+                `You nuked ${target.name}!\n\n` +
+                  `Choose an option:\n` +
+                  `1. Keep as ${target.name}\n` +
+                  `2. Rename country\n` +
+                  `3. Merge with ${gameState.countries[gameState.playerCountry].name}\n\n` +
+                  `Enter 1-3:`
+              );
+
+              const option = parseInt(choice);
+              if (option === 2) {
+                const newName = prompt(`Enter new name for ${target.name}:`);
+                if (newName && newName.trim()) {
+                  target.name = newName.trim();
+                  addEvent(`${target.name} renamed!`);
+                  showToast(`Country renamed to ${newName}`, 'info');
+                }
+              } else if (option === 3) {
+                const playerCountry =
+                  gameState.countries[gameState.playerCountry];
+                const oldName = target.name;
+                target.name = `${playerCountry.name}-${oldName}`;
+                addEvent(`Merged into ${target.name}!`);
+                showToast(`Merged into ${target.name}!`, 'info');
+              }
+
+              drawMap();
+            }, 500);
+            break;
+
+          case 'ice':
+            // Ice Nuke - freezes army
+            addEvent(`❄️ ICE NUKE on ${target.name}! Frozen solid!`);
+            showToast(`❄️ ${target.name} frozen for 3 turns!`, 'info');
+            showSpeechBubble(targetId);
+
+            target.frozen = 3; // Frozen for 3 turns
+            target.army = Math.floor(target.army * 0.5);
+            addEvent(`${target.name} cannot move for 3 turns`);
+            break;
+
+          case 'emp':
+            // EMP Nuke - disables tech
+            addEvent(`⚡ EMP NUKE on ${target.name}! All tech disabled!`);
+            showToast(`⚡ ${target.name}'s technology destroyed!`, 'warning');
+            showSpeechBubble(targetId);
+
+            target.army = Math.floor(target.army * 0.5);
+            target.emp = true; // Permanently weakened
+            addEvent(`${target.name} permanently weakened`);
+            break;
+
+          case 'bio':
+            // Bio Nuke - plague spreads
+            addEvent(`🦠 BIO NUKE on ${target.name}! Plague outbreak!`);
+            showToast(`🦠 Plague spreading from ${target.name}!`, 'error');
+            showSpeechBubble(targetId);
+
+            target.army = Math.floor(target.army * 0.2);
+            target.plague = 3; // Plague for 3 turns
+
+            // Spread to neighbors
+            target.neighbors.forEach((nId) => {
+              const neighbor = gameState.countries[nId];
+              if (neighbor.owner !== 'player') {
+                neighbor.army = Math.floor(neighbor.army * 0.7);
+                neighbor.plague = 2;
+                addEvent(`🦠 Plague spread to ${neighbor.name}!`);
+              }
+            });
+            break;
+        }
+
+        updateUI();
+        drawMap();
+      }
+
+      function attemptConquest(targetId) {
+        const target = gameState.countries[targetId];
+
+        if (target.owner === 'player') {
+          addEvent('❌ Already own this territory');
+          return;
+        }
+
+        // Check if target is neighbor of player territory
+        const playerTerritories = Object.values(gameState.countries).filter(
+          (c) => c.owner === 'player'
+        );
+        const isNeighbor = playerTerritories.some((territory) =>
+          territory.neighbors.includes(targetId)
+        );
+
+        // Check if player has planes for overseas attack
+        const canAttackOverseas =
+          gameState.planes > 0 && gameState.militaryLevel >= 5;
+
+        if (!isNeighbor && !canAttackOverseas) {
+          showToast('Need planes for overseas attacks!', 'error');
+          addEvent('❌ Overseas attack requires planes (Military Lv5)');
+          return;
+        }
+
+        let allianceHelped = false;
+        if (!isNeighbor && canAttackOverseas) {
+          gameState.planes -= 1;
+
+          // Check if alliance can help with overseas attack
+          const playerCountryData =
+            gameState.countries[gameState.playerCountry];
+          if (playerCountryData.alliance && Math.random() < 0.5) {
+            const alliance = gameState.alliances.find(
+              (a) => a.id === playerCountryData.alliance
+            );
+            const helper = alliance.members.find(
+              (mId) =>
+                mId !== gameState.playerCountry &&
+                gameState.countries[mId].owner !== 'player'
+            );
+
+            if (helper) {
+              const helperCountry = gameState.countries[helper];
+              const helpAmount = Math.floor(helperCountry.army * 0.15);
+              gameState.army += helpAmount;
+              allianceHelped = true;
+              addEvent(
+                `${helperCountry.name} sent ${helpAmount} troops to help!`
+              );
+            }
+          }
+
+          if (allianceHelped) {
+            showToast('Alliance helping with overseas attack!', 'success');
+          }
+          addEvent(`✈️ Plane deployed for overseas attack`);
+        }
+
+        // Check alliance - attacking own alliance member
+        if (gameState.mode === 'turnbyturn') {
+          const playerCountryData =
+            gameState.countries[gameState.playerCountry];
+
+          if (
+            target.alliance &&
+            target.alliance === playerCountryData.alliance
+          ) {
+            // Kicked from alliance!
+            const alliance = gameState.alliances.find(
+              (a) => a.id === playerCountryData.alliance
+            );
+            alliance.members = alliance.members.filter(
+              (mId) => mId !== gameState.playerCountry
+            );
+            playerCountryData.alliance = null;
+
+            addEvent(
+              `You were kicked from your alliance for attacking a member!`
+            );
+            showToast('Kicked from alliance for attacking member!', 'error');
+          }
+
+          // Attacking another alliance
+          if (
+            target.alliance &&
+            target.alliance !== playerCountryData.alliance
+          ) {
+            // Track attacked country
+            if (!gameState.attackedCountries.includes(targetId)) {
+              gameState.attackedCountries.push(targetId);
+            }
+
+            // Alliance ACTUALLY retaliates
+            const alliance = gameState.alliances.find(
+              (a) => a.id === target.alliance
+            );
+            if (alliance) {
+              addEvent(`${target.name}'s alliance is retaliating!`);
+
+              // Alliance members actually attack player territories
+              alliance.members.forEach((memberId) => {
+                const member = gameState.countries[memberId];
+                if (member.owner !== 'player' && Math.random() < 0.6) {
+                  // Find player territory to attack
+                  const playerTargets = member.neighbors
+                    .map((nId) => gameState.countries[nId])
+                    .filter((c) => c.owner === 'player');
+
+                  if (playerTargets.length > 0) {
+                    const playerTarget = playerTargets[0];
+                    const damage = Math.floor(member.army * 0.3);
+                    playerTarget.army -= damage;
+
+                    if (playerTarget.army <= 0) {
+                      playerTarget.owner = member.owner;
+                      playerTarget.color = member.color;
+                      playerTarget.army = Math.floor(member.army * 0.2);
+                      addEvent(
+                        `⚠️ ${member.name} conquered ${playerTarget.name} in retaliation!`
+                      );
+                    } else {
+                      addEvent(`${member.name} attacked ${playerTarget.name}!`);
+                    }
+
+                    showSpeechBubble(memberId);
+                  } else {
+                    // Boost army for future attacks
+                    member.army += 30;
+                  }
+                }
+              });
+            }
+          }
+        }
+
+        // Battle
+        const attackPower =
+          gameState.army * (1 + gameState.militaryLevel * 0.1);
+        if (attackPower > target.army) {
+          const casualties = Math.floor(target.army * 0.7);
+          gameState.army -= casualties;
+          target.owner = 'player';
+          target.color = '#4CAF50';
+          target.army = Math.floor(gameState.army * 0.5);
+
+          addEvent(`Victory! Conquered ${target.name}!`);
+          showSpeechBubble(targetId);
+          showToast(`Victory! Conquered ${target.name}!`, 'success');
+
+          // Ask if player wants to merge/rename
+          setTimeout(() => {
+            const choice = prompt(
+              `You conquered ${target.name}!\n\n` +
+                `Choose an option:\n` +
+                `1. Keep as ${target.name}\n` +
+                `2. Rename country\n` +
+                `3. Merge with ${gameState.countries[gameState.playerCountry].name}\n\n` +
+                `Enter 1-3:`
+            );
+
+            const option = parseInt(choice);
+            if (option === 2) {
+              const newName = prompt(`Enter new name for ${target.name}:`);
+              if (newName && newName.trim()) {
+                target.name = newName.trim();
+                addEvent(`${target.name} renamed!`);
+                showToast(`Country renamed to ${newName}`, 'info');
+              }
+            } else if (option === 3) {
+              const playerCountry =
+                gameState.countries[gameState.playerCountry];
+              const oldName = target.name;
+              target.name = `${playerCountry.name}-${oldName}`;
+              addEvent(`Merged into ${target.name}!`);
+              showToast(`Merged into ${target.name}!`, 'info');
+            }
+
+            drawMap();
+          }, 500);
+        } else {
+          const casualties = Math.floor(gameState.army * 0.3);
+          gameState.army -= casualties;
+
+          addEvent(`Defeat at ${target.name}!`);
+          showSpeechBubble(targetId);
+          showToast(`Defeat! ${target.name} too strong!`, 'error');
+        }
+
+        updateUI();
+        drawMap();
+      }
+
+      // Resize canvas on window resize
+      window.addEventListener('resize', () => {
+        if (canvas) {
+          canvas.width = canvas.offsetWidth;
+          canvas.height = canvas.offsetHeight;
+          drawMap();
+        }
+      });
+    </script>
+  </body>
+</html>

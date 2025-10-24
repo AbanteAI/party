@@ -1,0 +1,2463 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snake Game 🐍</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0f0c29 0%,
+          #302b63 50%,
+          #24243e 100%
+        );
+        color: #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px;
+        background-attachment: fixed;
+      }
+
+      h1 {
+        color: #f8fafc;
+        margin-bottom: 20px;
+        text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        font-size: 2.5rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        background: linear-gradient(to right, #a78bfa, #c084fc, #e879f9);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .game-container {
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow:
+          0 25px 50px -12px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+      }
+
+      canvas {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        display: block;
+        background: rgba(0, 0, 0, 0.2);
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .info {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #cbd5e1;
+        font-size: 1.1rem;
+        font-weight: 500;
+        padding: 12px 16px;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .controls {
+        margin-top: 15px;
+        color: #94a3b8;
+        font-size: 0.9rem;
+        text-align: center;
+        font-weight: 400;
+        letter-spacing: 0.2px;
+      }
+
+      .game-over {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        color: white;
+        padding: 40px;
+        border-radius: 24px;
+        text-align: center;
+        display: none;
+        box-shadow:
+          0 25px 50px -12px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        width: 90%;
+        max-width: 400px;
+        animation: modalAppear 0.4s ease-out;
+      }
+
+      @keyframes modalAppear {
+        from {
+          opacity: 0;
+          transform: translate(-50%, -60%);
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, -50%);
+        }
+      }
+
+      .game-over h2 {
+        margin-bottom: 15px;
+        font-size: 2.2rem;
+        font-weight: 800;
+        background: linear-gradient(to right, #f472b6, #c084fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .game-over p {
+        margin-bottom: 25px;
+        font-size: 1.1rem;
+        color: #cbd5e1;
+        line-height: 1.6;
+      }
+
+      .game-over button {
+        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        color: white;
+        border: none;
+        padding: 14px 32px;
+        border-radius: 16px;
+        font-size: 1rem;
+        cursor: pointer;
+        font-weight: 600;
+        letter-spacing: 0.25px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+        text-transform: uppercase;
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .game-over button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4);
+      }
+
+      .game-over input {
+        width: 100%;
+        padding: 14px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        font-size: 1rem;
+        text-align: center;
+        background: rgba(30, 41, 59, 0.8);
+        color: #e2e8f0;
+        backdrop-filter: blur(10px);
+        transition: all 0.2s ease;
+      }
+
+      .game-over input:focus {
+        outline: none;
+        border-color: #8b5cf6;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+      }
+
+      .leaderboard {
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow:
+          0 25px 50px -12px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        min-width: 320px;
+        transition: all 0.3s ease;
+      }
+
+      .leaderboard h2 {
+        color: #f8fafc;
+        margin-bottom: 20px;
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: linear-gradient(to right, #a78bfa, #f472b6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .leaderboard-entry {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .leaderboard-entry:hover {
+        background: rgba(51, 65, 85, 0.6);
+        transform: translateX(4px);
+      }
+
+      .leaderboard-entry.top-score {
+        background: linear-gradient(
+          135deg,
+          rgba(139, 92, 246, 0.2) 0%,
+          rgba(236, 72, 153, 0.2) 100%
+        );
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+      }
+
+      .leaderboard-rank {
+        color: #a78bfa;
+        font-weight: 700;
+        min-width: 35px;
+        font-size: 1.1rem;
+      }
+
+      .leaderboard-name {
+        flex: 1;
+        color: #e2e8f0;
+        font-weight: 500;
+      }
+
+      .leaderboard-score {
+        color: #f472b6;
+        font-weight: 700;
+      }
+
+      .container {
+        display: flex;
+        gap: 25px;
+        align-items: flex-start;
+        max-width: 1200px;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .leaderboard.hidden {
+        display: none;
+      }
+
+      .toggle-button {
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+        color: white;
+        border: none;
+        padding: 16px 24px;
+        border-radius: 30px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow:
+          0 10px 25px rgba(139, 92, 246, 0.4),
+          0 0 0 1px rgba(255, 255, 255, 0.1);
+        z-index: 1000;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .toggle-button:hover {
+        transform: translateY(-3px);
+        box-shadow:
+          0 15px 35px rgba(139, 92, 246, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.1);
+      }
+
+      .toggle-button:active {
+        transform: translateY(-1px);
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .leaderboard {
+          width: 100%;
+          max-width: 100%;
+          margin-top: 25px;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+
+        .game-over {
+          padding: 30px 20px;
+          margin: 0 15px;
+        }
+
+        .game-over h2 {
+          font-size: 1.8rem;
+        }
+      }
+
+      /* Modern scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.5);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #7c3aed, #db2777);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🐍 Snake Game 🐍</h1>
+    <div
+      style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #666;
+        font-family: monospace;
+      "
+    >
+      v1.0.10
+    </div>
+
+    <!-- Mode Selector -->
+    <div style="margin-bottom: 20px; text-align: center">
+      <div
+        style="
+          display: inline-flex;
+          background: rgba(15, 23, 42, 0.8);
+          backdrop-filter: blur(12px);
+          border-radius: 12px;
+          padding: 6px;
+          gap: 6px;
+        "
+      >
+        <button
+          id="singlePlayerBtn"
+          onclick="switchMode('single')"
+          style="
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+          "
+        >
+          Single Player
+        </button>
+        <button
+          id="multiplayerBtn"
+          onclick="switchMode('multiplayer')"
+          style="
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+          "
+        >
+          Multiplayer
+        </button>
+      </div>
+    </div>
+
+    <!-- Player Name Input (for multiplayer) -->
+    <div
+      id="playerNameInput"
+      style="display: none; margin-bottom: 20px; text-align: center"
+    >
+      <input
+        type="text"
+        id="playerNameField"
+        placeholder="Enter your name"
+        maxlength="20"
+        style="
+          padding: 12px 20px;
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
+          background: rgba(15, 23, 42, 0.8);
+          color: white;
+          font-size: 16px;
+          text-align: center;
+        "
+      />
+      <button
+        onclick="joinMultiplayer()"
+        style="
+          padding: 12px 24px;
+          margin-left: 10px;
+          border: none;
+          border-radius: 8px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-weight: 600;
+          cursor: pointer;
+        "
+      >
+        Join Game
+      </button>
+    </div>
+
+    <!-- Lobby List (for multiplayer) -->
+    <div
+      id="lobbyList"
+      style="
+        display: none;
+        max-width: 800px;
+        margin: 0 auto 20px;
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(12px);
+        border-radius: 12px;
+        padding: 20px;
+      "
+    >
+      <h3
+        style="
+          color: white;
+          text-align: center;
+          margin-bottom: 20px;
+          font-size: 1.5rem;
+        "
+      >
+        🎮 Available Lobbies
+      </h3>
+      <div id="lobbyListContent"></div>
+    </div>
+
+    <div class="container">
+      <div class="game-container">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div class="info">
+          <div>Score: <span id="score">0</span></div>
+          <div>High Score: <span id="highScore">0</span></div>
+        </div>
+        <div
+          id="powerUpStatus"
+          style="
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 6px;
+            min-height: 40px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+          "
+        ></div>
+        <div class="controls">Use Arrow Keys or WASD to move</div>
+        <button
+          id="pauseButton"
+          onclick="togglePause()"
+          style="
+            margin-top: 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+          "
+        >
+          ⏸️ Pause
+        </button>
+      </div>
+
+      <div class="leaderboard" id="leaderboard">
+        <div
+          style="
+            text-align: center;
+            margin-bottom: 10px;
+            color: #666;
+            font-size: 14px;
+          "
+        >
+          ❤️ @techfren
+        </div>
+        <h2>🏆 Leaderboard</h2>
+        <div id="leaderboardList"></div>
+      </div>
+    </div>
+
+    <button
+      class="toggle-button"
+      id="toggleButton"
+      onclick="toggleLeaderboard()"
+    >
+      Hide Leaderboard
+    </button>
+
+    <div class="game-over" id="gameOver">
+      <h2>Game Over!</h2>
+      <p>Final Score: <span id="finalScore">0</span></p>
+      <p
+        id="deathRoast"
+        style="font-size: 14px; color: #666; margin: 10px 0; font-style: italic"
+      ></p>
+      <input
+        type="text"
+        id="playerName"
+        placeholder="Enter your name"
+        maxlength="20"
+      />
+      <button onclick="saveScoreAndRestart()">Save & Play Again</button>
+    </div>
+
+    <!-- Socket.io Client -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <script>
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const scoreElement = document.getElementById('score');
+      const highScoreElement = document.getElementById('highScore');
+      const gameOverElement = document.getElementById('gameOver');
+      const finalScoreElement = document.getElementById('finalScore');
+      const deathRoastElement = document.getElementById('deathRoast');
+
+      const snakeDeathRoasts = [
+        'The bot snake sends its regards 🐍 — it left a condolence card and a tiny coffin made of apple seeds.',
+        'Skill issue detected 💀 — your reflexes are slower than a snail in molasses wearing lead boots.',
+        "Better luck next time, snake food 🍎 — the apple's already planning your funeral.",
+        "The bot is now 20% you 😬 — congrats, you've been assimilated into its cold, calculating AI soul.",
+        'You just got outplayed by an AI with 3 lines of code 🤖 — those 3 lines have more ambition than your entire life.',
+        "Your snake didn't die… it just realized it was never meant to be more than a snack.",
+        "The bot didn't win… it just waited for you to embarrass yourself. Patience is a virtue you clearly lack.",
+        'You played snake like it was a documentary about your own mediocrity.',
+        "The AI didn't outsmart you — it just watched you make the same mistake 47 times and then sighed.",
+        'Your high score? A tragic footnote in the annals of snake history.',
+        "You didn't lose… you just gave the bot a free upgrade to 'Elite Snake Mode'.",
+        "The bot's AI is so advanced, it started feeling sorry for you halfway through.",
+        "Your snake's death was so dramatic, even the pixels cried.",
+        "Congratulations! You've achieved the rare 'Human Error: Snake Edition' achievement.",
+        "The bot didn't eat your snake… it just politely asked for your dignity back.",
+        'You thought you were playing a game. The bot was playing existential chess.',
+        'Your reflexes are so slow, the apple had time to write a novel before you turned.',
+        "The bot's code is simpler than your excuses. And it still won.",
+        "You didn't lose to an AI… you lost to the concept of competence.",
+        "Your snake died so hard, it left behind a will: 'Please don't play again.'",
+        "The bot didn't need to think — it just waited for you to self-destruct.",
+        "You're not bad at snake… you're just a walking obstacle for the AI's greatness.",
+        "Your snake's final move? A confused U-turn into a wall. The bot applauded.",
+        "The AI didn't calculate your path… it just predicted your inevitable failure.",
+        "You're the reason 'easy mode' was invented.",
+        "The bot didn't beat you — it just politely corrected your life choices.",
+        "Your snake didn't die from hunger… it died from shame.",
+        "Even the game's tutorial had higher IQ than you.",
+        "The bot's victory dance? A single pixel blinking 'LOL'.",
+        "You didn't lose to an AI — you lost to your own inability to learn.",
+        "The apple you ate? It's now wearing your ghost as a hat.",
+        "Your snake's death was so slow, the bot took a nap and still won.",
+        "You're not playing snake… you're performing a tragedy in 8-bit.",
+        "The bot didn't outplay you — it just realized you were already defeated before the game started.",
+        'Your reflexes are slower than a Windows 95 startup.',
+        "The AI's entire strategy: 'Wait for human to panic.' It worked. Again.",
+        "You didn't die… you just became part of the bot's 'Why Humans Suck' presentation.",
+        "The bot didn't need to be smart — it just needed you to be dumb.",
+        "Your snake's death animation was more emotional than your last breakup.",
+        "You didn't lose to an AI… you lost to the laws of physics you refuse to obey.",
+        "The bot has a PhD in 'How to Watch Humans Fail Gracefully'.",
+        "Your high score is just a polite way of saying 'try again in another life.'",
+        "The apple didn't kill you — your decision-making did.",
+        "You're the reason snakes have nightmares about humans.",
+        "The bot didn't eat your snake… it adopted it as a pet.",
+        "You didn't lose… you just upgraded the bot's confidence level to 'God Mode'.",
+        "Your snake's death was so predictable, the bot wrote a haiku about it.",
+        "The AI didn't win… it just accepted your surrender before you did.",
+        "You didn't play snake — you played 'How to Make an AI Feel Bad for You'.",
+        "The bot's code is shorter than your attention span.",
+        "You didn't die to a snake… you died to your own lack of spatial awareness.",
+        "The bot didn't calculate your moves — it just waited for you to trip over your own ego.",
+        "Your snake's final words: 'I regret everything.'",
+        "The bot didn't need to be fast… it just needed you to be wrong.",
+        "You're not bad at games — you're bad at not being a liability.",
+        "The apple you ate? It's now your tombstone.",
+        "Your snake didn't die… it filed for emotional support.",
+        "The bot's victory screen? Just a single emoji: 🤡",
+        "You didn't lose to AI… you lost to the fact that even a toaster has better instincts.",
+        "The bot didn't outsmart you — it just outlasted your will to live.",
+        "Your snake's death was so slow, the game paused to give you a pep talk.",
+        "You didn't fail… you just provided the bot with its first real challenge: 'How to stay awake.'",
+        "The bot didn't need to think — it just needed you to stop breathing.",
+        'Your reflexes are so slow, the game had to slow down to match your pace.',
+        "The bot didn't beat you — it just showed you what happens when you don't try.",
+        "You didn't lose to a snake… you lost to the concept of 'not being terrible'.",
+        "The apple didn't kill you — your lack of planning did.",
+        "Your snake's death was so embarrassing, even the background music paused.",
+        "The bot didn't need to be smart — it just needed you to be human.",
+        "You didn't lose… you just became a cautionary tale in the game's documentation.",
+        "The bot's AI is so advanced, it started feeling guilty… then ate you anyway.",
+        "Your snake didn't die — it retired to a life of quiet solitude, far from your incompetence.",
+        "You didn't play snake — you played 'Guess How Many Times I Can Hit Myself'.",
+        "The bot didn't win… it just witnessed a slow-motion train wreck and took notes.",
+        "Your high score? A typo. The game meant to say '0'.",
+        "The bot didn't need to calculate your path — it just needed you to stop moving.",
+        "You didn't lose to an AI… you lost to the fact that you didn't even try to learn.",
+        "The apple you ate? It's now your epitaph.",
+        "Your snake's death was so dramatic, the game asked if you wanted to save your progress.",
+        "The bot didn't outplay you — it just waited for you to give up.",
+        "You didn't die… you just became a glitch in the game's 'Human Behavior' dataset.",
+        "The bot's code is shorter than your excuses.",
+        'Your reflexes are slower than a sloth on vacation… with a broken watch.',
+        "You didn't lose to a snake… you lost to your own refusal to evolve.",
+        "The bot didn't need to be fast — it just needed you to be predictable.",
+        "Your snake didn't die… it was euthanized for the greater good.",
+        "The bot didn't win… it just realized you were never a threat.",
+        "You didn't lose to AI — you lost to the fact that you didn't even read the manual.",
+        "The apple didn't kill you — your decision to turn into a wall did.",
+        "Your snake's final move? A desperate, chaotic wiggle. The bot yawned.",
+        "You didn't lose… you just gave the bot its first real laugh.",
+        "The bot didn't need to think — it just needed you to panic.",
+        "Your high score is just the game's way of saying 'you tried, but no.'",
+        "The bot didn't beat you — it just politely reminded you that you're not special.",
+        "You didn't die to a snake… you died to your own arrogance.",
+        "The apple you ate? It's now haunting your dreams.",
+        "Your snake's death was so slow, the game offered you a free restart… you declined.",
+        "The bot didn't need to calculate — it just needed you to be human.",
+        "You didn't lose… you just became the reason the game has a 'Noob Filter'.",
+        "The bot's victory screen? Just a single line: 'You're welcome.'",
+        "Your reflexes are so slow, the game had to add a 'Human Pause' button.",
+        "You didn't lose to AI… you lost to the concept of 'basic competence'.",
+        "The bot didn't eat your snake — it just politely asked for your keyboard back.",
+        "Your snake didn't die… it went on strike for better working conditions.",
+        "You didn't lose… you just became a statistic in the bot's 'Why Humans Shouldn't Play Games' report.",
+        "The apple didn't kill you — your lack of foresight did.",
+        "The bot didn't need to be smart — it just needed you to be… you.",
+        "Your snake's death was so poetic, the game paused to play a funeral dirge.",
+        "You didn't lose to an AI… you lost to the fact that you're not even a challenge.",
+        "The bot didn't win… it just waited for you to realize you're bad.",
+        'Your high score? A sad whisper in the void.',
+        "The bot didn't outplay you — it just outwaited your will to continue.",
+        "You didn't die… you just became the game's new 'How Not To Play' tutorial.",
+        "The apple you ate? It's now your legacy.",
+        "Your snake didn't die — it just realized it was better off as a pixel.",
+        "The bot didn't need to think — it just needed you to be predictable, slow, and tragically human.",
+        "You didn't lose to AI… you lost to the fact that you didn't even try to be good.",
+        "The bot's code is shorter than your last text message to an ex.",
+        "Your reflexes are so slow, the game had to add a 'Human Mode: Glacial' setting.",
+        "You didn't die… you just became the reason the game has a 'Don't Try This' warning.",
+        "The bot didn't eat your snake — it just politely filed a complaint with the Game Gods.",
+        "Your snake's final breath? A sigh. The bot didn't even notice.",
+        "You didn't lose to a snake… you lost to the concept of 'not being a disaster'.",
+        "The apple didn't kill you — your lack of direction did.",
+        "The bot didn't win… it just smiled and whispered, 'Pathetic.'",
+        'Your high score? More of a low point.',
+        "You didn't die… you just became the reason snakes have therapy.",
+        "The bot didn't need to calculate your moves — it just needed you to exist.",
+        "Your snake didn't die… it retired to a life of peace… far away from you.",
+      ];
+
+      const gridSize = 20;
+      const tileCount = canvas.width / gridSize;
+
+      let snake = [{ x: 10, y: 10 }];
+      let foods = [
+        { x: 15, y: 15, type: 'apple' },
+        { x: 5, y: 5, type: 'banana' },
+      ]; // Two fruits on screen at once
+      let dx = 0;
+      let dy = 0;
+      let score = 0;
+      let inputBuffer = null; // Buffer for next direction change
+      let lastDirection = { dx: 0, dy: 0 }; // Track last direction
+      let highScore = localStorage.getItem('snakeHighScore') || 0;
+      let gameRunning = false;
+      let gameLoop;
+      let gameSpeed = 100; // Starting speed in ms (slower = easier)
+      const minSpeed = 40; // Minimum speed (maximum difficulty)
+      const speedIncrement = 1; // Speed increase per point (slower acceleration)
+
+      // Feature variables (by @mcgdj on GitHub)
+      let multiplier = 1;
+      let multiplierTimer = 0;
+      const multiplierDuration = 300;
+      const powerUps = [];
+      let powerUpTimer = 0;
+      const powerUpInterval = 500;
+
+      // Enemy snakes (multiple)
+      const NUM_ENEMIES = 3;
+      const ENEMY_COLORS = ['#FF0000', '#FF6B00', '#FF00FF'];
+      let enemySnakes = [];
+      const enemyMoveDelay = 2; // Enemies move every 2 frames (slower than player)
+
+      // Pause state
+      let isPaused = false;
+
+      // Power-up types
+      const powerUpTypes = [
+        { type: 'speed', color: '#FFD700', duration: 200, icon: '⚡' },
+        { type: 'ghost', color: '#9370DB', duration: 150, icon: '👻' },
+        { type: 'multiplier', color: '#FF69B4', duration: 250, icon: '✨' },
+        { type: 'shield', color: '#00CED1', duration: 180, icon: '🛡️' },
+      ];
+
+      // Active power-up effects
+      let activePowerUps = {
+        speed: 0,
+        ghost: 0,
+        multiplier: 0,
+        shield: 0,
+      };
+      const snakeTrail = [];
+      const soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+      let audioContext = null;
+      const particles = [];
+      let currentSkin = 'classic';
+      let wrapWalls = localStorage.getItem('wrapWalls') === 'true';
+      let speedBoost = false;
+      let speedBoostTimer = 0;
+      let gamePaused = false;
+      let difficulty = 'medium';
+      let showLength = true;
+      let appleCount = 0;
+      let bananaCount = 0;
+      let streak = 0;
+      let maxStreak = 0;
+      let ghostMode = false;
+      let ghostTimer = 0;
+      let gameTime = 0;
+      let colorCycle = false;
+      let foodAnimation = true;
+      let customControls = {
+        up: 'ArrowUp',
+        down: 'ArrowDown',
+        left: 'ArrowLeft',
+        right: 'ArrowRight',
+      };
+      let snakeSize = 1;
+      let gameTimer = 0;
+      let scoreAnimating = false;
+      let showHighScoreNotification = true;
+      let snakeRotation = 0;
+      let foodTeleport = false;
+      let tailGlow = true;
+      let customSpeed = 100;
+      let trailFade = true;
+      let foodMagnetism = false;
+      let snakeCamouflage = false;
+      let gameStats = {
+        totalMoves: 0,
+        totalFoodEaten: 0,
+        deaths: 0,
+        timePlayed: 0,
+      };
+      let headStyle = 'classic';
+      const foodTypes = [
+        'apple',
+        'banana',
+        'cherry',
+        'orange',
+        'strawberry',
+        'grape',
+      ];
+      let dynamicDifficulty = true;
+      let timeMultiplier = 1;
+      let trailColor = '#66BB6A';
+      let collectedFoods = [];
+      let snakePersonality = 'calm';
+      let achievements = [];
+      let trailPattern = 'solid';
+      let attractionRadius = 0;
+      let movementStyle = 'classic';
+      let foodSpawnPattern = 'random';
+
+      // Multiplayer variables
+      let gameMode = 'single'; // 'single' or 'multiplayer'
+      let socket = null;
+      let multiplayerPlayers = new Map();
+      let myPlayerId = null;
+      let multiplayerFoods = [];
+      let multiplayerConnected = false;
+      let trailLength = 10;
+      let inGameMessages = [];
+      let headShape = 'square';
+      let foodVarietyTimer = 0;
+      let trailTransparency = 0.5;
+      let foodAnimationSpeed = 1;
+      let trailEffect = 'fade';
+      let foodCollection = [];
+      let trailStyle = 'simple';
+      let showHints = true;
+      let trailGlow = false;
+      let foodVarietyCount = 0;
+      let trailDirection = 'follow';
+      let foodAnimationType = 'bounce';
+      let trailFrequency = 1;
+      let challenges = [];
+      let trailIntensity = 1;
+      let foodVarietySystem = 'random';
+      let trailPatternType = 'dotted';
+      let foodCollectionCounter = 0;
+      let trailColorScheme = 'green';
+      let objectives = [];
+      let trailAnimation = 'none';
+      let foodVarietyMultiplier = 1;
+      let trailTransparencyLevel = 0.5;
+      let foodAnimationIntensity = 1;
+      let trailGlowIntensity = 1;
+      let events = [];
+      let trailFadeSpeed = 1;
+      let foodVarietyFrequency = 10;
+      let trailRotation = 0;
+      let foodCollectionProgress = 0;
+      let trailSize = 1;
+      let rewards = [];
+      let trailPatternFrequency = 1;
+      let foodVarietySystemEnabled = true;
+      let trailColorVariation = 0;
+      let foodAnimationStyle = 'bounce';
+      let notifications = [];
+      let trailEffectIntensity = 1;
+      let foodVarietyCounter = 0;
+      let trailPatternTypeValue = 'dotted';
+      let foodCollectionSystem = 'simple';
+      let gameAchievements = [];
+      let trailAnimationSpeed = 1;
+      let foodVarietyMultiplierValue = 1;
+      let trailTransparencyLevelValue = 0.5;
+      let foodAnimationIntensityValue = 1;
+      let trailGlowIntensityValue = 1;
+      let gameEvents = [];
+      let trailFadeSpeedValue = 1;
+      let foodVarietyFrequencyValue = 10;
+      let trailRotationValue = 0;
+      let foodCollectionProgressValue = 0;
+      let trailSizeValue = 1;
+      let gameRewards = [];
+      let trailPatternFrequencyValue = 1;
+
+      // Leaderboard management - now using server API
+      async function fetchLeaderboard() {
+        console.log('Fetching leaderboard...');
+        try {
+          const response = await fetch('/api/snake/scores');
+          console.log('Leaderboard response status:', response.status);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Leaderboard data:', data);
+            return data;
+          }
+        } catch (error) {
+          console.error('Error fetching leaderboard:', error);
+        }
+        return [];
+      }
+
+      async function updateLeaderboardDisplay() {
+        const leaderboard = await fetchLeaderboard();
+        const listElement = document.getElementById('leaderboardList');
+
+        if (leaderboard.length === 0) {
+          listElement.innerHTML =
+            '<div style="text-align: center; color: #999; padding: 20px;">No scores yet!</div>';
+          return;
+        }
+
+        listElement.innerHTML = leaderboard
+          .map(
+            (entry, index) => `
+            <div class="leaderboard-entry ${index === 0 ? 'top-score' : ''}">
+              <span class="leaderboard-rank">#${index + 1}</span>
+              <span class="leaderboard-name">${entry.name}</span>
+              <span class="leaderboard-score">${entry.score}</span>
+            </div>
+          `
+          )
+          .join('');
+
+        // Update high score display from leaderboard
+        if (leaderboard.length > 0) {
+          highScore = leaderboard[0].score;
+          highScoreElement.textContent = highScore;
+        }
+      }
+
+      async function addToLeaderboard(name, score) {
+        console.log('Attempting to save score:', { name, score });
+        try {
+          const response = await fetch('/api/snake/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, score }),
+          });
+
+          console.log('Response status:', response.status);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Score saved successfully:', data);
+            await updateLeaderboardDisplay();
+          } else {
+            const errorText = await response.text();
+            console.error('Failed to save score:', response.status, errorText);
+          }
+        } catch (error) {
+          console.error('Error posting score:', error);
+        }
+      }
+
+      // Initialize leaderboard display
+      updateLeaderboardDisplay();
+
+      // Toggle leaderboard visibility
+      function toggleLeaderboard() {
+        const leaderboard = document.getElementById('leaderboard');
+        const button = document.getElementById('toggleButton');
+
+        if (leaderboard.classList.contains('hidden')) {
+          leaderboard.classList.remove('hidden');
+          button.textContent = 'Hide Leaderboard';
+        } else {
+          leaderboard.classList.add('hidden');
+          button.textContent = 'Show Leaderboard';
+        }
+      }
+
+      // Feature functions (by @mcgdj on GitHub)
+      function updateBackgroundGradient() {
+        const hue = (score * 3) % 360;
+        document.body.style.background = `linear-gradient(135deg, hsl(${hue}, 70%, 60%) 0%, hsl(${(hue + 60) % 360}, 70%, 60%) 100%)`;
+      }
+
+      function initializeFeatures() {
+        const savedStats = localStorage.getItem('snakeGameStats');
+        if (savedStats) gameStats = JSON.parse(savedStats);
+        const savedSkin = localStorage.getItem('snakeSkin');
+        if (savedSkin) currentSkin = savedSkin;
+        const savedWrapWalls = localStorage.getItem('wrapWalls');
+        if (savedWrapWalls) wrapWalls = savedWrapWalls === 'true';
+        const savedDifficulty = localStorage.getItem('difficulty');
+        if (savedDifficulty) difficulty = savedDifficulty;
+        const savedSpeed = localStorage.getItem('gameSpeed');
+        if (savedSpeed) customSpeed = parseInt(savedSpeed);
+        const savedHeadStyle = localStorage.getItem('headStyle');
+        if (savedHeadStyle) headStyle = savedHeadStyle;
+        const savedTrailLength = localStorage.getItem('trailLength');
+        if (savedTrailLength) trailLength = parseInt(savedTrailLength);
+        const savedTrailColor = localStorage.getItem('trailColor');
+        if (savedTrailColor) trailColor = savedTrailColor;
+        const savedTrailPattern = localStorage.getItem('trailPattern');
+        if (savedTrailPattern) trailPattern = savedTrailPattern;
+        const savedAchievements = localStorage.getItem('snakeAchievements');
+        if (savedAchievements) achievements = JSON.parse(savedAchievements);
+        const savedCollectedFoods = localStorage.getItem('collectedFoods');
+        if (savedCollectedFoods)
+          collectedFoods = JSON.parse(savedCollectedFoods);
+        const savedChallenges = localStorage.getItem('snakeChallenges');
+        if (savedChallenges) challenges = JSON.parse(savedChallenges);
+        const savedObjectives = localStorage.getItem('snakeObjectives');
+        if (savedObjectives) objectives = JSON.parse(savedObjectives);
+        const savedRewards = localStorage.getItem('snakeRewards');
+        if (savedRewards) rewards = JSON.parse(savedRewards);
+        const savedEvents = localStorage.getItem('snakeEvents');
+        if (savedEvents) events = JSON.parse(savedEvents);
+        const savedNotifications = localStorage.getItem('snakeNotifications');
+        if (savedNotifications) notifications = JSON.parse(savedNotifications);
+      }
+
+      function initializeEnemies() {
+        enemySnakes = [];
+        // Spawn enemies in different corners/areas
+        const spawnPositions = [
+          { x: 2, y: 2 }, // Top-left
+          { x: tileCount - 3, y: 2 }, // Top-right
+          { x: 2, y: tileCount - 3 }, // Bottom-left
+          { x: tileCount - 3, y: tileCount - 3 }, // Bottom-right
+          { x: Math.floor(tileCount / 2), y: 2 }, // Top-center
+        ];
+
+        for (let i = 0; i < NUM_ENEMIES; i++) {
+          const spawnPos = spawnPositions[i % spawnPositions.length];
+          enemySnakes.push({
+            snake: [{ x: spawnPos.x, y: spawnPos.y }],
+            dx: 1,
+            dy: 0,
+            moveCounter: 0,
+            color: ENEMY_COLORS[i % ENEMY_COLORS.length],
+            alive: true,
+            aggressionLevel: Math.random(), // 0-1, higher = more aggressive
+          });
+        }
+      }
+
+      function togglePause() {
+        if (gameMode !== 'single' || !gameRunning) return;
+
+        isPaused = !isPaused;
+        const pauseButton = document.getElementById('pauseButton');
+
+        if (isPaused) {
+          pauseButton.textContent = '▶️ Resume';
+        } else {
+          pauseButton.textContent = '⏸️ Pause';
+        }
+      }
+
+      function saveGameStats() {
+        localStorage.setItem('snakeGameStats', JSON.stringify(gameStats));
+      }
+
+      function saveSnakeSkin() {
+        localStorage.setItem('snakeSkin', currentSkin);
+      }
+
+      function saveGameSettings() {
+        localStorage.setItem('wrapWalls', wrapWalls);
+        localStorage.setItem('difficulty', difficulty);
+        localStorage.setItem('gameSpeed', customSpeed);
+        localStorage.setItem('headStyle', headStyle);
+        localStorage.setItem('trailLength', trailLength);
+        localStorage.setItem('trailColor', trailColor);
+        localStorage.setItem('trailPattern', trailPattern);
+      }
+
+      function saveAchievements() {
+        localStorage.setItem('snakeAchievements', JSON.stringify(achievements));
+      }
+
+      function saveCollectedFoods() {
+        localStorage.setItem('collectedFoods', JSON.stringify(collectedFoods));
+      }
+
+      function saveChallenges() {
+        localStorage.setItem('snakeChallenges', JSON.stringify(challenges));
+      }
+
+      function saveObjectives() {
+        localStorage.setItem('snakeObjectives', JSON.stringify(objectives));
+      }
+
+      function saveRewards() {
+        localStorage.setItem('snakeRewards', JSON.stringify(rewards));
+      }
+
+      function saveEvents() {
+        localStorage.setItem('snakeEvents', JSON.stringify(events));
+      }
+
+      function saveNotifications() {
+        localStorage.setItem(
+          'snakeNotifications',
+          JSON.stringify(notifications)
+        );
+      }
+
+      function toggleWallWrapping() {
+        wrapWalls = !wrapWalls;
+        localStorage.setItem('wrapWalls', wrapWalls);
+        return wrapWalls;
+      }
+
+      function changeDifficulty(newDifficulty) {
+        difficulty = newDifficulty;
+        localStorage.setItem('difficulty', difficulty);
+        switch (difficulty) {
+          case 'easy':
+            customSpeed = 150;
+            break;
+          case 'medium':
+            customSpeed = 100;
+            break;
+          case 'hard':
+            customSpeed = 70;
+            break;
+          case 'insane':
+            customSpeed = 40;
+            break;
+        }
+        localStorage.setItem('gameSpeed', customSpeed);
+      }
+
+      function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('soundEnabled', soundEnabled);
+        return soundEnabled;
+      }
+
+      function addParticle(x, y, color) {
+        particles.push({
+          x: x,
+          y: y,
+          color: color,
+          size: Math.random() * 5 + 2,
+          speedX: (Math.random() - 0.5) * 4,
+          speedY: (Math.random() - 0.5) * 4,
+          life: 30,
+        });
+      }
+
+      function updateParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+          particles[i].x += particles[i].speedX;
+          particles[i].y += particles[i].speedY;
+          particles[i].life--;
+          if (particles[i].life <= 0) {
+            particles.splice(i, 1);
+          }
+        }
+      }
+
+      function drawParticles() {
+        for (let i = 0; i < particles.length; i++) {
+          ctx.fillStyle = particles[i].color;
+          ctx.beginPath();
+          ctx.arc(
+            particles[i].x,
+            particles[i].y,
+            particles[i].size,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+      }
+
+      function updateSnakeTrail() {
+        if (snake.length > 0) {
+          snakeTrail.push({
+            x: snake[0].x,
+            y: snake[0].y,
+            color: '#66BB6A',
+          });
+          if (snakeTrail.length > trailLength) {
+            snakeTrail.shift();
+          }
+        }
+      }
+
+      function drawSnakeTrail() {
+        for (let i = 0; i < snakeTrail.length; i++) {
+          const segment = snakeTrail[i];
+          const alpha = trailFade ? i / snakeTrail.length : 1;
+          ctx.fillStyle = `rgba(102, 187, 106, ${alpha * trailTransparency})`;
+          ctx.fillRect(
+            segment.x * gridSize + 1,
+            segment.y * gridSize + 1,
+            gridSize - 2,
+            gridSize - 2
+          );
+        }
+      }
+
+      function updateFoodCollection(type) {
+        collectedFoods.push({
+          type: type,
+          timestamp: Date.now(),
+        });
+        if (type === 'apple') appleCount++;
+        if (type === 'banana') bananaCount++;
+        saveCollectedFoods();
+      }
+
+      function checkAchievements() {
+        if (score >= 5 && !achievements.includes('first_snake')) {
+          achievements.push('first_snake');
+          notifications.push({
+            message: 'First Snake! Score 5 points',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+        if (
+          collectedFoods.length >= 10 &&
+          !achievements.includes('food_collector')
+        ) {
+          achievements.push('food_collector');
+          notifications.push({
+            message: 'Food Collector! Collect 10 foods',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+        if (score >= 20 && !achievements.includes('speed_demon')) {
+          achievements.push('speed_demon');
+          notifications.push({
+            message: 'Speed Demon! Score 20 points',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+        if (wrapWalls && !achievements.includes('wall_wrangler')) {
+          achievements.push('wall_wrangler');
+          notifications.push({
+            message: 'Wall Wrangler! Wall wrapping enabled',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+        if (
+          difficulty === 'insane' &&
+          !achievements.includes('master_of_difficulty')
+        ) {
+          achievements.push('master_of_difficulty');
+          notifications.push({
+            message: 'Master of Difficulty! Insane mode',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+        if (trailLength >= 20 && !achievements.includes('trail_master')) {
+          achievements.push('trail_master');
+          notifications.push({
+            message: 'Trail Master! Longest trail',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+        if (
+          currentSkin !== 'classic' &&
+          !achievements.includes('color_changer')
+        ) {
+          achievements.push('color_changer');
+          notifications.push({
+            message: 'Color Changer! Custom snake skin',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+        if (
+          score >= highScore &&
+          score > 0 &&
+          !achievements.includes('high_score')
+        ) {
+          achievements.push('high_score');
+          notifications.push({
+            message: 'High Score! Beat your record',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+        if (streak >= 5 && !achievements.includes('streak_master')) {
+          achievements.push('streak_master');
+          notifications.push({
+            message: 'Streak Master! 5 consecutive foods',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+        if (gameTime >= 300 && !achievements.includes('time_keeper')) {
+          achievements.push('time_keeper');
+          notifications.push({
+            message: 'Time Keeper! Play for 5 minutes',
+            time: Date.now(),
+          });
+          saveAchievements();
+        }
+      }
+
+      function updateGameStats() {
+        gameStats.totalMoves++;
+        gameStats.timePlayed++;
+        if (gameStats.timePlayed % 100 === 0) {
+          saveGameStats();
+        }
+      }
+
+      function drawCustomSnake() {
+        for (let i = 0; i < snake.length; i++) {
+          const segment = snake[i];
+          let color;
+          switch (currentSkin) {
+            case 'rainbow':
+              const hue = (i * 10) % 360;
+              color = `hsl(${hue}, 100%, 50%)`;
+              break;
+            case 'fire':
+              color = i === 0 ? '#FF4500' : '#FF6347';
+              break;
+            case 'ocean':
+              color = i === 0 ? '#1E90FF' : '#00BFFF';
+              break;
+            case 'forest':
+              color = i === 0 ? '#228B22' : '#32CD32';
+              break;
+            default:
+              color = i === 0 ? '#4CAF50' : '#66BB6A';
+          }
+          ctx.fillStyle = color;
+          ctx.fillRect(
+            segment.x * gridSize + 1,
+            segment.y * gridSize + 1,
+            gridSize - 2,
+            gridSize - 2
+          );
+          if (i === 0 && headStyle !== 'classic') {
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(
+              segment.x * gridSize + 1,
+              segment.y * gridSize + 1,
+              gridSize - 2,
+              gridSize - 2
+            );
+          }
+        }
+      }
+
+      function updateFoodAnimation() {
+        if (foodAnimation) {
+          foodAnimationSpeed = Math.sin(Date.now() / 500) * 0.5 + 1;
+        }
+      }
+
+      function drawAnimatedFood() {
+        ctx.font = `${gridSize - 4}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        foods.forEach((food) => {
+          let emoji = food.type === 'apple' ? '🍎' : '🍌';
+          if (foodAnimation) {
+            const scale = 0.8 + Math.sin(Date.now() / 200 + food.x) * 0.2;
+            ctx.save();
+            ctx.translate(
+              food.x * gridSize + gridSize / 2,
+              food.y * gridSize + gridSize / 2
+            );
+            ctx.scale(scale, scale);
+            ctx.fillText(emoji, 0, 0);
+            ctx.restore();
+          } else {
+            ctx.fillText(
+              emoji,
+              food.x * gridSize + gridSize / 2,
+              food.y * gridSize + gridSize / 2
+            );
+          }
+        });
+      }
+
+      // Mode switching functions
+      function switchMode(mode) {
+        gameMode = mode;
+
+        // Update button styles
+        const singleBtn = document.getElementById('singlePlayerBtn');
+        const multiBtn = document.getElementById('multiplayerBtn');
+        const nameInput = document.getElementById('playerNameInput');
+        const lobbyList = document.getElementById('lobbyList');
+        const pauseButton = document.getElementById('pauseButton');
+
+        if (mode === 'single') {
+          singleBtn.style.background =
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+          multiBtn.style.background = 'rgba(255,255,255,0.1)';
+          nameInput.style.display = 'none';
+          lobbyList.style.display = 'none';
+
+          // Disconnect from multiplayer if connected
+          if (socket) {
+            socket.disconnect();
+            socket = null;
+            multiplayerConnected = false;
+          }
+
+          // Reset to single player game
+          restartGame();
+        } else {
+          singleBtn.style.background = 'rgba(255,255,255,0.1)';
+          multiBtn.style.background =
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+          nameInput.style.display = 'block';
+          lobbyList.style.display = 'block';
+          pauseButton.style.display = 'none';
+
+          // Stop single player game
+          if (gameRunning) {
+            clearInterval(gameLoop);
+            if (gameLoopId) {
+              cancelAnimationFrame(gameLoopId);
+              gameLoopId = null;
+            }
+            gameRunning = false;
+          }
+
+          // Request lobby list
+          requestLobbyList();
+        }
+      }
+
+      function requestLobbyList() {
+        // Connect temporarily to get lobby list
+        if (!socket) {
+          socket = io();
+          socket.on('connect', () => {
+            socket.emit('get_lobbies');
+          });
+          socket.on('lobby_list', displayLobbyList);
+        } else {
+          socket.emit('get_lobbies');
+        }
+      }
+
+      function displayLobbyList(lobbies) {
+        const lobbyListContent = document.getElementById('lobbyListContent');
+        if (!lobbyListContent) return;
+
+        let html = '';
+        lobbies.forEach((lobby) => {
+          html += `
+            <div style="
+              background: rgba(255,255,255,0.05);
+              border-radius: 8px;
+              padding: 16px;
+              margin-bottom: 12px;
+              border: 1px solid rgba(255,255,255,0.1);
+              transition: all 0.2s ease;
+              cursor: pointer;
+            " onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
+               onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;">
+                  <h4 style="color: white; margin: 0 0 8px 0; font-size: 1.2rem;">${lobby.name}</h4>
+                  <p style="color: #94a3b8; margin: 0; font-size: 0.9rem;">${lobby.description}</p>
+                </div>
+                <div style="text-align: right; margin-left: 20px;">
+                  <div style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 8px;">
+                    ${lobby.playerCount}/${lobby.maxPlayers} players
+                  </div>
+                  <button onclick="joinLobby('${lobby.id}')" style="
+                    padding: 8px 16px;
+                    border: none;
+                    border-radius: 6px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    font-weight: 600;
+                    cursor: pointer;
+                  ">Join</button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        lobbyListContent.innerHTML = html;
+      }
+
+      function joinLobby(roomId) {
+        const nameField = document.getElementById('playerNameField');
+        const playerName = nameField.value.trim() || 'Player';
+        joinMultiplayer(playerName, roomId);
+      }
+
+      function joinMultiplayer(playerName, roomId) {
+        // If called without parameters, get them from the form
+        if (!playerName) {
+          const nameField = document.getElementById('playerNameField');
+          playerName = nameField.value.trim() || 'Player';
+        }
+        if (!roomId) {
+          roomId = 'default';
+        }
+
+        // Connect to Socket.io server if not already connected
+        if (!socket || !socket.connected) {
+          socket = io();
+        }
+
+        socket.on('connect', () => {
+          console.log('Connected to multiplayer server');
+          socket.emit('join_game', { playerName, roomId });
+        });
+
+        // If already connected, join immediately
+        if (socket.connected) {
+          socket.emit('join_game', { playerName, roomId });
+        }
+
+        socket.on('game_joined', (data) => {
+          myPlayerId = data.playerId;
+          multiplayerConnected = true;
+          multiplayerPlayers = new Map();
+
+          // Add all existing players
+          data.gameState.players.forEach((player) => {
+            multiplayerPlayers.set(player.id, player);
+          });
+
+          multiplayerFoods = data.gameState.foods;
+
+          // Start multiplayer rendering
+          if (!gameRunning) {
+            gameRunning = true;
+            gameLoop = setInterval(drawMultiplayerGame, 100);
+          }
+        });
+
+        socket.on('player_joined', (player) => {
+          multiplayerPlayers.set(player.id, player);
+        });
+
+        socket.on('player_left', (playerId) => {
+          multiplayerPlayers.delete(playerId);
+        });
+
+        socket.on('game_update', (gameState) => {
+          // Update all players
+          multiplayerPlayers.clear();
+          gameState.players.forEach((player) => {
+            multiplayerPlayers.set(player.id, player);
+          });
+          multiplayerFoods = gameState.foods;
+        });
+
+        socket.on('player_died', (data) => {
+          const player = multiplayerPlayers.get(data.playerId);
+          if (player) {
+            player.alive = false;
+            if (!player.isBot) {
+              player.spectating = true;
+            }
+          }
+
+          if (data.playerId === myPlayerId) {
+            // You died - enter spectator mode
+            const myPlayer = multiplayerPlayers.get(myPlayerId);
+            if (myPlayer) {
+              myPlayer.spectating = true;
+            }
+
+            // Show spectator message
+            setTimeout(() => {
+              alert('You died! You are now spectating. Refresh to play again.');
+            }, 500);
+          }
+        });
+
+        socket.on('room_full', () => {
+          alert('Room is full! (20 players max)');
+          socket.disconnect();
+          socket = null;
+        });
+      }
+
+      function drawMultiplayerGame() {
+        // Clear canvas
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw foods
+        ctx.font = `${gridSize}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        multiplayerFoods.forEach((food) => {
+          const emoji = food.type === 'apple' ? '🍎' : '🍌';
+          ctx.fillText(
+            emoji,
+            food.x * gridSize + gridSize / 2,
+            food.y * gridSize + gridSize / 2
+          );
+        });
+
+        // Draw all players
+        multiplayerPlayers.forEach((player) => {
+          if (!player.alive) return;
+
+          // Draw snake
+          for (let i = 0; i < player.snake.length; i++) {
+            const segment = player.snake[i];
+            ctx.fillStyle = player.color;
+            ctx.fillRect(
+              segment.x * gridSize + 1,
+              segment.y * gridSize + 1,
+              gridSize - 2,
+              gridSize - 2
+            );
+          }
+
+          // Draw player name above snake head
+          if (player.snake.length > 0) {
+            const head = player.snake[0];
+            const displayName = player.isBot
+              ? `🤖 ${player.name}`
+              : player.name;
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeText(
+              displayName,
+              head.x * gridSize + gridSize / 2,
+              head.y * gridSize - 10
+            );
+            ctx.fillText(
+              displayName,
+              head.x * gridSize + gridSize / 2,
+              head.y * gridSize - 10
+            );
+          }
+        });
+
+        // Draw spectator indicator if player is spectating
+        const myPlayer = multiplayerPlayers.get(myPlayerId);
+        if (myPlayer && myPlayer.spectating) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillRect(0, 0, canvas.width, 40);
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 16px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('👁️ SPECTATING', canvas.width / 2, 25);
+        }
+
+        // Update leaderboard
+        updateMultiplayerLeaderboard();
+      }
+
+      function updateMultiplayerLeaderboard() {
+        const leaderboardList = document.getElementById('leaderboardList');
+        if (!leaderboardList) return;
+
+        // Sort players by score and kills
+        const sortedPlayers = Array.from(multiplayerPlayers.values())
+          .sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return b.kills - a.kills;
+          })
+          .slice(0, 10);
+
+        let html = '';
+        sortedPlayers.forEach((player, index) => {
+          const isMe = player.id === myPlayerId;
+          html += `
+            <div class="leaderboard-entry ${index === 0 ? 'top-score' : ''}" style="${isMe ? 'border: 2px solid #FFD700;' : ''}">
+              <span class="leaderboard-rank">#${index + 1}</span>
+              <span class="leaderboard-name">${player.name}${isMe ? ' (You)' : ''}</span>
+              <span class="leaderboard-score">🍎${player.score} 💀${player.kills}</span>
+            </div>
+          `;
+        });
+
+        leaderboardList.innerHTML =
+          html ||
+          '<p style="text-align: center; color: #666;">No players yet</p>';
+      }
+
+      // Initialize all features
+      initializeFeatures();
+
+      // Power-up functions
+      function spawnPowerUp() {
+        if (powerUps.length < 2 && Math.random() < 0.02) {
+          const powerUpType =
+            powerUpTypes[Math.floor(Math.random() * powerUpTypes.length)];
+          let x, y;
+          do {
+            x = Math.floor(Math.random() * tileCount);
+            y = Math.floor(Math.random() * tileCount);
+          } while (
+            snake.some((s) => s.x === x && s.y === y) ||
+            enemySnake.some((s) => s.x === x && s.y === y) ||
+            foods.some((f) => f.x === x && f.y === y) ||
+            powerUps.some((p) => p.x === x && p.y === y)
+          );
+          powerUps.push({ x, y, ...powerUpType });
+        }
+      }
+
+      function collectPowerUp(head) {
+        for (let i = powerUps.length - 1; i >= 0; i--) {
+          if (head.x === powerUps[i].x && head.y === powerUps[i].y) {
+            const powerUp = powerUps[i];
+            activePowerUps[powerUp.type] = powerUp.duration;
+
+            // Apply immediate effects
+            if (powerUp.type === 'multiplier') {
+              multiplier = 2;
+              multiplierTimer = powerUp.duration;
+            }
+
+            // Add particles
+            for (let j = 0; j < 20; j++) {
+              addParticle(
+                powerUp.x * gridSize + gridSize / 2,
+                powerUp.y * gridSize + gridSize / 2,
+                powerUp.color
+              );
+            }
+
+            powerUps.splice(i, 1);
+            break;
+          }
+        }
+      }
+
+      function updatePowerUps() {
+        // Decrease active power-up timers
+        for (let key in activePowerUps) {
+          if (activePowerUps[key] > 0) {
+            activePowerUps[key]--;
+            if (activePowerUps[key] === 0 && key === 'multiplier') {
+              multiplier = 1;
+            }
+          }
+        }
+
+        // Update power-up status display
+        updatePowerUpDisplay();
+      }
+
+      function updatePowerUpDisplay() {
+        const statusDiv = document.getElementById('powerUpStatus');
+        if (!statusDiv) return;
+
+        let html = '';
+        const iconMap = {
+          speed: '⚡',
+          ghost: '👻',
+          multiplier: '✨',
+          shield: '🛡️',
+        };
+        const colorMap = {
+          speed: '#FFD700',
+          ghost: '#9370DB',
+          multiplier: '#FF69B4',
+          shield: '#00CED1',
+        };
+
+        for (let key in activePowerUps) {
+          if (activePowerUps[key] > 0) {
+            const timeLeft = Math.ceil(activePowerUps[key] / 60); // Convert to seconds
+            html += `
+              <div style="
+                background: ${colorMap[key]};
+                color: white;
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 600;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              ">
+                <span>${iconMap[key]}</span>
+                <span>${key.charAt(0).toUpperCase() + key.slice(1)}</span>
+                <span style="font-size: 12px; opacity: 0.9;">${timeLeft}s</span>
+              </div>
+            `;
+          }
+        }
+
+        if (html === '') {
+          html =
+            '<span style="color: #999; font-size: 14px;">No active power-ups</span>';
+        }
+
+        statusDiv.innerHTML = html;
+      }
+
+      function drawPowerUps() {
+        powerUps.forEach((powerUp) => {
+          // Draw glow effect
+          const glowSize = 5 + Math.sin(Date.now() / 100) * 2;
+          ctx.shadowBlur = glowSize;
+          ctx.shadowColor = powerUp.color;
+          ctx.fillStyle = powerUp.color;
+          ctx.fillRect(
+            powerUp.x * gridSize + 2,
+            powerUp.y * gridSize + 2,
+            gridSize - 4,
+            gridSize - 4
+          );
+          ctx.shadowBlur = 0;
+
+          // Draw icon
+          ctx.font = `${gridSize - 6}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(
+            powerUp.icon,
+            powerUp.x * gridSize + gridSize / 2,
+            powerUp.y * gridSize + gridSize / 2
+          );
+        });
+      }
+
+      // Enemy snake functions
+      function moveEnemySnakes() {
+        enemySnakes.forEach((enemy) => {
+          if (!enemy.alive) return;
+
+          enemy.moveCounter++;
+          if (enemy.moveCounter < enemyMoveDelay) return;
+          enemy.moveCounter = 0;
+
+          const head = enemy.snake[0];
+          let target = null;
+
+          // Aggressive AI: decide what to chase based on aggression level
+          if (enemy.aggressionLevel > 0.6) {
+            // High aggression: chase nearest snake (player or other enemies)
+            let nearestSnake = null;
+            let minDist = Infinity;
+
+            // Check player snake
+            if (snake.length > 0) {
+              const playerHead = snake[0];
+              const dist =
+                Math.abs(head.x - playerHead.x) +
+                Math.abs(head.y - playerHead.y);
+              if (dist < minDist) {
+                minDist = dist;
+                nearestSnake = playerHead;
+              }
+            }
+
+            // Check other enemy snakes
+            enemySnakes.forEach((otherEnemy) => {
+              if (
+                otherEnemy !== enemy &&
+                otherEnemy.alive &&
+                otherEnemy.snake.length > 0
+              ) {
+                const otherHead = otherEnemy.snake[0];
+                const dist =
+                  Math.abs(head.x - otherHead.x) +
+                  Math.abs(head.y - otherHead.y);
+                if (dist < minDist) {
+                  minDist = dist;
+                  nearestSnake = otherHead;
+                }
+              }
+            });
+
+            if (nearestSnake && minDist < 10) {
+              target = nearestSnake;
+            }
+          }
+
+          // If no target or low aggression, chase food
+          if (!target) {
+            let nearestFood = foods[0];
+            let minDist =
+              Math.abs(head.x - nearestFood.x) +
+              Math.abs(head.y - nearestFood.y);
+
+            for (let i = 1; i < foods.length; i++) {
+              const dist =
+                Math.abs(head.x - foods[i].x) + Math.abs(head.y - foods[i].y);
+              if (dist < minDist) {
+                minDist = dist;
+                nearestFood = foods[i];
+              }
+            }
+            target = nearestFood;
+          }
+
+          // Decide direction towards target
+          const dx = target.x - head.x;
+          const dy = target.y - head.y;
+
+          if (Math.abs(dx) > Math.abs(dy)) {
+            enemy.dx = dx > 0 ? 1 : -1;
+            enemy.dy = 0;
+          } else {
+            enemy.dx = 0;
+            enemy.dy = dy > 0 ? 1 : -1;
+          }
+
+          // Move enemy
+          const newHead = { x: head.x + enemy.dx, y: head.y + enemy.dy };
+
+          // Wrap around walls
+          if (newHead.x < 0) newHead.x = tileCount - 1;
+          if (newHead.x >= tileCount) newHead.x = 0;
+          if (newHead.y < 0) newHead.y = tileCount - 1;
+          if (newHead.y >= tileCount) newHead.y = 0;
+
+          enemy.snake.unshift(newHead);
+
+          // Check if enemy cuts player's tail
+          for (let i = 1; i < snake.length; i++) {
+            if (newHead.x === snake[i].x && newHead.y === snake[i].y) {
+              // Enemy cut player's tail - player loses tail segments
+              snake.splice(i);
+              break;
+            }
+          }
+
+          // Check if enemy cuts another enemy's tail
+          enemySnakes.forEach((otherEnemy) => {
+            if (otherEnemy !== enemy && otherEnemy.alive) {
+              for (let i = 1; i < otherEnemy.snake.length; i++) {
+                if (
+                  newHead.x === otherEnemy.snake[i].x &&
+                  newHead.y === otherEnemy.snake[i].y
+                ) {
+                  // Enemy cut another enemy's tail - kill it
+                  otherEnemy.alive = false;
+                  setTimeout(() => {
+                    const spawnPositions = [
+                      { x: 2, y: 2 },
+                      { x: tileCount - 3, y: 2 },
+                      { x: 2, y: tileCount - 3 },
+                      { x: tileCount - 3, y: tileCount - 3 },
+                      { x: Math.floor(tileCount / 2), y: 2 },
+                    ];
+                    const spawnPos =
+                      spawnPositions[
+                        Math.floor(Math.random() * spawnPositions.length)
+                      ];
+                    otherEnemy.snake = [{ x: spawnPos.x, y: spawnPos.y }];
+                    otherEnemy.dx = 1;
+                    otherEnemy.dy = 0;
+                    otherEnemy.moveCounter = 0;
+                    otherEnemy.alive = true;
+                  }, 2000);
+                  break;
+                }
+              }
+            }
+          });
+
+          // Check if enemy ate food
+          let ateFood = false;
+          for (let i = 0; i < foods.length; i++) {
+            if (newHead.x === foods[i].x && newHead.y === foods[i].y) {
+              placeFoodAt(i);
+              ateFood = true;
+              break;
+            }
+          }
+
+          if (!ateFood) {
+            enemy.snake.pop();
+          }
+
+          // Keep enemy snake from getting too long
+          if (enemy.snake.length > 10) {
+            enemy.snake.pop();
+          }
+        });
+      }
+
+      function drawEnemySnakes() {
+        enemySnakes.forEach((enemy) => {
+          if (!enemy.alive) return;
+
+          for (let i = 0; i < enemy.snake.length; i++) {
+            const segment = enemy.snake[i];
+            // Use enemy's unique color
+            ctx.fillStyle = i === 0 ? enemy.color : enemy.color + '99';
+            ctx.fillRect(
+              segment.x * gridSize + 1,
+              segment.y * gridSize + 1,
+              gridSize - 2,
+              gridSize - 2
+            );
+
+            // Add glow effect to head
+            if (i === 0) {
+              ctx.shadowBlur = 10;
+              ctx.shadowColor = enemy.color;
+              ctx.fillRect(
+                segment.x * gridSize + 1,
+                segment.y * gridSize + 1,
+                gridSize - 2,
+                gridSize - 2
+              );
+              ctx.shadowBlur = 0;
+            }
+          }
+        });
+      }
+
+      function checkEnemyCollision(head) {
+        // Check if player collides with any enemy (unless ghost mode active)
+        if (activePowerUps.ghost > 0) return false;
+
+        for (const enemy of enemySnakes) {
+          if (!enemy.alive) continue;
+
+          for (let i = 0; i < enemy.snake.length; i++) {
+            if (head.x === enemy.snake[i].x && head.y === enemy.snake[i].y) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      function checkTailCutting(head) {
+        // Check if player cuts through any enemy's tail
+        for (const enemy of enemySnakes) {
+          if (!enemy.alive) continue;
+
+          // Check if player head crosses enemy's body (not head)
+          for (let i = 1; i < enemy.snake.length; i++) {
+            if (head.x === enemy.snake[i].x && head.y === enemy.snake[i].y) {
+              // Kill enemy and respawn
+              enemy.alive = false;
+              score += 50; // Bonus for killing enemy
+              document.getElementById('score').textContent = score;
+
+              // Respawn enemy after delay
+              setTimeout(() => {
+                enemy.snake = [
+                  {
+                    x: Math.floor(Math.random() * tileCount),
+                    y: Math.floor(Math.random() * tileCount),
+                  },
+                ];
+                enemy.dx = 1;
+                enemy.dy = 0;
+                enemy.moveCounter = 0;
+                enemy.alive = true;
+              }, 2000);
+
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      function drawGame() {
+        try {
+          // Clear canvas
+          ctx.fillStyle = '#f0f0f0';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Check if paused
+          if (isPaused) {
+            // Draw everything but don't update
+            drawSnakeTrail();
+            drawEnemySnakes();
+            drawPowerUps();
+            drawCustomSnake();
+            drawAnimatedFood();
+            drawParticles();
+
+            // Draw pause overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 32px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+            ctx.font = '16px Arial';
+            ctx.fillText(
+              'Press P or click Resume',
+              canvas.width / 2,
+              canvas.height / 2 + 40
+            );
+            return;
+          }
+
+          // Process buffered input
+          if (inputBuffer) {
+            dx = inputBuffer.dx;
+            dy = inputBuffer.dy;
+            lastDirection = { dx, dy };
+            inputBuffer = null;
+          }
+
+          // Spawn power-ups
+          spawnPowerUp();
+
+          // Move enemy snakes
+          moveEnemySnakes();
+
+          // Move snake
+          if (dx !== 0 || dy !== 0) {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+
+            // Check power-up collection
+            collectPowerUp(head);
+
+            // Check if snake ate any food
+            let ateFood = false;
+            for (let i = 0; i < foods.length; i++) {
+              if (head.x === foods[i].x && head.y === foods[i].y) {
+                score++;
+                scoreElement.textContent = score;
+                if (score > highScore) {
+                  highScore = score;
+                  highScoreElement.textContent = highScore;
+                  localStorage.setItem('snakeHighScore', highScore);
+                }
+                // Add particle effects
+                addParticle(
+                  foods[i].x * gridSize + gridSize / 2,
+                  foods[i].y * gridSize + gridSize / 2,
+                  foods[i].type === 'apple' ? '#FF0000' : '#FFFF00'
+                );
+                // Update food collection
+                updateFoodCollection(foods[i].type);
+                // Replace the eaten food with a new one
+                placeFoodAt(i);
+                ateFood = true;
+                break;
+              }
+            }
+
+            if (!ateFood) {
+              snake.pop();
+            }
+
+            // Check collisions with walls (unless ghost mode active)
+            if (activePowerUps.ghost === 0 && activePowerUps.shield === 0) {
+              if (
+                head.x < 0 ||
+                head.x >= tileCount ||
+                head.y < 0 ||
+                head.y >= tileCount
+              ) {
+                endGame();
+                return;
+              }
+            }
+
+            // Check self collision (unless ghost mode or shield active)
+            if (activePowerUps.ghost === 0 && activePowerUps.shield === 0) {
+              for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                  endGame();
+                  return;
+                }
+              }
+            }
+
+            // Check tail cutting (kill enemies by crossing their tails)
+            checkTailCutting(head);
+
+            // Check enemy collision (unless shield active)
+            if (activePowerUps.shield === 0 && checkEnemyCollision(head)) {
+              endGame();
+              return;
+            }
+          }
+
+          // Update power-ups
+          updatePowerUps();
+
+          // Update snake trail
+          updateSnakeTrail();
+
+          // Draw snake trail
+          drawSnakeTrail();
+
+          // Draw enemy snakes
+          drawEnemySnakes();
+
+          // Draw power-ups
+          drawPowerUps();
+
+          // Draw snake with custom skin
+          drawCustomSnake();
+
+          // Draw foods with animation
+          drawAnimatedFood();
+
+          // Draw particles
+          drawParticles();
+
+          // Update game stats
+          updateGameStats();
+
+          // Update food animation
+          updateFoodAnimation();
+
+          // Update particles
+          updateParticles();
+
+          // Update background gradient
+          updateBackgroundGradient();
+
+          // Update multiplier timer
+          if (multiplierTimer > 0) {
+            multiplierTimer--;
+          } else {
+            multiplier = 1;
+          }
+
+          // Update game timer
+          gameTime++;
+
+          // Check achievements
+          checkAchievements();
+        } catch (error) {
+          console.error('Error in drawGame:', error);
+          // Try to recover by restarting
+          if (gameRunning) {
+            gameRunning = false;
+            setTimeout(() => {
+              console.log('Attempting to recover...');
+              restartGame();
+            }, 1000);
+          }
+        }
+      }
+
+      function placeFoodAt(index) {
+        const types = ['apple', 'banana'];
+        do {
+          foods[index].x = Math.floor(Math.random() * tileCount);
+          foods[index].y = Math.floor(Math.random() * tileCount);
+        } while (
+          snake.some(
+            (segment) =>
+              segment.x === foods[index].x && segment.y === foods[index].y
+          ) ||
+          foods.some(
+            (f, i) =>
+              i !== index && f.x === foods[index].x && f.y === foods[index].y
+          )
+        );
+        // Keep the same type (apple stays apple, banana stays banana)
+        // This way there's always one of each on screen
+      }
+
+      function placeFood() {
+        // Place both foods initially
+        placeFoodAt(0);
+        placeFoodAt(1);
+      }
+
+      function endGame() {
+        gameRunning = false;
+        clearInterval(gameLoop);
+        if (gameLoopId) {
+          cancelAnimationFrame(gameLoopId);
+          gameLoopId = null;
+        }
+        finalScoreElement.textContent = score;
+
+        // Display random death roast
+        const randomRoast =
+          snakeDeathRoasts[Math.floor(Math.random() * snakeDeathRoasts.length)];
+        deathRoastElement.textContent = randomRoast;
+
+        gameOverElement.style.display = 'block';
+
+        // Focus on name input
+        const nameInput = document.getElementById('playerName');
+        nameInput.value = localStorage.getItem('snakePlayerName') || '';
+        setTimeout(() => nameInput.focus(), 100);
+      }
+
+      function saveScoreAndRestart() {
+        const nameInput = document.getElementById('playerName');
+        const playerName = nameInput.value.trim() || 'Anonymous';
+
+        // Save player name for next time
+        localStorage.setItem('snakePlayerName', playerName);
+
+        // Add to leaderboard
+        if (score > 0) {
+          addToLeaderboard(playerName, score);
+        }
+
+        restartGame();
+      }
+
+      function restartGame() {
+        snake = [{ x: 10, y: 10 }];
+        initializeEnemies();
+        dx = 0;
+        dy = 0;
+        score = 0;
+        gameSpeed = 100; // Reset speed
+        scoreElement.textContent = score;
+        gameOverElement.style.display = 'none';
+        isPaused = false;
+
+        // Reset power-ups
+        powerUps.length = 0;
+        activePowerUps = {
+          speed: 0,
+          ghost: 0,
+          multiplier: 0,
+          shield: 0,
+        };
+        multiplier = 1;
+        multiplierTimer = 0;
+
+        placeFood();
+
+        // Show pause button in single player
+        const pauseButton = document.getElementById('pauseButton');
+        if (gameMode === 'single') {
+          pauseButton.style.display = 'block';
+          pauseButton.textContent = '⏸️ Pause';
+        } else {
+          pauseButton.style.display = 'none';
+        }
+
+        startGame();
+      }
+
+      let lastFrameTime = 0;
+      let gameLoopId = null;
+
+      function startGame() {
+        if (!gameRunning) {
+          gameRunning = true;
+
+          if (gameMode === 'single') {
+            // Use requestAnimationFrame for smooth single-player
+            lastFrameTime = performance.now();
+            gameLoopId = requestAnimationFrame(singlePlayerGameLoop);
+          } else {
+            // Use setInterval for multiplayer (server-controlled)
+            gameLoop = setInterval(drawMultiplayerGame, 100);
+          }
+        }
+      }
+
+      function singlePlayerGameLoop(currentTime) {
+        try {
+          if (!gameRunning || gameMode !== 'single') return;
+
+          const deltaTime = currentTime - lastFrameTime;
+
+          // Update game logic based on gameSpeed
+          if (deltaTime >= gameSpeed) {
+            lastFrameTime = currentTime - (deltaTime % gameSpeed);
+            drawGame();
+          }
+
+          gameLoopId = requestAnimationFrame(singlePlayerGameLoop);
+        } catch (error) {
+          console.error('Error in game loop:', error);
+          gameRunning = false;
+          if (gameLoopId) {
+            cancelAnimationFrame(gameLoopId);
+            gameLoopId = null;
+          }
+        }
+      }
+
+      // Keyboard controls
+      document.addEventListener('keydown', (e) => {
+        // Don't capture keys when typing in input field
+        if (document.activeElement.tagName === 'INPUT') {
+          // Allow Enter to submit name in game over screen
+          if (gameOverElement.style.display === 'block' && e.key === 'Enter') {
+            saveScoreAndRestart();
+          }
+          return;
+        }
+
+        // Pause/Resume with P key (single player only)
+        if (
+          (e.key === 'p' || e.key === 'P') &&
+          gameMode === 'single' &&
+          gameRunning
+        ) {
+          togglePause();
+          return;
+        }
+
+        if (
+          !gameRunning &&
+          (e.key.startsWith('Arrow') || 'wasd'.includes(e.key.toLowerCase()))
+        ) {
+          startGame();
+        }
+
+        // Buffer input to prevent 180-degree turns
+        let newDirection = null;
+        switch (e.key) {
+          case 'ArrowUp':
+          case 'w':
+          case 'W':
+            if (lastDirection.dy === 0) {
+              newDirection = { dx: 0, dy: -1 };
+              inputBuffer = newDirection;
+            }
+            break;
+          case 'ArrowDown':
+          case 's':
+          case 'S':
+            if (lastDirection.dy === 0) {
+              newDirection = { dx: 0, dy: 1 };
+              inputBuffer = newDirection;
+            }
+            break;
+          case 'ArrowLeft':
+          case 'a':
+          case 'A':
+            if (lastDirection.dx === 0) {
+              newDirection = { dx: -1, dy: 0 };
+              inputBuffer = newDirection;
+            }
+            break;
+          case 'ArrowRight':
+          case 'd':
+          case 'D':
+            if (lastDirection.dx === 0) {
+              newDirection = { dx: 1, dy: 0 };
+              inputBuffer = newDirection;
+            }
+            break;
+        }
+
+        // Send movement to server in multiplayer mode
+        if (gameMode === 'multiplayer' && socket && newDirection) {
+          socket.emit('player_move', newDirection);
+        }
+      });
+
+      // Initialize game on page load
+      initializeFeatures();
+      initializeEnemies();
+      placeFood();
+
+      // Initial draw
+      drawGame();
+    </script>
+  </body>
+</html>
