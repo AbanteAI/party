@@ -567,6 +567,7 @@
         mergedCountries: {}, // Track merged countries
         nukeTarget: null, // For nuke targeting
         nukeType: null, // Type of nuke selected
+        nukeFactory: false, // Nuke factory unlocked at Lv15
       };
 
       // Alliance colors
@@ -785,7 +786,8 @@
 
       function selectCountry(countryId) {
         if (gameState.mode === 'turnbyturn' && gameState.playerCountry) {
-          alert('In Turn-By-Turn mode, you cannot switch countries!');
+          showToast('Cannot switch countries in Turn-By-Turn mode!', 'error');
+          addEvent('❌ Cannot switch countries');
           return;
         }
 
@@ -958,9 +960,12 @@
         if (gameState.gold >= 100) {
           gameState.gold -= 100;
           gameState.army += 50;
+          showToast('Recruited 50 troops!', 'success');
+          addEvent('⚔️ Recruited 50 troops');
           updateUI();
         } else {
-          alert('Not enough gold!');
+          showToast('Not enough gold!', 'error');
+          addEvent('❌ Need 100💰 to recruit');
         }
       }
 
@@ -972,26 +977,37 @@
           // Unlock planes at level 5
           if (gameState.militaryLevel === 5) {
             gameState.planes += 10;
-            alert(
-              'Military upgraded! Planes unlocked - you can now attack overseas!'
+            showToast(
+              '✈️ Planes unlocked! Overseas attacks enabled!',
+              'success'
             );
+            addEvent('✈️ Planes unlocked at Military Lv5');
           }
           // Unlock nukes at level 10
           else if (gameState.militaryLevel === 10) {
             gameState.nukes += 3;
-            alert(
-              '☢️ NUKES UNLOCKED! You now have weapons of mass destruction!'
-            );
+            showToast('☢️ NUKES UNLOCKED!', 'warning');
+            addEvent('☢️ Nuclear weapons unlocked at Lv10');
+          }
+          // Unlock nuke factory at level 15
+          else if (gameState.militaryLevel === 15) {
+            gameState.nukeFactory = true;
+            gameState.nukes += 5;
+            showToast('🏭 NUKE FACTORY UNLOCKED!', 'success');
+            addEvent('🏭 Nuke Factory built! +2 nukes/turn');
           } else if (gameState.militaryLevel >= 5) {
             gameState.planes += 5;
-            alert('Military upgraded! +5 planes');
+            showToast('Military upgraded! +5 planes', 'success');
+            addEvent(`🎖️ Military Lv${gameState.militaryLevel}: +5 planes`);
           } else {
-            alert('Military upgraded! Army is now stronger.');
+            showToast('Military upgraded!', 'success');
+            addEvent(`🎖️ Military upgraded to Lv${gameState.militaryLevel}`);
           }
 
           updateUI();
         } else {
-          alert('Not enough gold!');
+          showToast('Not enough gold!', 'error');
+          addEvent('❌ Need 300💰 for military upgrade');
         }
       }
 
@@ -999,10 +1015,12 @@
         if (gameState.gold >= 200) {
           gameState.gold -= 200;
           gameState.economyLevel++;
-          alert('Economy improved! You will earn more gold per turn.');
+          showToast('Economy improved!', 'success');
+          addEvent(`💰 Economy upgraded to Lv${gameState.economyLevel}`);
           updateUI();
         } else {
-          alert('Not enough gold!');
+          showToast('Not enough gold!', 'error');
+          addEvent('❌ Need 200💰 for economy upgrade');
         }
       }
 
@@ -1029,6 +1047,27 @@
           { id: 'real', name: '☢️ Real Nuke', desc: 'Classic destruction' },
         ];
 
+        // Add factory nukes if unlocked
+        if (gameState.nukeFactory) {
+          nukeTypes.push(
+            {
+              id: 'ice',
+              name: '❄️ Ice Nuke',
+              desc: 'Freezes army for 3 turns',
+            },
+            {
+              id: 'emp',
+              name: '⚡ EMP Nuke',
+              desc: 'Disables all tech, -50% army',
+            },
+            {
+              id: 'bio',
+              name: '🦠 Bio Nuke',
+              desc: 'Plague spreads to neighbors',
+            }
+          );
+        }
+
         const selection = prompt(
           'Choose your nuke type:\n\n' +
             nukeTypes
@@ -1053,14 +1092,16 @@
 
       function requestAlliance() {
         if (!gameState.playerCountry) {
-          alert('Select a country first!');
+          showToast('Select a country first!', 'error');
+          addEvent('❌ Select country first');
           return;
         }
 
         const playerCountryData = gameState.countries[gameState.playerCountry];
 
         if (playerCountryData.alliance) {
-          alert('You are already in an alliance!');
+          showToast('Already in an alliance!', 'warning');
+          addEvent('❌ Already in alliance');
           return;
         }
 
@@ -1072,9 +1113,8 @@
         });
 
         if (availableAlliances.length === 0) {
-          alert(
-            'No alliances available - you have attacked members of all existing alliances!'
-          );
+          showToast('No alliances available!', 'error');
+          addEvent('❌ Attacked all alliance members');
           return;
         }
 
@@ -1083,12 +1123,12 @@
         alliance.members.push(gameState.playerCountry);
         playerCountryData.alliance = alliance.id;
 
-        addEvent(`You joined an alliance!`);
-        alert(
-          `Joined alliance with: ${alliance.members
-            .map((id) => gameState.countries[id].name)
-            .join(', ')}`
-        );
+        const allianceNames = alliance.members
+          .map((id) => gameState.countries[id].name)
+          .join(', ');
+
+        addEvent(`🤝 Joined alliance!`);
+        showToast(`Joined alliance with ${allianceNames}`, 'success');
 
         updateUI();
         drawMap();
@@ -1096,14 +1136,16 @@
 
       function requestMilitaryHelp() {
         if (!gameState.playerCountry) {
-          alert('Select a country first!');
+          showToast('Select a country first!', 'error');
+          addEvent('❌ Select country first');
           return;
         }
 
         const playerCountryData = gameState.countries[gameState.playerCountry];
 
         if (!playerCountryData.alliance) {
-          alert('You need to be in an alliance first!');
+          showToast('Need to be in an alliance first!', 'error');
+          addEvent('❌ Not in alliance');
           return;
         }
 
@@ -1123,8 +1165,8 @@
         });
 
         gameState.army += totalHelp;
-        addEvent(`Alliance sent ${totalHelp} troops to help!`);
-        alert(`Your alliance sent ${totalHelp} troops to help!`);
+        addEvent(`🤝 Alliance sent ${totalHelp} troops!`);
+        showToast(`Alliance sent ${totalHelp} troops to help!`, 'success');
         updateUI();
         drawMap();
       }
@@ -1265,8 +1307,9 @@
                 `⚠️ ${attacker.name} attacked and conquered ${target.name}!`
               );
               showSpeechBubble(attacker.id);
-              alert(
-                `⚠️ ${attacker.name} attacked and conquered ${target.name}!`
+              showToast(
+                `⚠️ ${attacker.name} conquered ${target.name}!`,
+                'error'
               );
             } else {
               // Player defends
@@ -1287,6 +1330,34 @@
 
         // Check for country mergers
         checkCountryMergers();
+
+        // Check for game over
+        checkGameOver();
+      }
+
+      function checkGameOver() {
+        if (gameState.mode !== 'turnbyturn' || !gameState.playerCountry) return;
+
+        const playerTerritories = Object.values(gameState.countries).filter(
+          (c) => c.owner === 'player'
+        );
+
+        if (playerTerritories.length === 0) {
+          // Game Over!
+          clearInterval(gameState.turnTimerInterval);
+          showToast('GAME OVER! All territories lost!', 'error');
+          addEvent('💀 GAME OVER - Defeated!');
+
+          setTimeout(() => {
+            if (
+              confirm(
+                'Game Over! All your territories were conquered.\n\nPlay again?'
+              )
+            ) {
+              location.reload();
+            }
+          }, 1000);
+        }
       }
 
       function nextTurn() {
@@ -1298,6 +1369,12 @@
         ).length;
         const income = playerTerritories * 50 * gameState.economyLevel;
         gameState.gold += income;
+
+        // Nuke factory production
+        if (gameState.nukeFactory) {
+          gameState.nukes += 2;
+          addEvent('🏭 Nuke Factory: +2 nukes');
+        }
 
         // AI moves
         Object.values(gameState.countries).forEach((country) => {
@@ -1324,7 +1401,7 @@
       // Canvas click handler for conquering
       document.getElementById('worldMap').addEventListener('click', (e) => {
         if (!gameState.playerCountry) {
-          alert('Please select your starting country first!');
+          showToast('Select your starting country first!', 'warning');
           return;
         }
 
@@ -1457,6 +1534,48 @@
               }
             });
             break;
+
+          case 'ice':
+            // Ice Nuke - freezes army
+            addEvent(`❄️ ICE NUKE on ${target.name}! Frozen solid!`);
+            showToast(`❄️ ${target.name} frozen for 3 turns!`, 'info');
+            showSpeechBubble(targetId);
+
+            target.frozen = 3; // Frozen for 3 turns
+            target.army = Math.floor(target.army * 0.5);
+            addEvent(`${target.name} cannot move for 3 turns`);
+            break;
+
+          case 'emp':
+            // EMP Nuke - disables tech
+            addEvent(`⚡ EMP NUKE on ${target.name}! All tech disabled!`);
+            showToast(`⚡ ${target.name}'s technology destroyed!`, 'warning');
+            showSpeechBubble(targetId);
+
+            target.army = Math.floor(target.army * 0.5);
+            target.emp = true; // Permanently weakened
+            addEvent(`${target.name} permanently weakened`);
+            break;
+
+          case 'bio':
+            // Bio Nuke - plague spreads
+            addEvent(`🦠 BIO NUKE on ${target.name}! Plague outbreak!`);
+            showToast(`🦠 Plague spreading from ${target.name}!`, 'error');
+            showSpeechBubble(targetId);
+
+            target.army = Math.floor(target.army * 0.2);
+            target.plague = 3; // Plague for 3 turns
+
+            // Spread to neighbors
+            target.neighbors.forEach((nId) => {
+              const neighbor = gameState.countries[nId];
+              if (neighbor.owner !== 'player') {
+                neighbor.army = Math.floor(neighbor.army * 0.7);
+                neighbor.plague = 2;
+                addEvent(`🦠 Plague spread to ${neighbor.name}!`);
+              }
+            });
+            break;
         }
 
         updateUI();
@@ -1544,9 +1663,7 @@
             addEvent(
               `You were kicked from your alliance for attacking a member!`
             );
-            alert(
-              'You attacked your own alliance member! You have been kicked from the alliance!'
-            );
+            showToast('Kicked from alliance for attacking member!', 'error');
           }
 
           // Attacking another alliance
@@ -1614,18 +1731,45 @@
 
           addEvent(`Victory! Conquered ${target.name}!`);
           showSpeechBubble(targetId);
-          alert(
-            `Victory! You conquered ${target.name}!\nCasualties: ${casualties}`
-          );
+          showToast(`Victory! Conquered ${target.name}!`, 'success');
+
+          // Ask if player wants to merge/rename
+          setTimeout(() => {
+            const choice = prompt(
+              `You conquered ${target.name}!\n\n` +
+                `Choose an option:\n` +
+                `1. Keep as ${target.name}\n` +
+                `2. Rename country\n` +
+                `3. Merge with ${gameState.countries[gameState.playerCountry].name}\n\n` +
+                `Enter 1-3:`
+            );
+
+            const option = parseInt(choice);
+            if (option === 2) {
+              const newName = prompt(`Enter new name for ${target.name}:`);
+              if (newName && newName.trim()) {
+                target.name = newName.trim();
+                addEvent(`${target.name} renamed!`);
+                showToast(`Country renamed to ${newName}`, 'info');
+              }
+            } else if (option === 3) {
+              const playerCountry =
+                gameState.countries[gameState.playerCountry];
+              const oldName = target.name;
+              target.name = `${playerCountry.name}-${oldName}`;
+              addEvent(`Merged into ${target.name}!`);
+              showToast(`Merged into ${target.name}!`, 'info');
+            }
+
+            drawMap();
+          }, 500);
         } else {
           const casualties = Math.floor(gameState.army * 0.3);
           gameState.army -= casualties;
 
           addEvent(`Defeat at ${target.name}!`);
           showSpeechBubble(targetId);
-          alert(
-            `Defeat! ${target.name} has a stronger army.\nCasualties: ${casualties}`
-          );
+          showToast(`Defeat! ${target.name} too strong!`, 'error');
         }
 
         updateUI();
