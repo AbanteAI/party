@@ -2459,13 +2459,32 @@ Final synthesis: [how to combine all elements]
               />
               Settings
             </button>
+            {chatList.length > 0 && (
+              <button
+                onClick={() => setShowChatList(!showChatList)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'rgba(102, 126, 234, 0.8)',
+                  color: 'white',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginRight: '8px',
+                }}
+              >
+                📜 History ({chatList.length})
+              </button>
+            )}
             <button
-              onClick={clearChat}
+              onClick={startNewChat}
               style={{
                 padding: '6px 12px',
                 borderRadius: '6px',
                 border: 'none',
-                background: 'rgba(239, 68, 68, 0.8)',
+                background: 'rgba(16, 185, 129, 0.8)',
                 color: 'white',
                 fontSize: '12px',
                 cursor: 'pointer',
@@ -2473,42 +2492,9 @@ Final synthesis: [how to combine all elements]
                 alignItems: 'center',
               }}
             >
-              {chatList.length > 0 && (
-                <button
-                  onClick={() => setShowChatList(!showChatList)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    background: 'rgba(102, 126, 234, 0.8)',
-                    color: 'white',
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    marginRight: '8px',
-                  }}
-                >
-                  📜 History ({chatList.length})
-                </button>
-              )}
-              <button
-                onClick={startNewChat}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: 'rgba(16, 185, 129, 0.8)',
-                  color: 'white',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                ➕ New Chat
-              </button>
-            </div>
+              ➕ New Chat
+            </button>
+          </div>
           </div>
         </div>
         <div
