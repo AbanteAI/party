@@ -40,9 +40,25 @@ interface Poll {
   createdAt: number;
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  id: string;
+}
+
+interface Chat {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  username: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 const users: User[] = [];
 const sharedImages: SharedImage[] = [];
 const polls: Poll[] = [];
+const chats: Chat[] = [];
 
 // Basic route
 app.get('/api', (req: Request, res: Response) => {
@@ -182,6 +198,83 @@ app.post('/api/polls/:id/vote', (req: Request, res: Response) => {
   option.votes.push(voter);
 
   res.json({ success: true, poll });
+});
+
+// Chat routes
+app.get('/api/chats', (req: Request, res: Response) => {
+  const { username } = req.query;
+
+  if (!username) {
+    return res.status(400).json({ error: 'Username required' });
+  }
+
+  const userChats = chats
+    .filter((chat) => chat.username === username)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+
+  res.json(userChats);
+});
+
+app.post('/api/chats', (req: Request, res: Response) => {
+  const { title, messages, username } = req.body;
+
+  if (!title || !messages || !username) {
+    return res
+      .status(400)
+      .json({ error: 'Title, messages, and username required' });
+  }
+
+  const chat: Chat = {
+    id: Date.now().toString(),
+    title,
+    messages,
+    username,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+
+  chats.push(chat);
+  res.json({ success: true, chat });
+});
+
+app.get('/api/chats/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const chat = chats.find((c) => c.id === id);
+
+  if (!chat) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  res.json(chat);
+});
+
+app.put('/api/chats/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { title, messages } = req.body;
+
+  const chatIndex = chats.findIndex((c) => c.id === id);
+
+  if (chatIndex === -1) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  if (title) chats[chatIndex].title = title;
+  if (messages) chats[chatIndex].messages = messages;
+  chats[chatIndex].updatedAt = Date.now();
+
+  res.json({ success: true, chat: chats[chatIndex] });
+});
+
+app.delete('/api/chats/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const chatIndex = chats.findIndex((c) => c.id === id);
+
+  if (chatIndex === -1) {
+    return res.status(404).json({ error: 'Chat not found' });
+  }
+
+  chats.splice(chatIndex, 1);
+  res.json({ success: true });
 });
 
 // Serve React app or fallback page

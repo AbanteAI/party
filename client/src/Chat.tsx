@@ -350,6 +350,15 @@ export default function Chat({ currentUser }: ChatProps) {
     total: number;
   } | null>(null);
   const [generatedGifUrl, setGeneratedGifUrl] = useState<string | null>(null);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [chatList, setChatList] = useState<
+    Array<{
+      id: string;
+      title: string;
+      updatedAt: number;
+    }>
+  >([]);
+  const [showChatList, setShowChatList] = useState(false);
   const [communityModels, setCommunityModels] = useState<
     Array<{
       id: string;
@@ -461,6 +470,13 @@ export default function Chat({ currentUser }: ChatProps) {
     };
     fetchModels();
   }, []);
+
+  // Load chat list when user logs in
+  useEffect(() => {
+    if (currentUser) {
+      loadChatList();
+    }
+  }, [currentUser]);
 
   // Save conversations
   useEffect(() => {
@@ -1350,6 +1366,113 @@ export default function Chat({ currentUser }: ChatProps) {
       setMessages([]);
       localStorage.removeItem('chat-messages');
     }
+  };
+
+  const generateChatTitle = async (
+    messages: Message[]
+  ): Promise<string | null> => {
+    try {
+      const response = await fetch(
+        'https://text.pollinations.ai/openai/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(apiKey && { Authorization: `Bearer ${apiKey}` }),
+          },
+          body: JSON.stringify({
+            model: 'openai-fast',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'Generate a short, descriptive title (max 50 chars) for this conversation. Respond with ONLY the title, no quotes or explanation.',
+              },
+              ...messages.slice(0, 4).map((m) => ({
+                role: m.role,
+                content: m.content,
+              })),
+            ],
+            stream: false,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.choices?.[0]?.message?.content?.trim() || null;
+      }
+    } catch (error) {
+      console.error('Failed to generate title:', error);
+    }
+    return null;
+  };
+
+  const saveCurrentChat = async () => {
+    if (!currentUser || messages.length === 0) return;
+
+    try {
+      const title =
+        (await generateChatTitle(messages)) || 'Untitled Conversation';
+
+      const response = await fetch('/api/chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          messages,
+          username: currentUser,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentChatId(data.chat.id);
+        await loadChatList();
+        return data.chat.id;
+      }
+    } catch (error) {
+      console.error('Failed to save chat:', error);
+    }
+    return null;
+  };
+
+  const loadChatList = async () => {
+    if (!currentUser) return;
+
+    try {
+      const response = await fetch(`/api/chats?username=${currentUser}`);
+      if (response.ok) {
+        const chats = await response.json();
+        setChatList(chats);
+      }
+    } catch (error) {
+      console.error('Failed to load chat list:', error);
+    }
+  };
+
+  const loadChat = async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/chats/${chatId}`);
+      if (response.ok) {
+        const chat = await response.json();
+        setMessages(chat.messages);
+        setCurrentChatId(chat.id);
+        setShowChatList(false);
+      }
+    } catch (error) {
+      console.error('Failed to load chat:', error);
+    }
+  };
+
+  const startNewChat = async () => {
+    if (messages.length > 0 && currentUser) {
+      await saveCurrentChat();
+    }
+    setMessages([]);
+    setCurrentChatId(null);
+    localStorage.removeItem('chat-messages');
+    showToast('Started new chat', 'success');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -2350,12 +2473,42 @@ Final synthesis: [how to combine all elements]
                 alignItems: 'center',
               }}
             >
-              <Trash2
-                size={14}
-                style={{ marginRight: '4px', color: 'white' }}
-              />
-              Clear
-            </button>
+              {chatList.length > 0 && (
+                <button
+                  onClick={() => setShowChatList(!showChatList)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: 'rgba(102, 126, 234, 0.8)',
+                    color: 'white',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    marginRight: '8px',
+                  }}
+                >
+                  📜 History ({chatList.length})
+                </button>
+              )}
+              <button
+                onClick={startNewChat}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'rgba(16, 185, 129, 0.8)',
+                  color: 'white',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                ➕ New Chat
+              </button>
+            </div>
           </div>
         </div>
         <div
