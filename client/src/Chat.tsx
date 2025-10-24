@@ -358,6 +358,7 @@ export default function Chat({ currentUser }: ChatProps) {
       updatedAt: number;
     }>
   >([]);
+   
   const [showChatList, setShowChatList] = useState(false);
   const [communityModels, setCommunityModels] = useState<
     Array<{
@@ -1362,13 +1363,6 @@ export default function Chat({ currentUser }: ChatProps) {
     }
   };
 
-  const clearChat = () => {
-    if (confirm('Clear all messages?')) {
-      setMessages([]);
-      localStorage.removeItem('chat-messages');
-    }
-  };
-
   const generateChatTitle = async (
     messages: Message[]
   ): Promise<string | null> => {
@@ -1452,6 +1446,7 @@ export default function Chat({ currentUser }: ChatProps) {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const loadChat = async (chatId: string) => {
     try {
       const response = await fetch(`/api/chats/${chatId}`);
