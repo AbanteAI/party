@@ -350,6 +350,7 @@ export default function Chat({ currentUser }: ChatProps) {
     total: number;
   } | null>(null);
   const [generatedGifUrl, setGeneratedGifUrl] = useState<string | null>(null);
+  // @ts-expect-error - Will be used when chat list UI is added
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [chatList, setChatList] = useState<
@@ -1447,6 +1448,7 @@ export default function Chat({ currentUser }: ChatProps) {
     }
   };
 
+  // @ts-expect-error - Will be used when chat list UI is added
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const loadChat = async (chatId: string) => {
     try {
