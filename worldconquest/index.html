@@ -251,6 +251,47 @@
         padding: 4px 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
+
+      .toast {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 2000;
+        animation: slideIn 0.3s ease-out;
+        max-width: 300px;
+      }
+
+      .toast.success {
+        border-left: 4px solid #10b981;
+      }
+
+      .toast.error {
+        border-left: 4px solid #ef4444;
+      }
+
+      .toast.warning {
+        border-left: 4px solid #f59e0b;
+      }
+
+      .toast.info {
+        border-left: 4px solid #3b82f6;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body>
@@ -525,6 +566,7 @@
         speechBubbles: [],
         mergedCountries: {}, // Track merged countries
         nukeTarget: null, // For nuke targeting
+        nukeType: null, // Type of nuke selected
       };
 
       // Alliance colors
@@ -805,6 +847,18 @@
           .join('');
       }
 
+      function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
       function drawMap() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -954,12 +1008,47 @@
 
       function launchNuke() {
         if (gameState.nukes <= 0) {
-          alert('No nukes available!');
+          showToast('No nukes available!', 'error');
+          addEvent('❌ No nukes available');
           return;
         }
 
-        alert('Click on a country to nuke it!');
-        gameState.nukeTarget = true;
+        // Show nuke type selection
+        const nukeTypes = [
+          {
+            id: 'fart',
+            name: '💨 Fart Nuke',
+            desc: 'Stinky! Makes them attack you',
+          },
+          { id: 'heat', name: '🔥 Heat Nuke', desc: 'Melts their gold supply' },
+          {
+            id: 'love',
+            name: '💗 Love Nuke',
+            desc: 'Pink and harmless but annoying',
+          },
+          { id: 'real', name: '☢️ Real Nuke', desc: 'Classic destruction' },
+        ];
+
+        const selection = prompt(
+          'Choose your nuke type:\n\n' +
+            nukeTypes
+              .map((t, i) => `${i + 1}. ${t.name}\n   ${t.desc}`)
+              .join('\n\n') +
+            '\n\nEnter 1-4:'
+        );
+
+        const choice = parseInt(selection);
+        if (choice >= 1 && choice <= 4) {
+          gameState.nukeType = nukeTypes[choice - 1].id;
+          gameState.nukeTarget = true;
+          showToast(
+            `${nukeTypes[choice - 1].name} selected! Click target.`,
+            'warning'
+          );
+          addEvent(`☢️ ${nukeTypes[choice - 1].name} armed`);
+        } else {
+          showToast('Nuke launch cancelled', 'info');
+        }
       }
 
       function requestAlliance() {
@@ -1063,21 +1152,41 @@
 
               if (weakNeighbor) {
                 const neighbor = gameState.countries[weakNeighbor];
-                // Merge!
-                const newName = `${country.name}-${neighbor.name}`;
+                const oldName1 = country.name;
+                const oldName2 = neighbor.name;
+
+                // Properly merge countries
+                const newName = `${oldName1}-${oldName2}`;
                 country.name = newName;
                 country.army += neighbor.army;
                 country.fearLevel = 0;
 
-                // Transfer ownership
-                neighbor.owner = country.owner;
-                neighbor.color = country.color;
-                neighbor.army = 0;
+                // Combine neighbors
+                neighbor.neighbors.forEach((nId) => {
+                  if (nId !== country.id && !country.neighbors.includes(nId)) {
+                    country.neighbors.push(nId);
+                  }
+                });
 
-                addEvent(
-                  `${country.name} and ${neighbor.name} merged out of fear!`
-                );
+                // Update all references to neighbor to point to country
+                Object.values(gameState.countries).forEach((c) => {
+                  if (c.neighbors.includes(weakNeighbor)) {
+                    c.neighbors = c.neighbors.filter((n) => n !== weakNeighbor);
+                    if (
+                      !c.neighbors.includes(country.id) &&
+                      c.id !== country.id
+                    ) {
+                      c.neighbors.push(country.id);
+                    }
+                  }
+                });
+
+                // Remove the neighbor country
+                delete gameState.countries[weakNeighbor];
+
+                addEvent(`${oldName1} and ${oldName2} merged out of fear!`);
                 showSpeechBubble(country.id);
+                showToast(`${newName} formed!`, 'info');
 
                 gameState.mergedCountries[country.id] = true;
               }
@@ -1242,29 +1351,113 @@
         const target = gameState.countries[targetId];
 
         if (target.owner === 'player') {
-          alert("You can't nuke your own territory!");
+          showToast("Can't nuke your own territory!", 'error');
+          addEvent("❌ Can't nuke own territory");
           gameState.nukeTarget = false;
           return;
         }
 
         gameState.nukes--;
+        const nukeType = gameState.nukeType || 'real';
         gameState.nukeTarget = false;
+        gameState.nukeType = null;
 
-        // Nuke destroys most of the army
-        target.army = Math.floor(target.army * 0.1);
-        target.owner = 'player';
-        target.color = '#4CAF50';
+        switch (nukeType) {
+          case 'fart':
+            // Fart Nuke - makes them mad and attack
+            addEvent(`💨 FART NUKE on ${target.name}! *PFFFFT*`);
+            showToast(
+              `💨 ${target.name} is FURIOUS about the smell!`,
+              'warning'
+            );
+            showSpeechBubble(targetId);
 
-        addEvent(`☢️ NUCLEAR STRIKE on ${target.name}!`);
-        alert(`☢️ Nuclear strike successful! ${target.name} is devastated!`);
+            // They get mad and attack back
+            target.army += 50;
+            target.fearLevel = -100; // Very angry!
 
-        // Increase fear in neighboring countries
-        target.neighbors.forEach((nId) => {
-          const neighbor = gameState.countries[nId];
-          if (neighbor.owner !== 'player') {
-            neighbor.fearLevel += 50;
-          }
-        });
+            // Immediate retaliation
+            setTimeout(() => {
+              const playerTerritories = Object.values(
+                gameState.countries
+              ).filter(
+                (c) => c.owner === 'player' && target.neighbors.includes(c.id)
+              );
+              if (playerTerritories.length > 0) {
+                const playerTarget = playerTerritories[0];
+                const damage = Math.floor(target.army * 0.4);
+                playerTarget.army -= damage;
+                addEvent(`⚠️ ${target.name} retaliates! -${damage} army`);
+                showToast(`${target.name} attacks in revenge!`, 'error');
+                updateUI();
+                drawMap();
+              }
+            }, 1000);
+            break;
+
+          case 'heat':
+            // Heat Nuke - melts gold
+            addEvent(`🔥 HEAT NUKE on ${target.name}! Gold melted!`);
+            showToast(`🔥 ${target.name}'s economy destroyed!`, 'warning');
+            showSpeechBubble(targetId);
+
+            // They lose army due to economic collapse
+            target.army = Math.floor(target.army * 0.3);
+
+            // Player gets some of the melted gold
+            const stolenGold = 200;
+            gameState.gold += stolenGold;
+            addEvent(`💰 Recovered ${stolenGold} gold from ruins`);
+            break;
+
+          case 'love':
+            // Love Nuke - pink and annoying
+            addEvent(`💗 LOVE NUKE on ${target.name}! So much love!`);
+            showToast(`💗 ${target.name} is confused by all the love!`, 'info');
+            showSpeechBubble(targetId);
+
+            // Similar to fart but less angry
+            target.army += 30;
+            target.fearLevel = -50;
+
+            // Mild retaliation
+            setTimeout(() => {
+              const playerTerritories = Object.values(
+                gameState.countries
+              ).filter(
+                (c) => c.owner === 'player' && target.neighbors.includes(c.id)
+              );
+              if (playerTerritories.length > 0) {
+                const playerTarget = playerTerritories[0];
+                const damage = Math.floor(target.army * 0.2);
+                playerTarget.army -= damage;
+                addEvent(`${target.name} attacks (annoyed by love)`);
+                updateUI();
+                drawMap();
+              }
+            }, 1000);
+            break;
+
+          case 'real':
+          default:
+            // Real Nuke - classic destruction
+            target.army = Math.floor(target.army * 0.1);
+            target.owner = 'player';
+            target.color = '#4CAF50';
+
+            addEvent(`☢️ NUCLEAR STRIKE on ${target.name}!`);
+            showToast(`☢️ ${target.name} devastated!`, 'warning');
+            showSpeechBubble(targetId);
+
+            // Increase fear in neighboring countries
+            target.neighbors.forEach((nId) => {
+              const neighbor = gameState.countries[nId];
+              if (neighbor.owner !== 'player') {
+                neighbor.fearLevel += 50;
+              }
+            });
+            break;
+        }
 
         updateUI();
         drawMap();
@@ -1274,7 +1467,7 @@
         const target = gameState.countries[targetId];
 
         if (target.owner === 'player') {
-          alert('You already own this territory!');
+          addEvent('❌ Already own this territory');
           return;
         }
 
@@ -1291,9 +1484,8 @@
           gameState.planes > 0 && gameState.militaryLevel >= 5;
 
         if (!isNeighbor && !canAttackOverseas) {
-          alert(
-            'You can only attack neighboring territories! Upgrade military to level 5 for planes.'
-          );
+          showToast('Need planes for overseas attacks!', 'error');
+          addEvent('❌ Overseas attack requires planes (Military Lv5)');
           return;
         }
 
@@ -1325,11 +1517,10 @@
             }
           }
 
-          alert(
-            allianceHelped
-              ? 'Using plane for overseas attack! Alliance is helping!'
-              : 'Using plane for overseas attack!'
-          );
+          if (allianceHelped) {
+            showToast('Alliance helping with overseas attack!', 'success');
+          }
+          addEvent(`✈️ Plane deployed for overseas attack`);
         }
 
         // Check alliance - attacking own alliance member
