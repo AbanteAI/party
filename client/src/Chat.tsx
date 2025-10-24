@@ -360,7 +360,6 @@ export default function Chat({ currentUser }: ChatProps) {
       updatedAt: number;
     }>
   >([]);
-
   const [showChatList, setShowChatList] = useState(false);
   const [communityModels, setCommunityModels] = useState<
     Array<{
@@ -1448,8 +1447,6 @@ export default function Chat({ currentUser }: ChatProps) {
     }
   };
 
-  // @ts-expect-error - Will be used when chat list UI is added
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const loadChat = async (chatId: string) => {
     try {
       const response = await fetch(`/api/chats/${chatId}`);
@@ -3781,6 +3778,101 @@ Final synthesis: [how to combine all elements]
           </div>
         )}
       </div>
+
+      {/* Chat History Modal */}
+      {showChatList && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setShowChatList(false)}
+        >
+          <div
+            style={{
+              background: currentTheme.messageBg,
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+              }}
+            >
+              <h2 style={{ color: currentTheme.text, margin: 0 }}>
+                Chat History
+              </h2>
+              <button
+                onClick={() => setShowChatList(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: currentTheme.text,
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div
+              style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+            >
+              {chatList.map((chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => loadChat(chat.id)}
+                  style={{
+                    padding: '16px',
+                    background: currentTheme.assistantBg,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    border: `1px solid ${currentTheme.border}`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = currentTheme.userBg;
+                    e.currentTarget.style.color = currentTheme.userText;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = currentTheme.assistantBg;
+                    e.currentTarget.style.color = currentTheme.text;
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: '500',
+                      marginBottom: '4px',
+                      color: 'inherit',
+                    }}
+                  >
+                    {chat.title}
+                  </div>
+                  <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                    {new Date(chat.updatedAt).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div
