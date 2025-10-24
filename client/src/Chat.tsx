@@ -476,6 +476,7 @@ export default function Chat({ currentUser }: ChatProps) {
     if (currentUser) {
       loadChatList();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
   // Save conversations
@@ -2494,7 +2495,6 @@ Final synthesis: [how to combine all elements]
             >
               ➕ New Chat
             </button>
-          </div>
           </div>
         </div>
         <div
