@@ -350,6 +350,7 @@ export default function Chat({ currentUser }: ChatProps) {
     total: number;
   } | null>(null);
   const [generatedGifUrl, setGeneratedGifUrl] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [chatList, setChatList] = useState<
     Array<{
@@ -358,7 +359,7 @@ export default function Chat({ currentUser }: ChatProps) {
       updatedAt: number;
     }>
   >([]);
-   
+
   const [showChatList, setShowChatList] = useState(false);
   const [communityModels, setCommunityModels] = useState<
     Array<{
